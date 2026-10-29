@@ -3,3 +3,5 @@
 *.js text eol=lf
 *.command text eol=lf
 *.swift text eol=lf
+*.go text eol=lf
+*.bat text eol=crlf

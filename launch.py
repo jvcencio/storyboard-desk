@@ -2,7 +2,6 @@
 """Start/reuse the local storyboard app. No login item or service installation."""
 from pathlib import Path
 import argparse
-import fcntl
 import getpass
 import json
 import os
@@ -11,12 +10,15 @@ import sys
 import time
 import urllib.request
 import urllib.error
+import webbrowser
 
 APP = Path(__file__).resolve().parent
 sys.path.insert(0, str(APP))
 from settings import CONFIG
+from platform_support import FileLock, stop_process
 URL = 'http://127.0.0.1:%d/' % CONFIG['port']
 DATA = CONFIG['data_dir']
+_owned_children = {}
 
 
 def ready(url=URL):
@@ -39,19 +41,16 @@ def prepare_background(data_dir=DATA, url=URL, state_dir=None, create=False):
         data_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
     if ready(url):
         return {'app': 'Storyboard Desk', 'url': url, 'status': 'reused'}
-    state_dir = Path(state_dir or Path.home()/'Library/Logs/Storyboard Desk')
+    default_state = Path.home()/'Library/Logs/Storyboard Desk' if sys.platform == 'darwin' else Path(data_dir)/'runtime'
+    state_dir = Path(state_dir or default_state)
     state_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
     # Concurrent button clicks/launches share one startup decision.
-    with (state_dir/'launch.lock').open('a') as lock:
-        deadline = time.monotonic() + 12
-        while True:
-            try:
-                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                break
-            except BlockingIOError:
-                if time.monotonic() >= deadline:
-                    raise RuntimeError('Storyboard Desk is still starting. Try again shortly.')
-                time.sleep(.1)
+    with FileLock(state_dir/'launch.lock') as lock:
+        deadline = time.monotonic() + 20
+        while not lock.acquire():
+            if time.monotonic() >= deadline:
+                raise RuntimeError('Storyboard Desk is still starting. Try again shortly.')
+            time.sleep(.1)
         if ready(url):
             return {'app': 'Storyboard Desk', 'url': url, 'status': 'reused'}
         from urllib.parse import urlsplit
@@ -59,9 +58,10 @@ def prepare_background(data_dir=DATA, url=URL, state_dir=None, create=False):
         log_path = state_dir/'server.log'
         with log_path.open('ab') as log:
             proc = subprocess.Popen(
-                [sys.executable, '-I', '-B', str(APP/'server.py'), '--data-dir', str(data_dir), '--port', str(port)],
+                [sys.executable, '-X', 'utf8', '-I', '-B', str(APP/'server.py'), '--data-dir', str(data_dir), '--port', str(port)],
                 stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT,
-                start_new_session=True, close_fds=True,
+                start_new_session=os.name != 'nt', close_fds=True,
+                creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0,
                 env=dict(os.environ, PYTHONDONTWRITEBYTECODE='1'))
         try:
             startup_deadline = time.monotonic() + 15
@@ -69,6 +69,7 @@ def prepare_background(data_dir=DATA, url=URL, state_dir=None, create=False):
                 if proc.poll() is not None:
                     raise RuntimeError('Storyboard Desk could not start. Check '+str(log_path))
                 if ready(url):
+                    _owned_children[proc.pid] = proc
                     return {'app': 'Storyboard Desk', 'url': url, 'status': 'started', 'pid': proc.pid}
                 time.sleep(.1)
             raise RuntimeError('Storyboard Desk did not become ready. Check '+str(log_path))
@@ -83,12 +84,28 @@ def prepare_background(data_dir=DATA, url=URL, state_dir=None, create=False):
             raise
 
 
+
+def stop_background(reply):
+    """For an embedding caller: stop only a server this process actually started."""
+    process = _owned_children.pop(reply.get('pid'), None)
+    if process is not None:
+        stop_process(process)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--gosx', action='store_true', help='Open the optional GoSX native desktop host instead of the browser')
     parser.add_argument('--background', action='store_true', help='Start/reuse the server without a Terminal lifetime')
     parser.add_argument('--no-open', action='store_true', help='Return startup JSON for Mini Meter; do not open a browser')
     parser.add_argument('--ask-openrouter-key', action='store_true', help='Read an optional API key without echo/history; keep it only in this server process environment')
     args = parser.parse_args()
+    if args.gosx and args.background:
+        parser.error('--gosx runs in the foreground; omit --background')
+    host = None
+    if args.gosx:
+        host = Path(os.environ.get('STORYBOARD_GOSX_HOST', str(APP/'gosx-host'/('storyboard-desk-gosx.exe' if os.name == 'nt' else 'storyboard-desk-gosx'))))
+        if not host.is_file():
+            parser.error('Build the GoSX host first: python3 build_desktop.py. See docs/PORTABILITY.md.')
     if args.no_open and not args.background:
         parser.error('--no-open requires --background')
     if args.ask_openrouter_key:
@@ -104,12 +121,12 @@ def main():
         except (OSError, ValueError, RuntimeError) as error:
             raise SystemExit(str(error))
         if not args.no_open:
-            subprocess.run(['/usr/bin/open', URL], check=True)
+            webbrowser.open(URL)
         print(json.dumps(result), flush=True)
         return
     proc = None
     if not ready():
-        proc = subprocess.Popen([sys.executable, str(APP/'server.py'), '--data-dir', str(DATA), '--port', str(CONFIG['port'])])
+        proc = subprocess.Popen([sys.executable, '-X', 'utf8', str(APP/'server.py'), '--data-dir', str(DATA), '--port', str(CONFIG['port'])])
         for _ in range(80):
             if proc.poll() is not None:
                 raise SystemExit('Storyboard Desk could not start. Check the configured storage and the message above.')
@@ -120,15 +137,22 @@ def main():
             proc.terminate()
             proc.wait(timeout=5)
             raise SystemExit('The local dashboard did not become ready.')
-    subprocess.run(['/usr/bin/open', URL], check=True)
-    print('Storyboard Desk is open at '+URL, flush=True)
-    if proc:
-        print('Keep this window open. Control-C stops the app; project files remain in '+str(DATA)+'.', flush=True)
-        try:
-            proc.wait()
-        except KeyboardInterrupt:
-            proc.send_signal(2)
-            proc.wait(timeout=25)
+    try:
+        if host:
+            result = subprocess.run([str(host), '--url', URL])
+            if result.returncode:
+                raise SystemExit('The GoSX desktop host could not open. See docs/PORTABILITY.md; browser mode remains available.')
+        else:
+            webbrowser.open(URL)
+            print('Storyboard Desk is open at '+URL, flush=True)
+            if proc:
+                print('Keep this window open. Control-C stops the app; project files remain in '+str(DATA)+'.', flush=True)
+                proc.wait()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        if proc:
+            stop_process(proc)
 
 
 if __name__ == '__main__':

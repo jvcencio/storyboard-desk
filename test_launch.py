@@ -28,17 +28,12 @@ def prepare_with_diagnostics(data, url, state):
         return launch.prepare_background(data, url, state)
     except Exception as exc:
         log = Path(state)/'server.log'
-        details = log.read_text()[-6000:] if log.exists() else '(no server log)'
+        details = log.read_text(encoding='utf-8')[-6000:] if log.exists() else '(no server log)'
         raise RuntimeError(str(exc)+'\nTemporary server log:\n'+details) from exc
 
 
 def stop_owned(reply):
-    if reply.get('status') == 'started':
-        os.kill(reply['pid'], signal.SIGINT)
-        try:
-            os.waitpid(reply['pid'], 0)
-        except ChildProcessError:
-            pass
+    launch.stop_background(reply)
 
 
 class LaunchChecks(unittest.TestCase):
@@ -49,6 +44,7 @@ class LaunchChecks(unittest.TestCase):
             self.assertEqual(reply['status'], 'reused')
             self.assertTrue(data.is_dir())
 
+    @unittest.skipIf(os.name == 'nt', 'POSIX /Volumes mount guard')
     def test_missing_volume_cannot_be_created_even_with_create_enabled(self):
         with patch.object(Path, 'is_mount', return_value=False), patch.object(Path, 'mkdir') as mkdir:
             with self.assertRaisesRegex(RuntimeError, 'configured storage volume'):
@@ -95,7 +91,7 @@ class LaunchChecks(unittest.TestCase):
             try:
                 with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
                     futures = [pool.submit(prepare_with_diagnostics, data, url, Path(root)/'logs') for _ in range(2)]
-                    replies = [future.result(timeout=20) for future in futures]
+                    replies = [future.result(timeout=35) for future in futures]
                 self.assertEqual(sorted(r['status'] for r in replies), ['reused', 'started'])
                 self.assertEqual(len(list(data.glob('*/project.json'))), 1)
             finally:

@@ -2,31 +2,32 @@
 
 A GoSX creative workspace for turning an idea into shots, takes and editable footage. Plan the story, keep reference images and alternative clips, generate selected takes, then export extra footage to shape in an editor.
 
-The current app is a local Python server with a buildless browser UI. Full video inspection and MP4 export use small macOS helpers. It is a working development version.
+The current app is a local Python server with a buildless browser UI. Video inspection and silent MP4 export use FFmpeg on Windows, Mac and Linux, or the optional native Mac helpers. An optional GoSX native host opens the same workspace on Windows and Mac. It is a working development version.
 
-## Start on a Mac
+## Start on Windows, Mac or Linux
 
-The full workflow targets macOS 13 or newer, Python 3.9 or newer and a modern browser. No pip packages, Node build or API key are needed to open the app and organize imported media.
+Use Python 3.11 or newer and a modern browser. No pip packages, Node build or API key are needed to try the demo.
 
 ```sh
 git clone https://github.com/jvcencio/storyboard-desk.git
 cd storyboard-desk
-python3 launch.py
+python launch.py
 ```
 
-The launcher opens **http://127.0.0.1:4492/**. Keep its Terminal window open; **Control-C** stops it. Later, you can also double-click **Start Storyboard Desk.command**.
+On Windows use `py -3 launch.py`, or double-click **Start Storyboard Desk.bat**. On Mac/Linux use `python3` if needed; the Mac `.command` launcher also remains available. The app opens **http://127.0.0.1:4492/**. Keep the Terminal open; **Control-C** stops the server you started.
 
-To enable video inspection, silent MP4 ranges and selects-reel export, build the native helpers once:
+For video inspection and export install **FFmpeg 6.1+ including ffprobe**, with libx264 support, and put both executables on PATH. [FFmpeg's download page](https://ffmpeg.org/download.html) links platform builds. Mac users can alternatively build the Swift helpers with `python3 build_native.py` after installing Apple's Command Line Tools.
+
+## Run inside GoSX
+
+With Go 1.26+ installed:
 
 ```sh
-# If Apple's Command Line Tools are not installed:
-xcode-select --install
-
-# After that installation has finished:
-python3 build_native.py
+python build_desktop.py
+python launch.py --gosx
 ```
 
-Build on the Mac that will run the app; no architecture-specific binaries are committed. This release is supported on macOS.
+This builds a pinned GoSX native host for Windows (WebView2) or Mac (WKWebView). Linux uses the browser. The existing Python service and browser UI remain shared. See [platform setup and integration details](docs/PORTABILITY.md), including Windows runtime requirements, storage paths and the current verification boundary.
 
 ## First useful session
 
@@ -64,7 +65,7 @@ You can also copy prompts and manually use Flow, Grok, Claude or another tool, t
 
 ## Storage and configuration
 
-On a fresh Mac, projects live in `~/Library/Application Support/Storyboard Desk`, outside the checkout. Each project retains its JSON, media, hashes, prompts and exports. Imports copy files; original source files stay in place. Keep your own backup of that data folder.
+Projects live outside the checkout: `%LOCALAPPDATA%\Storyboard Desk` on Windows, `~/Library/Application Support/Storyboard Desk` on Mac, and `~/.local/share/storyboard-desk` (or XDG data home) on Linux. Each project retains its JSON, media, hashes, prompts and exports. Imports copy files; original source files stay in place. Keep your own backup of that data folder.
 
 To use another folder, copy `settings.example.json` to **settings.local.json** and edit it. That local file is ignored by Git. Environment variables override local settings:
 
@@ -76,10 +77,12 @@ To use another folder, copy `settings.example.json` to **settings.local.json** a
 | Optional model folder / filename | `STORYBOARD_MODELS_DIR` / `STORYBOARD_DRAW_MODEL` |
 | Optional Mini Meter executable | `STORYBOARD_METER` |
 | Optional cached reference previews | `STORYBOARD_REFERENCE_CACHE` |
+| FFmpeg / ffprobe executables | `STORYBOARD_FFMPEG` / `STORYBOARD_FFPROBE` |
+| Media backend (`auto`, `ffmpeg`, `native`) | `STORYBOARD_MEDIA_BACKEND` |
 
 An unavailable configured `/Volumes/...` drive is never replaced with a newly created empty drive folder. The server binds to loopback and requires same-origin checks plus a per-run token for mutations. It is a local workspace, not an Internet-facing multi-user server.
 
-**Draw locally** is an optional advanced layout-sketch route. It requires Draw Things CLI, the configured local model and Mini Meter memory checks. It is not required for cloud generation or the imported-footage workflow. A local rough sketch is not a qualified character-identity render.
+**Draw locally** is an optional advanced layout-sketch route. It is a Mac integration that requires Draw Things CLI, the configured local model and Mini Meter memory checks. It is not required for cloud generation or the imported-footage workflow. A local rough sketch is not a qualified character-identity render.
 
 ## Development
 
@@ -94,6 +97,6 @@ for file in static/*.js; do node --check "$file"; done
 python3 server.py --data-dir /tmp/storyboard-desk-dev --port 4493
 ```
 
-Tests use temporary stores and fake cloud clients; they do not spend model credits. GitHub CI runs the tests and builds native helpers on macOS.
+Tests use temporary stores and fake cloud clients; they do not spend model credits. GitHub CI tests Windows, Linux and Mac, exercises actual FFmpeg exports, and builds the GoSX desktop hosts and optional Mac helpers.
 
 This repository contains application source and a generic demo. Personal projects, lyrics, reference/media libraries, cloud-job receipts, handoff packets, logs, local configuration and built executables are excluded by an explicit source allowlist. No license for public redistribution has been selected.

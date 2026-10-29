@@ -3,8 +3,12 @@ on: [push, pull_request]
 permissions:
   contents: read
 jobs:
-  macos:
-    runs-on: macos-latest
+  portable:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-15-intel]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -13,6 +17,27 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: python3 build_native.py
-      - run: python3 -m unittest discover -s . -p 'test_*.py' -v
-      - run: for file in static/*.js; do node --check "$file"; done
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.4'
+          cache-dependency-path: gosx-host/go.sum
+      - uses: FedericoCarboni/setup-ffmpeg@36c6454b5a2348e7794ba2d82a21506605921e3d # v3
+        with:
+          ffmpeg-version: release
+          architecture: x64
+          github-token: ${{ github.token }}
+      - if: runner.os == 'macOS'
+        run: python build_native.py
+      - run: python -m unittest discover -s . -p 'test_*.py' -v
+        env:
+          STORYBOARD_REQUIRE_FFMPEG: '1'
+      - shell: bash
+        run: for file in static/*.js; do node --check "$file"; done
+      - working-directory: gosx-host
+        run: go test ./...
+        env:
+          CGO_ENABLED: '0'
+      - if: runner.os != 'Linux'
+        run: python build_desktop.py
+      - if: runner.os == 'Windows'
+        run: python build_desktop.py --target windows-arm64 --output-dir build/windows-arm64

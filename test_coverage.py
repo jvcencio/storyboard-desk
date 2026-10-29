@@ -65,7 +65,7 @@ class CoverageChecks(unittest.TestCase):
         p=self.p();self.store.place_clip(self.pid,'one','clip0','two',p['revision'],0,4)
     def test_full_reel_exceeds_target_and_cut_map_preserves_order(self):
         self.collect();self.collect(source_shot='two',source_asset='clip1');p=self.p();s=copy.deepcopy(self.row());s['end_seconds']=64;self.store.save_section(self.pid,p['revision'],s);before=self.p();result=self.store.export_reel(self.pid,before['revision'],self.sid,renderer=self.fake)
-        self.assertEqual((result['duration_seconds'],result['target_seconds']),(16,4));manifest=json.loads((self.store.folder(self.pid)/'exports'/Path(result['map_url']).name).read_text());self.assertEqual([(c['reel_in_seconds'],c['reel_out_seconds']) for c in manifest['cuts']],[(0,8),(8,16)]);self.assertEqual(self.p(),before)
+        self.assertEqual((result['duration_seconds'],result['target_seconds']),(16,4));manifest=json.loads((self.store.folder(self.pid)/'exports'/Path(result['map_url']).name).read_text(encoding='utf-8'));self.assertEqual([(c['reel_in_seconds'],c['reel_out_seconds']) for c in manifest['cuts']],[(0,8),(8,16)]);self.assertEqual(self.p(),before)
     def test_reel_scope_and_inclusion(self):
         self.add(in_seconds=1,out_seconds=3);self.collect(source_shot='two',source_asset='clip1');self.change(in_seconds=3,out_seconds=7);self.change(coverage=self.row()['coverage'][1]['id'],include_in_handoff=False)
         for scope,expected in [('coverage',8),('preferred',4),('assembly',2)]:self.assertEqual(self.store.export_reel(self.pid,self.p()['revision'],self.sid,scope,self.fake)['duration_seconds'],expected)

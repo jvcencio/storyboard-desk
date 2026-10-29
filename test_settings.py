@@ -18,10 +18,19 @@ class SettingsChecks(unittest.TestCase):
             self.assertEqual(value['data_dir'], (home/'Library/Application Support/Storyboard Desk').resolve())
             self.assertFalse(home.exists())
 
+    def test_windows_and_linux_respect_user_data_locations(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            win = settings.load_settings({'LOCALAPPDATA':str(root/'Local')}, root/'missing', root/'home', 'win32')
+            self.assertEqual(win['data_dir'], (root/'Local/Storyboard Desk').resolve())
+            linux = settings.load_settings({'XDG_DATA_HOME':str(root/'data')}, root/'missing', root/'home', 'linux')
+            self.assertEqual(linux['data_dir'], (root/'data/storyboard-desk').resolve())
+            self.assertFalse((root/'home').exists())
+
     def test_environment_overrides_local_machine_settings(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp)/'settings.json'
-            path.write_text(json.dumps({'data_dir': tmp+'/first', 'port': 4500}))
+            path.write_text(json.dumps({'data_dir': tmp+'/first', 'port': 4500}), encoding='utf-8')
             value = settings.load_settings({'STORYBOARD_DATA_DIR': tmp+'/second', 'STORYBOARD_PORT': '4501'}, path)
             self.assertEqual(value['data_dir'], (Path(tmp)/'second').resolve())
             self.assertEqual(value['port'], 4501)
@@ -29,7 +38,7 @@ class SettingsChecks(unittest.TestCase):
     def test_invalid_config_and_credentials_are_not_accepted_as_settings(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp)/'settings.json'
-            path.write_text(json.dumps({'OPENROUTER_API_KEY': 'not-a-real-key'}))
+            path.write_text(json.dumps({'OPENROUTER_API_KEY': 'not-a-real-key'}), encoding='utf-8')
             with self.assertRaisesRegex(ValueError, 'credentials'):
                 settings.load_settings({}, path)
             for port in ('0', '65536', '4492.5'):
@@ -53,5 +62,5 @@ class SettingsChecks(unittest.TestCase):
                 patch.object(cloud, 'APP', Path(tmp)/'app'):
             path = Path(tmp)/'buckley-workstation/scripts/workstation_credentials.py'
             path.parent.mkdir(parents=True)
-            path.write_text('def find(provider):\n    return "fixture-workstation-key", {}\n')
+            path.write_text('def find(provider):\n    return "fixture-workstation-key", {}\n', encoding='utf-8')
             self.assertEqual(cloud.keychain_key(), 'fixture-workstation-key')

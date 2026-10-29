@@ -58,29 +58,8 @@ def fcpxml(project,section,entries,source_names,options=()):
     ET.indent(root)
     return '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE fcpxml>\n'+ET.tostring(root,encoding='unicode')+'\n'
 
-def render_range(source,target,start,end):
-    helper=APP/'export_range'
-    if not helper.is_file():raise ValueError('The local MP4 exporter is unavailable. No source files were changed.')
-    try:
-        r=subprocess.run([str(helper),str(source),str(target),str(start),str(end)],capture_output=True,text=True,timeout=120)
-    except subprocess.TimeoutExpired:raise ValueError('Local MP4 export timed out; source files are retained.') from None
-    if r.returncode or not target.is_file():raise ValueError('This source could not be exported as MP4. Check that it plays locally; source files are retained.')
-    result=json.loads(r.stdout)
-    if result.get('audio_tracks')!=0 or abs(result.get('duration_seconds',0)-(end-start))>.09:raise ValueError('The MP4 export failed its silent-picture/duration check.')
-    return result
-
-def render_reel(segments,target,aspect):
-    helper=APP/'export_reel'
-    if not helper.is_file():raise ValueError('The local selects-reel exporter is unavailable. Source files are retained.')
-    width,height={'16:9':(1280,720),'9:16':(720,1280),'1:1':(1080,1080)}[aspect]
-    with tempfile.TemporaryDirectory(prefix='sbd-reel-') as tmp:
-        request=Path(tmp)/'request.json';request.write_text(json.dumps({'segments':segments,'width':width,'height':height}))
-        try:r=subprocess.run([str(helper),str(request),str(target)],capture_output=True,text=True,timeout=240)
-        except subprocess.TimeoutExpired:raise ValueError('Local selects-reel export timed out. Source files are retained.') from None
-    if r.returncode or not target.is_file():raise ValueError('The selects reel could not be exported. Check the source clips locally.')
-    result=json.loads(r.stdout);expected=sum(c['end']-c['start'] for c in segments)
-    if result.get('audio_tracks')!=0 or abs(result.get('duration_seconds',0)-expected)>.09:raise ValueError('The selects reel failed its silent-picture/duration check.')
-    return result
+# Shared media adapter preserves the native Mac path and adds FFmpeg.
+from media_tools import render_range, render_reel
 
 class SectionStore:
     @staticmethod
@@ -294,8 +273,8 @@ class SectionStore:
                 expected=round(elapsed,6)
                 if result.get('audio_tracks')!=0 or abs(result.get('duration_seconds',0)-expected)>.09:raise ValueError('The selects reel failed its silent-picture/duration check.')
                 manifest={'schema':'sbd-selects-reel/1','project_id':pid,'project_revision':revision,'section_id':sid,'section_label':s['label'],'song_start_seconds':s['start_seconds'],'song_end_seconds':s['end_seconds'],'song_section_seconds':s['end_seconds']-s['start_seconds'],'reel_seconds':expected,'scope':scope,'cuts':cuts,'export_metadata':result,'exported_at':now(),'editing_note':'Overlength silent picture reel. Split, trim and rearrange in your editor. Song timing is a target only; no footage is stretched or cut to fit. Audio remains separate.'}
-                (tmp/'cuts.json').write_text(json.dumps(manifest,indent=2,ensure_ascii=False)+'\n')
-                with (tmp/'cuts.csv').open('w',newline='') as out:
+                (tmp/'cuts.json').write_text(json.dumps(manifest,indent=2,ensure_ascii=False)+'\n', encoding='utf-8')
+                with (tmp/'cuts.csv').open('w',newline='', encoding='utf-8') as out:
                     writer=csv.DictWriter(out,fieldnames=list(cuts[0]));writer.writeheader();writer.writerows(cuts)
                 for source,suffix in (('reel.mp4','.mp4'),('cuts.json','.json'),('cuts.csv','.csv')):
                     dest=exports/(stem+suffix);(tmp/source).replace(dest);files.append(dest)

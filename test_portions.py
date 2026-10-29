@@ -39,7 +39,7 @@ class PortionChecks(unittest.TestCase):
     def test_clip_tags_retained_in_both_editor_handoffs(self):
         self.add();row=self.row()['coverage'][0];self.store.coverage_edit(self.pid,self.p()['revision'],self.sid,{'coverage':row['id'],'operation':'update','music_tag':'intro'})
         def render(segments,dst,aspect):dst.write_bytes(b'picture');return {'duration_seconds':sum(c['end']-c['start'] for c in segments),'audio_tracks':0}
-        result=self.store.export_reel(self.pid,self.p()['revision'],self.sid,renderer=render);manifest=json.loads((self.store.folder(self.pid)/'exports'/Path(result['map_url']).name).read_text());self.assertEqual(manifest['cuts'][0]['music_tag'],'intro')
+        result=self.store.export_reel(self.pid,self.p()['revision'],self.sid,renderer=render);manifest=json.loads((self.store.folder(self.pid)/'exports'/Path(result['map_url']).name).read_text(encoding='utf-8'));self.assertEqual(manifest['cuts'][0]['music_tag'],'intro')
         def range_render(src,dst,start,end):dst.write_bytes(b'picture');return {'duration_seconds':end-start,'audio_tracks':0}
         path=self.store.folder(self.pid)/self.store.export_section(self.pid,self.p()['revision'],self.sid,range_render,True)
         with zipfile.ZipFile(path) as z:self.assertEqual(json.loads(z.read('section.json'))['coverage_options'][0]['music_tag'],'intro')

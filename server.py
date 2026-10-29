@@ -31,6 +31,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from cloud import CloudEngine
 from sections import SectionStore
 from settings import CONFIG
+from media_tools import probe_video, require_video_tools
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from socketserver import TCPServer
 
@@ -374,7 +375,7 @@ class Store(SectionStore):
     def load(self, pid):
         with self.lock:
             self.ensure_storage()
-            p = json.loads((self.folder(pid) / 'project.json').read_text())
+            p = json.loads((self.folder(pid) / 'project.json').read_text(encoding='utf-8'))
             p.setdefault('episode_notes', '')
             p.setdefault('runtime_limit_seconds', 0)
             p.setdefault('visual_references', [])
@@ -396,7 +397,7 @@ class Store(SectionStore):
             self.ensure_storage()
             target = self.folder(p['id']) / 'project.json'
             if revision is not None and target.exists():
-                current = json.loads(target.read_text())
+                current = json.loads(target.read_text(encoding='utf-8'))
                 if current['revision'] != revision:
                     raise RuntimeError('Project changed in another window. Reload before saving.')
             p['revision'] = p.get('revision', 0) + 1
@@ -706,7 +707,7 @@ class Store(SectionStore):
             p = self.load(pid)
             if p['revision'] != revision:
                 raise RuntimeError('Project changed in another window. Reload before attaching music.')
-            if os.statvfs(self.root).f_bavail * os.statvfs(self.root).f_frsize < length + 1024**3:
+            if shutil.disk_usage(self.root).free < length + 1024**3:
                 raise ValueError('Keep at least 1 GiB free on the media drive.')
             rid = uid()
             rel = f'media/soundtrack/{rid}.wav'
@@ -848,7 +849,7 @@ class Store(SectionStore):
             raise ValueError('Use a supported image/video file smaller than 256 MiB.')
         with self.lock:
             self.shot(self.load(pid), sid)
-        if os.statvfs(self.root).f_bavail * os.statvfs(self.root).f_frsize < length + 1024**3:
+        if shutil.disk_usage(self.root).free < length + 1024**3:
             raise ValueError('Keep at least 1 GiB free on the media drive.')
         aid = uid()
         rel = f'media/{sid}/{aid}{ext}'
@@ -909,7 +910,7 @@ class Store(SectionStore):
                 if brief.is_file(): z.write(brief, 'generation/'+name)
             cloud_jobs = []
             for job_file in (self.root/'cloud/jobs').glob('*.json'):
-                job = json.loads(job_file.read_text())
+                job = json.loads(job_file.read_text(encoding='utf-8'))
                 if job.get('project_id') == pid: cloud_jobs.append(job)
             if cloud_jobs: z.writestr('generation/jobs.json', json.dumps(cloud_jobs, indent=2))
             z.writestr('STORYBOARD.txt', script_text(p))
@@ -981,7 +982,7 @@ class Renderer:
         self.worker = threading.Thread(target=self.run, daemon=True)
         # Preserve receipts from the previous run and mark unfinished work interrupted.
         for path in store.root.glob('*/jobs/*.json'):
-            j = json.loads(path.read_text())
+            j = json.loads(path.read_text(encoding='utf-8'))
             if j['status'] in ('queued', 'running'):
                 j.update(status='interrupted', message='Server stopped. Review before retrying.')
                 atomic(path, j)
@@ -1035,7 +1036,7 @@ class Renderer:
                 if hashlib.sha256(snapshot.read_bytes()).hexdigest() != image['sha256']:
                     snapshot.unlink()
                     raise ValueError('Input image changed while preparing the job.')
-                j['input_image'] = dict(image, snapshot_path=str(snapshot.relative_to(self.store.folder(pid))))
+                j['input_image'] = dict(image, snapshot_path=snapshot.relative_to(self.store.folder(pid)).as_posix())
                 j['input_transform'] = 'CLI aspect-preserving scale and center crop to output frame'
             self.save(j)
             self.store.jobs[j['id']] = j
@@ -1072,6 +1073,8 @@ class Renderer:
                 self.queue.task_done()
 
     def render(self, j):
+        if sys.platform != 'darwin':
+            raise ValueError('Draw Things is an optional Mac integration. Use imported images or cloud generation on this system.')
         if not CLI.is_file() or not (MODELS/MODEL).is_file():
             raise ValueError('Local drawing needs Draw Things CLI and the configured model. See README.md for optional setup.')
         health = metrics()
@@ -1096,7 +1099,7 @@ class Renderer:
             source = folder/Path(image['snapshot_path']).name
             if hashlib.sha256(source.read_bytes()).hexdigest() != image['sha256']:
                 raise ValueError('Queued input image changed; prepare a fresh variation.')
-        (folder/'prompt.txt').write_text(j['prompt'])
+        (folder/'prompt.txt').write_text(j['prompt'], encoding='utf-8')
         atomic(folder/'config.json', {'sampler': 10, 'batchSize': 1, 'batchCount': 1, 'hiresFix': False, 'controls': [], 'loras': []})
         output = folder/'draft.png'
         command = self.command(j, folder)
@@ -1108,7 +1111,7 @@ class Renderer:
         critical = 0
         proc = None
         try:
-            with (folder/'render.log').open('x') as log:
+            with (folder/'render.log').open('x', encoding='utf-8') as log:
                 proc = subprocess.Popen(command, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
                 while proc.poll() is None:
                     if self.stop.is_set() or j.get('cancel'):
@@ -1191,7 +1194,7 @@ class Handler(BaseHTTPRequestHandler):
             route = parts.path
             store = self.server.store
             if route == '/api/state':
-                return self.respond({'app': 'Storyboard Desk', 'version': '0.10', 'token': self.server.token,
+                return self.respond({'app': 'Storyboard Desk', 'version': '0.11.0', 'token': self.server.token,
                                      'projects': store.listing(), 'jobs': list(copy.deepcopy(store.jobs).values()),
                                      'storage': str(store.root), 'cloud_mode': 'explicit-api-and-manual'})
             if route == '/api/cloud':
@@ -1200,7 +1203,7 @@ class Handler(BaseHTTPRequestHandler):
             if route == '/api/metrics':
                 return self.respond(metrics())
             if route == '/api/health':
-                return self.respond({'app': 'Storyboard Desk', 'version': '0.10'})
+                return self.respond({'app': 'Storyboard Desk', 'version': '0.11.0'})
             if route.startswith('/media/'):
                 bits = route.split('/')
                 pid = valid_id(bits[2])
@@ -1288,6 +1291,8 @@ class Handler(BaseHTTPRequestHandler):
             if route == '/api/cloud-approve-brief':
                 return self.respond(self.server.cloud.approve_brief(raw['project'],raw['sha256']))
             if route == '/api/cloud-prepare':
+                if raw.get('kind') == 'video':
+                    require_video_tools()
                 return self.respond({'quote':self.server.cloud.prepare(raw)})
             if route == '/api/cloud-submit':
                 return self.respond({'job':self.server.cloud.submit(raw['quote'],raw.get('confirmed') is True)})
@@ -1371,20 +1376,12 @@ class Handler(BaseHTTPRequestHandler):
 def seed(store):
     if store.listing():
         return
-    raw = json.loads((APP/'cowboy.json').read_text())
+    raw = json.loads((APP/'cowboy.json').read_text(encoding='utf-8'))
     store.new(raw)
 
 
 def probe_cloud_video(path, folder):
-    binary=APP/'media_probe'
-    if not binary.is_file():
-        raise ValueError('Local video inspection is not installed. The downloaded result is retained.')
-    try:
-        result=subprocess.run([str(binary),str(path),str(folder)],capture_output=True,text=True,timeout=30,check=True)
-        return json.loads(result.stdout)
-    except (OSError,subprocess.SubprocessError,ValueError):
-        raise ValueError('The downloaded video could not be inspected; it is retained for review.') from None
-
+    return probe_video(path, folder)
 
 class LocalHTTPServer(ThreadingHTTPServer):
     """The dashboard binds locally without a potentially blocking DNS lookup."""
@@ -1395,6 +1392,8 @@ class LocalHTTPServer(ThreadingHTTPServer):
 
 
 def serve(data_dir, port):
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(errors='backslashreplace')
     os.umask(0o077)
     store = Store(data_dir)
     seed(store)

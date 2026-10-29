@@ -19,7 +19,7 @@ class StoreChecks(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.store = server.Store(self.temp.name)
-        self.p = self.store.new(json.loads((server.APP/'cowboy.json').read_text()))
+        self.p = self.store.new(json.loads((server.APP/'cowboy.json').read_text(encoding='utf-8')))
         self.pid = self.p['id']
         self.sid = self.p['shots'][0]['id']
 
@@ -123,7 +123,7 @@ class StoreChecks(unittest.TestCase):
         self.assertNotIn('SHARED CONTINUITY',package['local_draft'])
 
     def test_duplicate_ids_and_script_reference_rejected(self):
-        raw=json.loads((server.APP/'cowboy.json').read_text())
+        raw=json.loads((server.APP/'cowboy.json').read_text(encoding='utf-8'))
         raw['shots'][1]['id']=raw['shots'][0]['id']
         with self.assertRaises(ValueError):self.store.new(raw)
         with self.assertRaises(ValueError):self.store.update(self.pid,{'revision':self.p['revision'],'references':[{'url':'javascript:alert(1)'}]})
@@ -277,7 +277,7 @@ class StoreChecks(unittest.TestCase):
         self.assertEqual(self.p['aspect'],'16:9')
 
     def test_reusable_template_creates_separate_fresh_projects(self):
-        raw=json.loads((server.APP/'templates/storyboard-project-template.json').read_text())
+        raw=json.loads((server.APP/'templates/storyboard-project-template.json').read_text(encoding='utf-8'))
         p=self.store.new(raw);q=self.store.new(raw)
         self.assertNotEqual(p['id'],q['id'])
         self.assertEqual(len(p['shots']),3)
@@ -358,6 +358,13 @@ class HTTPChecks(unittest.TestCase):
                 self.assertEqual(r.status,200)
                 self.assertIn('javascript',r.headers['Content-Type'])
         with self.opener.open(self.url+'/api/health') as r:self.assertEqual(json.load(r)['app'],'Storyboard Desk')
+
+    def test_missing_video_tools_block_prepare_before_provider_work(self):
+        with patch.object(server, 'require_video_tools', side_effect=ValueError('Install FFmpeg')):
+            req=urllib.request.Request(self.url+'/api/cloud-prepare',data=b'{"kind":"video"}',headers={'X-Storyboard-Token':'test-token'})
+            with self.assertRaises(urllib.error.HTTPError) as error:self.opener.open(req)
+            self.assertEqual(error.exception.code,400)
+            self.assertIn('Install FFmpeg',json.loads(error.exception.read())['error'])
 
     def test_malformed_json_returns_error(self):
         req=urllib.request.Request(self.url+'/api/new',data=b'[]',headers={'X-Storyboard-Token':'test-token'})

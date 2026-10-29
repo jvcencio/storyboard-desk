@@ -7,7 +7,6 @@ import importlib.util
 import io
 import json
 import math
-import fcntl
 import mimetypes
 import os
 from pathlib import Path
@@ -19,6 +18,7 @@ import threading
 import urllib.error
 import urllib.parse
 import urllib.request
+from platform_support import FileLock
 
 APP = Path(__file__).resolve().parent
 API = 'https://openrouter.ai/api/v1/'
@@ -32,7 +32,7 @@ def digest(value): return hashlib.sha256(json.dumps(value,sort_keys=True).encode
 def atomic(path, value):
     path.parent.mkdir(parents=True,exist_ok=True)
     temp=path.with_suffix('.'+uid()+'.tmp')
-    with temp.open('x') as f:
+    with temp.open('x', encoding='utf-8') as f:
         json.dump(value,f,indent=2);f.flush()
         import os
         os.fsync(f.fileno())
@@ -94,16 +94,15 @@ class CloudEngine:
         self.worker_lock=None
         if start_worker:
             self.root.mkdir(parents=True,exist_ok=True)
-            self.worker_lock=(self.root/'worker.lock').open('a')
-            try: fcntl.flock(self.worker_lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
-            except BlockingIOError:
+            self.worker_lock=FileLock(self.root/'worker.lock')
+            if not self.worker_lock.acquire():
                 self.worker_lock.close()
                 raise ValueError('Another SBD generation worker already owns this data folder.') from None
-        self.catalog=json.loads((APP/'cloud_catalog.json').read_text())
-        if (self.root/'catalog.json').exists(): self.catalog=json.loads((self.root/'catalog.json').read_text())
+        self.catalog=json.loads((APP/'cloud_catalog.json').read_text(encoding='utf-8'))
+        if (self.root/'catalog.json').exists(): self.catalog=json.loads((self.root/'catalog.json').read_text(encoding='utf-8'))
         self.jobs={};self.worker=None
         for path in self.root.glob('jobs/*.json'):
-            j=json.loads(path.read_text());self.jobs[j['id']]=j
+            j=json.loads(path.read_text(encoding='utf-8'));self.jobs[j['id']]=j
             if j['status'] in ACTIVE:
                 if j.get('remote_id') or j.get('result_file') or j['status']=='queued': self.queue.put(j['id'])
                 else:
@@ -115,7 +114,7 @@ class CloudEngine:
     def config(self,pid):
         self.store.load(pid)
         path=self.store.folder(pid)/'cloud/config.json'
-        return json.loads(path.read_text()) if path.exists() else {'allowance_usd':0}
+        return json.loads(path.read_text(encoding='utf-8')) if path.exists() else {'allowance_usd':0}
     def spent(self,pid):
         return sum(j.get('actual_cost_usd') if j.get('actual_cost_usd') is not None else j['reserved_usd']
                    for j in self.jobs.values() if j['project_id']==pid and j['status']!='cancelled')
@@ -128,7 +127,7 @@ class CloudEngine:
         return self.status(pid)
     def brief(self,pid):
         path=self.store.folder(pid)/'cloud/production-brief.json'
-        return json.loads(path.read_text()) if path.exists() else None
+        return json.loads(path.read_text(encoding='utf-8')) if path.exists() else None
     def approve_brief(self,pid,sha):
         with self.lock:
             b=self.brief(pid)
@@ -215,7 +214,7 @@ class CloudEngine:
         if not re.fullmatch('[a-f0-9]{12}',qid): raise ValueError('Invalid prepared request.')
         with self.lock,self.store.lock:
             if self.connected is not True: raise ValueError('Check the saved OpenRouter connection first.')
-            q=json.loads((self.root/'quotes'/(qid+'.json')).read_text())
+            q=json.loads((self.root/'quotes'/(qid+'.json')).read_text(encoding='utf-8'))
             if qid in self.jobs: return copy.deepcopy(self.jobs[qid])
             age=(dt.datetime.now(dt.timezone.utc)-dt.datetime.fromisoformat(q['created_at'])).total_seconds()
             if not 0<=age<=900: raise RuntimeError('The request expired. Prepare it again.')
@@ -237,7 +236,7 @@ class CloudEngine:
             for n,r in enumerate(j['refs']):
                 src=self.store.folder(p['id'])/r['path'];target=folder/(str(n)+src.suffix.lower());shutil.copyfile(src,target)
                 if hashlib.sha256(target.read_bytes()).hexdigest()!=r['sha256']: raise ValueError('Input changed during snapshot.')
-                r['snapshot']=str(target.relative_to(self.root))
+                r['snapshot']=target.relative_to(self.root).as_posix()
             self.save(j);self.jobs[qid]=j;self.queue.put(qid)
             return copy.deepcopy(j)
     def resume(self,jid):
@@ -270,7 +269,7 @@ class CloudEngine:
                 item=data[0];ext={'image/png':'.png','image/jpeg':'.jpg','image/webp':'.webp'}.get(item.get('media_type','image/png'))
                 if not ext: raise RuntimeError('Unsupported generated image format; result needs manual review.')
                 payload=base64.b64decode(item['b64_json'],validate=True);path=folder/('image'+ext);path.write_bytes(payload)
-                self.update(j,result_file=str(path.relative_to(self.root)),status='importing',actual_cost_usd=self.cost(result))
+                self.update(j,result_file=path.relative_to(self.root).as_posix(),status='importing',actual_cost_usd=self.cost(result))
             else:
                 if not j.get('remote_id'):
                     self.update(j,status='submitting',message='Submitting one silent Veo take.')
@@ -282,7 +281,7 @@ class CloudEngine:
                     if status=='completed':
                         self.update(j,status='downloading',actual_cost_usd=self.cost(result),message='Downloading the completed take.')
                         payload=self.client.download(j['remote_id']);path=folder/'video.mp4';path.write_bytes(payload)
-                        self.update(j,result_file=str(path.relative_to(self.root)),status='importing');break
+                        self.update(j,result_file=path.relative_to(self.root).as_posix(),status='importing');break
                     if status=='failed':
                         self.update(j,status='failed',message='Provider reported failure. Inspect account activity before creating another take.',actual_cost_usd=self.cost(result));return
                     if status not in ('pending','in_progress'): raise RuntimeError('Provider returned an unfamiliar job status. Check this existing job again.')

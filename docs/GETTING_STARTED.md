@@ -34,9 +34,9 @@ Look at the whole take. A good starter does not guarantee stable hands, props, f
 
 ## Common questions
 
-**Where are my projects?** On a fresh Mac: `~/Library/Application Support/Storyboard Desk`. The app shows the active data path. The Git checkout is separate from project storage.
+**Where are my projects?** Windows: `%LOCALAPPDATA%\Storyboard Desk`; Mac: `~/Library/Application Support/Storyboard Desk`; Linux: `~/.local/share/storyboard-desk` (or your XDG data home). The app shows the active data path. The Git checkout is separate from project storage.
 
-**Why is video export unavailable?** Run `python3 build_native.py` on your Mac after installing Apple Command Line Tools. The compiled helpers are local files, not part of the Git repository.
+**Why is video export unavailable?** Install FFmpeg and ffprobe on PATH. On Mac, you can alternatively run `python3 build_native.py` after installing Apple Command Line Tools. See [platform setup](PORTABILITY.md).
 
 **Why does Draw locally need extra setup?** It is a separate optional Draw Things / model / Mini Meter route. Imported media and cloud generation do not depend on it.
 

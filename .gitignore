@@ -13,6 +13,15 @@
 !/launch.py
 !/settings.py
 !/build_native.py
+!/build_desktop.py
+!/platform_support.py
+!/media_tools.py
+!/Start Storyboard Desk.bat
+!/gosx-host/
+/gosx-host/*
+!/gosx-host/go.mod
+!/gosx-host/go.sum
+!/gosx-host/*.go
 !/cowboy.json
 !/templates/
 /templates/*
@@ -29,6 +38,7 @@
 !/docs/
 /docs/*
 !/docs/GETTING_STARTED.md
+!/docs/PORTABILITY.md
 !/.github/
 /.github/*
 !/.github/workflows/
