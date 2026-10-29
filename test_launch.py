@@ -21,6 +21,16 @@ def free_url():
         return 'http://127.0.0.1:%d/' % sock.getsockname()[1]
 
 
+
+def prepare_with_diagnostics(data, url, state):
+    try:
+        return launch.prepare_background(data, url, state)
+    except Exception as exc:
+        log = Path(state)/'server.log'
+        details = log.read_text()[-6000:] if log.exists() else '(no server log)'
+        raise RuntimeError(str(exc)+'\nTemporary server log:\n'+details) from exc
+
+
 def stop_owned(reply):
     if reply.get('status') == 'started':
         os.kill(reply['pid'], signal.SIGINT)
@@ -64,11 +74,11 @@ class LaunchChecks(unittest.TestCase):
             data = Path(root)/'projects'
             data.mkdir()
             url = free_url()
-            first = launch.prepare_background(data, url, Path(root)/'logs')
+            first = prepare_with_diagnostics(data, url, Path(root)/'logs')
             try:
                 self.assertEqual(first['status'], 'started')
                 self.assertTrue(launch.ready(url))
-                second = launch.prepare_background(data, url, Path(root)/'logs')
+                second = prepare_with_diagnostics(data, url, Path(root)/'logs')
                 self.assertEqual(second['status'], 'reused')
                 self.assertNotIn('pid', second)
                 self.assertEqual(len(list(data.glob('*/project.json'))), 1)
@@ -83,7 +93,7 @@ class LaunchChecks(unittest.TestCase):
             replies = []
             try:
                 with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
-                    futures = [pool.submit(launch.prepare_background, data, url, Path(root)/'logs') for _ in range(2)]
+                    futures = [pool.submit(prepare_with_diagnostics, data, url, Path(root)/'logs') for _ in range(2)]
                     replies = [future.result(timeout=20) for future in futures]
                 self.assertEqual(sorted(r['status'] for r in replies), ['reused', 'started'])
                 self.assertEqual(len(list(data.glob('*/project.json'))), 1)
