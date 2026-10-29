@@ -1,0 +1,538 @@
+{
+  "observed_at": "2026-10-28T03:21:29.182906+00:00",
+  "images": [
+    {
+      "id": "google/gemini-nano-banana-2.1",
+      "name": "Google: Nano Banana 2.1",
+      "description": "Nano Banana 2.1 (Gemini Nano Banana 2.1) is Google's image generation and editing model on the Flash tier, succeeding Nano Banana 2 and Nano Banana Pro. It improves product recontextualization,...",
+      "created": 1791300825,
+      "architecture": {
+        "input_modalities": [
+          "image",
+          "text"
+        ],
+        "output_modalities": [
+          "image",
+          "text"
+        ]
+      },
+      "supported_parameters": {
+        "resolution": {
+          "type": "enum",
+          "values": [
+            "1K",
+            "2K",
+            "4K"
+          ]
+        },
+        "aspect_ratio": {
+          "type": "enum",
+          "values": [
+            "1:1",
+            "1:4",
+            "1:8",
+            "2:3",
+            "3:2",
+            "3:4",
+            "4:1",
+            "4:3",
+            "4:5",
+            "5:4",
+            "8:1",
+            "9:16",
+            "16:9",
+            "21:9"
+          ]
+        },
+        "n": {
+          "type": "range",
+          "min": 1,
+          "max": 1
+        },
+        "input_references": {
+          "type": "range",
+          "min": 0,
+          "max": 14
+        }
+      },
+      "supports_streaming": false,
+      "endpoints": "/api/v1/images/models/google/gemini-nano-banana-2.1/endpoints"
+    },
+    {
+      "id": "google/gemini-3.1-flash-lite-image",
+      "name": "Google: Nano Banana 2 Lite (Gemini 3.1 Flash Lite Image)",
+      "description": "Nano Banana 2 Lite (Gemini 3.1 Flash Lite Image) is Google's fastest, most cost-efficient Gemini image model, built for high-velocity developer pipelines and rapid-fire visual exploration. It delivers text-to-image generation...",
+      "created": 1782837225,
+      "architecture": {
+        "input_modalities": [
+          "image",
+          "text"
+        ],
+        "output_modalities": [
+          "image",
+          "text"
+        ]
+      },
+      "supported_parameters": {
+        "resolution": {
+          "type": "enum",
+          "values": [
+            "1K"
+          ]
+        },
+        "aspect_ratio": {
+          "type": "enum",
+          "values": [
+            "1:1",
+            "1:4",
+            "1:8",
+            "2:3",
+            "3:2",
+            "3:4",
+            "4:1",
+            "4:3",
+            "4:5",
+            "5:4",
+            "8:1",
+            "9:16",
+            "16:9",
+            "21:9"
+          ]
+        },
+        "n": {
+          "type": "range",
+          "min": 1,
+          "max": 1
+        },
+        "input_references": {
+          "type": "range",
+          "min": 0,
+          "max": 14
+        }
+      },
+      "supports_streaming": false,
+      "endpoints": "/api/v1/images/models/google/gemini-3.1-flash-lite-image/endpoints"
+    },
+    {
+      "id": "google/gemini-3.1-flash-image",
+      "name": "Google: Nano Banana 2 (Gemini 3.1 Flash Image)",
+      "description": "Gemini 3.1 Flash Image, a.k.a. \"Nano Banana 2,\" is Google\u2019s latest state of the art image generation and editing model, delivering Pro-level visual quality at Flash speed. It combines advanced...",
+      "created": 1781754065,
+      "architecture": {
+        "input_modalities": [
+          "image",
+          "text"
+        ],
+        "output_modalities": [
+          "image",
+          "text"
+        ]
+      },
+      "supported_parameters": {
+        "resolution": {
+          "type": "enum",
+          "values": [
+            "512",
+            "1K",
+            "2K",
+            "4K"
+          ]
+        },
+        "aspect_ratio": {
+          "type": "enum",
+          "values": [
+            "1:1",
+            "1:4",
+            "1:8",
+            "2:3",
+            "3:2",
+            "3:4",
+            "4:1",
+            "4:3",
+            "4:5",
+            "5:4",
+            "8:1",
+            "9:16",
+            "16:9",
+            "21:9"
+          ]
+        },
+        "n": {
+          "type": "range",
+          "min": 1,
+          "max": 1
+        },
+        "input_references": {
+          "type": "range",
+          "min": 0,
+          "max": 14
+        }
+      },
+      "supports_streaming": false,
+      "endpoints": "/api/v1/images/models/google/gemini-3.1-flash-image/endpoints"
+    },
+    {
+      "id": "google/gemini-3-pro-image",
+      "name": "Google: Nano Banana Pro (Gemini 3 Pro Image)",
+      "description": "Nano Banana Pro is Google\u2019s most advanced image-generation and editing model, built on Gemini 3 Pro. It extends the original Nano Banana with significantly improved multimodal reasoning, real-world grounding, and...",
+      "created": 1781754054,
+      "architecture": {
+        "input_modalities": [
+          "image",
+          "text"
+        ],
+        "output_modalities": [
+          "image",
+          "text"
+        ]
+      },
+      "supported_parameters": {
+        "resolution": {
+          "type": "enum",
+          "values": [
+            "1K",
+            "2K",
+            "4K"
+          ]
+        },
+        "aspect_ratio": {
+          "type": "enum",
+          "values": [
+            "1:1",
+            "2:3",
+            "3:2",
+            "3:4",
+            "4:3",
+            "4:5",
+            "5:4",
+            "9:16",
+            "16:9",
+            "21:9"
+          ]
+        },
+        "n": {
+          "type": "range",
+          "min": 1,
+          "max": 1
+        },
+        "input_references": {
+          "type": "range",
+          "min": 0,
+          "max": 14
+        }
+      },
+      "supports_streaming": false,
+      "endpoints": "/api/v1/images/models/google/gemini-3-pro-image/endpoints"
+    },
+    {
+      "id": "google/gemini-3.1-flash-image-preview",
+      "name": "Google: Nano Banana 2 (Gemini 3.1 Flash Image Preview)",
+      "description": "Gemini 3.1 Flash Image Preview, a.k.a. \"Nano Banana 2,\" is Google\u2019s latest state of the art image generation and editing model, delivering Pro-level visual quality at Flash speed. It combines...",
+      "created": 1772119558,
+      "architecture": {
+        "input_modalities": [
+          "image",
+          "text"
+        ],
+        "output_modalities": [
+          "image",
+          "text"
+        ]
+      },
+      "supported_parameters": {
+        "resolution": {
+          "type": "enum",
+          "values": [
+            "512",
+            "1K",
+            "2K",
+            "4K"
+          ]
+        },
+        "aspect_ratio": {
+          "type": "enum",
+          "values": [
+            "1:1",
+            "1:4",
+            "1:8",
+            "2:3",
+            "3:2",
+            "3:4",
+            "4:1",
+            "4:3",
+            "4:5",
+            "5:4",
+            "8:1",
+            "9:16",
+            "16:9",
+            "21:9"
+          ]
+        },
+        "n": {
+          "type": "range",
+          "min": 1,
+          "max": 1
+        },
+        "input_references": {
+          "type": "range",
+          "min": 0,
+          "max": 14
+        }
+      },
+      "supports_streaming": false,
+      "endpoints": "/api/v1/images/models/google/gemini-3.1-flash-image-preview/endpoints"
+    },
+    {
+      "id": "google/gemini-3-pro-image-preview",
+      "name": "Google: Nano Banana Pro (Gemini 3 Pro Image Preview)",
+      "description": "Nano Banana Pro is Google\u2019s most advanced image-generation and editing model, built on Gemini 3 Pro. It extends the original Nano Banana with significantly improved multimodal reasoning, real-world grounding, and...",
+      "created": 1763653797,
+      "architecture": {
+        "input_modalities": [
+          "image",
+          "text"
+        ],
+        "output_modalities": [
+          "image",
+          "text"
+        ]
+      },
+      "supported_parameters": {
+        "resolution": {
+          "type": "enum",
+          "values": [
+            "1K",
+            "2K",
+            "4K"
+          ]
+        },
+        "aspect_ratio": {
+          "type": "enum",
+          "values": [
+            "1:1",
+            "2:3",
+            "3:2",
+            "3:4",
+            "4:3",
+            "4:5",
+            "5:4",
+            "9:16",
+            "16:9",
+            "21:9"
+          ]
+        },
+        "n": {
+          "type": "range",
+          "min": 1,
+          "max": 1
+        },
+        "input_references": {
+          "type": "range",
+          "min": 0,
+          "max": 14
+        }
+      },
+      "supports_streaming": false,
+      "endpoints": "/api/v1/images/models/google/gemini-3-pro-image-preview/endpoints"
+    },
+    {
+      "id": "google/gemini-2.5-flash-image",
+      "name": "Google: Nano Banana (Gemini 2.5 Flash Image)",
+      "description": "Gemini 2.5 Flash Image, a.k.a. \"Nano Banana,\" is now generally available. It is a state of the art image generation model with contextual understanding. It is capable of image generation,...",
+      "created": 1759870431,
+      "architecture": {
+        "input_modalities": [
+          "image",
+          "text"
+        ],
+        "output_modalities": [
+          "image",
+          "text"
+        ]
+      },
+      "supported_parameters": {
+        "aspect_ratio": {
+          "type": "enum",
+          "values": [
+            "1:1",
+            "2:3",
+            "3:2",
+            "3:4",
+            "4:3",
+            "4:5",
+            "5:4",
+            "9:16",
+            "16:9",
+            "21:9"
+          ]
+        },
+        "n": {
+          "type": "range",
+          "min": 1,
+          "max": 1
+        },
+        "input_references": {
+          "type": "range",
+          "min": 0,
+          "max": 3
+        }
+      },
+      "supports_streaming": false,
+      "endpoints": "/api/v1/images/models/google/gemini-2.5-flash-image/endpoints"
+    }
+  ],
+  "videos": [
+    {
+      "id": "google/veo-3.1-fast",
+      "canonical_slug": "google/veo-3.1-fast-20260320",
+      "hugging_face_id": null,
+      "name": "Google: Veo 3.1 Fast",
+      "created": 1776994666,
+      "description": "Google's mid-tier video generation model balancing speed and quality. Veo 3.1 Fast generates high-quality video from text or image prompts with native synchronized audio, offering faster turnaround than Veo 3.1...",
+      "supported_resolutions": [
+        "720p",
+        "1080p",
+        "4K"
+      ],
+      "supported_aspect_ratios": [
+        "16:9",
+        "9:16"
+      ],
+      "supported_sizes": [
+        "1280x720",
+        "1080x1920",
+        "1920x1080",
+        "720x1280",
+        "3840x2160",
+        "2160x3840"
+      ],
+      "supported_durations": [
+        4,
+        6,
+        8
+      ],
+      "supported_frame_images": [
+        "first_frame",
+        "last_frame"
+      ],
+      "upscale_factor": null,
+      "creativity": null,
+      "generate_audio": true,
+      "seed": true,
+      "pricing_skus": {
+        "duration_seconds_with_audio": "0.12",
+        "duration_seconds_with_audio_4k": "0.30",
+        "duration_seconds_without_audio": "0.10",
+        "duration_seconds_with_audio_720p": "0.10",
+        "duration_seconds_without_audio_4k": "0.25",
+        "duration_seconds_without_audio_720p": "0.08"
+      },
+      "allowed_passthrough_parameters": [
+        "personGeneration",
+        "aspectRatio",
+        "negativePrompt",
+        "conditioningScale",
+        "enhancePrompt"
+      ]
+    },
+    {
+      "id": "google/veo-3.1-lite",
+      "canonical_slug": "google/veo-3.1-lite-20260331",
+      "hugging_face_id": null,
+      "name": "Google: Veo 3.1 Lite",
+      "created": 1776978818,
+      "description": "Google's most cost-effective video generation model, designed for high-volume applications and rapid iteration. Veo 3.1 Lite generates 720p and 1080p video from text or image prompts with native synchronized audio...",
+      "supported_resolutions": [
+        "720p",
+        "1080p"
+      ],
+      "supported_aspect_ratios": [
+        "16:9",
+        "9:16"
+      ],
+      "supported_sizes": [
+        "1280x720",
+        "720x1280",
+        "1920x1080",
+        "1080x1920"
+      ],
+      "supported_durations": [
+        8,
+        4,
+        6
+      ],
+      "supported_frame_images": [
+        "first_frame",
+        "last_frame"
+      ],
+      "upscale_factor": null,
+      "creativity": null,
+      "generate_audio": true,
+      "seed": true,
+      "pricing_skus": {
+        "duration_seconds_with_audio": "0.08",
+        "duration_seconds_without_audio": "0.05",
+        "duration_seconds_with_audio_720p": "0.05",
+        "duration_seconds_without_audio_720p": "0.03"
+      },
+      "allowed_passthrough_parameters": [
+        "personGeneration",
+        "aspectRatio",
+        "negativePrompt",
+        "conditioningScale",
+        "enhancePrompt"
+      ]
+    },
+    {
+      "id": "google/veo-3.1",
+      "canonical_slug": "google/veo-3.1-20260320",
+      "hugging_face_id": null,
+      "name": "Google: Veo 3.1",
+      "created": 1774277148,
+      "description": "Google's state-of-the-art video generation model, built for maximum visual fidelity in final production cuts. Veo 3.1 generates high-quality 1080p video from text or image prompts with native synchronized audio \u2014...",
+      "supported_resolutions": [
+        "720p",
+        "1080p",
+        "4K"
+      ],
+      "supported_aspect_ratios": [
+        "16:9",
+        "9:16"
+      ],
+      "supported_sizes": [
+        "1280x720",
+        "1080x1920",
+        "1920x1080",
+        "720x1280",
+        "3840x2160",
+        "2160x3840"
+      ],
+      "supported_durations": [
+        4,
+        6,
+        8
+      ],
+      "supported_frame_images": [
+        "first_frame",
+        "last_frame"
+      ],
+      "upscale_factor": null,
+      "creativity": null,
+      "generate_audio": true,
+      "seed": true,
+      "pricing_skus": {
+        "duration_seconds_with_audio": "0.40",
+        "duration_seconds_with_audio_4k": "0.60",
+        "duration_seconds_without_audio": "0.20",
+        "duration_seconds_without_audio_4k": "0.40"
+      },
+      "allowed_passthrough_parameters": [
+        "personGeneration",
+        "aspectRatio",
+        "negativePrompt",
+        "conditioningScale",
+        "enhancePrompt"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "template_kind": "storyboard-project-v1",
+  "title": "New episode — three-shot workflow template",
+  "brief": "Replace with the story or activity, audience, intended result and tone. Begin with a few examples to validate the workflow.",
+  "look": "Replace with the intended visual treatment. Use actual character/style images as visual inputs in manual image-app handoffs.",
+  "continuity": "Record established appearance, recurring props and camera convention. Label unknowns and new proposals explicitly.",
+  "aspect": "9:16",
+  "episode_notes": "Episode > scenes > shots. Human selection of composition, finished starter and final clip. Keep local drawing prompts visual and concise. One clear physical beat per initial clip test.",
+  "runtime_limit_seconds": 600,
+  "references": [],
+  "shots": [
+    {
+      "id": "opening",
+      "scene": "01 · Workflow example",
+      "story_status": "proposed",
+      "title": "Establish the starting situation",
+      "purpose": "Make the setting and starting state clear.",
+      "duration": 5,
+      "composition": "Define subject placement, important objects and the camera view.",
+      "start_state": "Define what is visible before any action.",
+      "action": "Choose one observable action.",
+      "camera": "Choose a fixed view or one simple camera movement.",
+      "end_state": "Define the physical state at the cut.",
+      "local_prompt": "",
+      "feedback": "Review staging before enhancement; attach actual appearance references."
+    },
+    {
+      "id": "main-action",
+      "scene": "01 · Workflow example",
+      "story_status": "proposed",
+      "title": "One readable action",
+      "purpose": "Test the complete image-to-clip workflow with this shot.",
+      "duration": 8,
+      "start_state": "Continue from the preceding physical state.",
+      "action": "Specify a feasible start, movement and finish.",
+      "camera": "Keep subject motion separate from camera motion.",
+      "end_state": "Make the result readable.",
+      "local_prompt": ""
+    },
+    {
+      "id": "result",
+      "scene": "01 · Workflow example",
+      "story_status": "proposed",
+      "title": "Show the result",
+      "purpose": "Confirm cause, continuity and the intended story outcome.",
+      "duration": 5,
+      "start_state": "Preserve the previous shot's objects and positions.",
+      "action": "A small reaction or held result.",
+      "camera": "Keep the selected framing coherent.",
+      "local_prompt": ""
+    }
+  ]
+}

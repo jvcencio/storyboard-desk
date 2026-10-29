@@ -1,0 +1,44 @@
+# Publish reviewed application source only. Creator projects and machine setup
+# already live alongside this folder and must never be staged by git add .
+/*
+!/.gitignore
+!/.gitattributes
+!/README.md
+!/settings.example.json
+!/Start Storyboard Desk.command
+!/server.py
+!/sections.py
+!/cloud.py
+!/cloud_catalog.json
+!/launch.py
+!/settings.py
+!/build_native.py
+!/cowboy.json
+!/templates/
+/templates/*
+!/templates/storyboard-project-template.json
+!/test_*.py
+!/media_probe.swift
+!/export_range.swift
+!/export_reel.swift
+!/static/
+!/static/**
+!/tests/
+/tests/*
+!/tests/make_video_fixture.swift
+!/docs/
+/docs/*
+!/docs/GETTING_STARTED.md
+!/.github/
+/.github/*
+!/.github/workflows/
+/.github/workflows/*
+!/.github/workflows/ci.yml
+__pycache__/
+*.py[cod]
+.DS_Store
+.env
+.env.*
+settings.local.json
+*.key
+*.pem
