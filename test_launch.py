@@ -41,6 +41,24 @@ def stop_owned(reply):
 
 
 class LaunchChecks(unittest.TestCase):
+    def setUp(self):
+        # A stalled child must leave a stack trace before the startup deadline.
+        popen = launch.subprocess.Popen
+        def traced_start(command, *args, **kwargs):
+            command = list(command)
+            script = str(launch.APP/'server.py')
+            if script in command:
+                index = command.index(script)
+                bootstrap = ('import faulthandler,runpy,sys; '
+                             'faulthandler.dump_traceback_later(8,repeat=True); '
+                             'sys.argv=sys.argv[1:]; '
+                             'runpy.run_path(sys.argv[0],run_name="__main__")')
+                command[index:index] = ['-c', bootstrap]
+            return popen(command, *args, **kwargs)
+        trace = patch.object(launch.subprocess, 'Popen', side_effect=traced_start)
+        trace.start()
+        self.addCleanup(trace.stop)
+
     def test_explicit_new_storage_can_be_created_without_starting_another_server(self):
         with tempfile.TemporaryDirectory() as root, patch.object(launch, 'ready', return_value=True):
             data = Path(root)/'new-projects'
