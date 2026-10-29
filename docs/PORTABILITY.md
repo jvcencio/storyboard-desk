@@ -34,6 +34,8 @@ python launch.py --gosx
 python launch.py --gosx --ask-openrouter-key
 ```
 
+The Mac build also creates `gosx-host/Storyboard Desk.app`; the launcher uses that bundle.
+
 On a Mac use `python3` if `python` is unavailable. The Go compiler may download its pinned module dependencies. No TinyGo, npm, CGo or frontend build step is needed for this desktop-host target.
 
 On Windows the build also downloads a checksum-pinned Microsoft WebView2 SDK, extracts the matching **WebView2Loader.dll**, and saves its license next to the executable. Keep that DLL beside `storyboard-desk-gosx.exe`. The **Evergreen WebView2 Runtime** is separate; install/update it from [Microsoft](https://developer.microsoft.com/microsoft-edge/webview2/) if GoSX reports that the runtime is unavailable. Native host initialization depends on a desktop session. If it cannot open, `python launch.py` still opens the full app in a browser.

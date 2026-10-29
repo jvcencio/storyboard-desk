@@ -1385,7 +1385,12 @@ def probe_cloud_video(path, folder):
 
 class LocalHTTPServer(ThreadingHTTPServer):
     """The dashboard binds locally without a potentially blocking DNS lookup."""
+    allow_reuse_address = os.name != 'nt'
+
     def server_bind(self):
+        if os.name == 'nt':
+            # SO_REUSEADDR on Windows can silently bind over another listener.
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
         TCPServer.server_bind(self)
         self.server_name = self.server_address[0]
         self.server_port = self.server_address[1]

@@ -6,6 +6,7 @@ import io
 import os
 from pathlib import Path
 import platform
+import plistlib
 import shutil
 import subprocess
 import sys
@@ -55,6 +56,17 @@ def main():
     subprocess.run([compiler, 'build', '-trimpath', '-o', str(target), '.'], cwd=APP/'gosx-host', env=env, check=True)
     if system == 'windows':
         install_loader(folder, arch)
+    else:
+        bundle = folder/'Storyboard Desk.app'/'Contents'
+        (bundle/'MacOS').mkdir(parents=True, exist_ok=True)
+        shutil.copy2(target, bundle/'MacOS'/'storyboard-desk-gosx')
+        with (bundle/'Info.plist').open('wb') as stream:
+            plistlib.dump({'CFBundleIdentifier':'com.gosx.storyboarddesk',
+                           'CFBundleName':'Storyboard Desk', 'CFBundleDisplayName':'Storyboard Desk',
+                           'CFBundleExecutable':'storyboard-desk-gosx', 'CFBundlePackageType':'APPL',
+                           'CFBundleShortVersionString':'0.11.0', 'LSMinimumSystemVersion':'13.0',
+                           'NSHighResolutionCapable':True,
+                           'NSAppTransportSecurity':{'NSAllowsLocalNetworking':True}}, stream)
     print('Built '+str(target))
     print('Start: python3 launch.py --gosx')
 

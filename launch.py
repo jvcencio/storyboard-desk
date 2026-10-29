@@ -103,7 +103,10 @@ def main():
         parser.error('--gosx runs in the foreground; omit --background')
     host = None
     if args.gosx:
-        host = Path(os.environ.get('STORYBOARD_GOSX_HOST', str(APP/'gosx-host'/('storyboard-desk-gosx.exe' if os.name == 'nt' else 'storyboard-desk-gosx'))))
+        default_host = APP/'gosx-host'/('storyboard-desk-gosx.exe' if os.name == 'nt' else 'storyboard-desk-gosx')
+        if sys.platform == 'darwin':
+            default_host = APP/'gosx-host/Storyboard Desk.app/Contents/MacOS/storyboard-desk-gosx'
+        host = Path(os.environ.get('STORYBOARD_GOSX_HOST', str(default_host)))
         if not host.is_file():
             parser.error('Build the GoSX host first: python3 build_desktop.py. See docs/PORTABILITY.md.')
     if args.no_open and not args.background:
@@ -139,7 +142,8 @@ def main():
             raise SystemExit('The local dashboard did not become ready.')
     try:
         if host:
-            result = subprocess.run([str(host), '--url', URL])
+            host_env = {k:v for k,v in os.environ.items() if k != 'OPENROUTER_API_KEY'}
+            result = subprocess.run([str(host), '--url', URL], env=host_env)
             if result.returncode:
                 raise SystemExit('The GoSX desktop host could not open. See docs/PORTABILITY.md; browser mode remains available.')
         else:

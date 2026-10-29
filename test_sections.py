@@ -12,7 +12,7 @@ class SectionChecks(unittest.TestCase):
         self.temp=tempfile.TemporaryDirectory();self.store=server.Store(self.temp.name);p=self.store.new({'title':'Song test','music_video':True,'aspect':'16:9','lyrics':'Exact original lyrics','shots':[{'id':'one','title':'Party'},{'id':'two','title':'Reaction'}]});self.pid=p['id'];data=audio();p=self.store.import_soundtrack(self.pid,'song.wav',io.BytesIO(data),len(data),p['revision'])
         self.original_audio=data
         for i,s in enumerate(p['shots']):
-            path=self.store.folder(self.pid)/f'media/{s["id"]}/source.mp4';path.parent.mkdir(exist_ok=True);path.write_bytes(b'media fixture '+bytes([i]));s['assets'].append({'id':'clip'+str(i),'kind':'clip','path':str(path.relative_to(self.store.folder(self.pid))),'sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'duration_seconds':8,'in_seconds':0,'out_seconds':8,'take':1});s['selected_clip']='clip'+str(i)
+            path=self.store.folder(self.pid)/f'media/{s["id"]}/source.mp4';path.parent.mkdir(exist_ok=True);path.write_bytes(b'media fixture '+bytes([i]));s['assets'].append({'id':'clip'+str(i),'kind':'clip','path':path.relative_to(self.store.folder(self.pid)).as_posix(),'sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'duration_seconds':8,'in_seconds':0,'out_seconds':8,'take':1});s['selected_clip']='clip'+str(i)
         self.store.save(p,p['revision']);self.sid=self.create()['section_id']
     def tearDown(self):self.temp.cleanup()
     def p(self):return self.store.load(self.pid)
