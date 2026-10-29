@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Local storyboard companion. Standard library; explicit cloud generation uses the workstation Keychain."""
+"""Local storyboard companion. Standard library; explicit cloud generation uses a separately configured API key."""
 import argparse
 import copy
 import datetime as dt
@@ -32,6 +32,7 @@ from cloud import CloudEngine
 from sections import SectionStore
 from settings import CONFIG
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from socketserver import TCPServer
 
 APP = Path(__file__).resolve().parent
 WORKSPACE = APP.parent
@@ -362,7 +363,7 @@ class Store(SectionStore):
         if str(self.root).startswith('/Volumes/'):
             volume = Path('/Volumes') / self.root.parts[2]
             if not volume.is_mount():
-                raise ValueError('Connect Studio_SSD before opening Storyboard Desk.')
+                raise ValueError('Connect the configured storage volume before opening Storyboard Desk.')
         self.root.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.lock = threading.RLock()
         self.jobs = {}
@@ -443,7 +444,7 @@ class Store(SectionStore):
 
     def ensure_storage(self):
         if str(self.root).startswith('/Volumes/') and not (Path('/Volumes')/self.root.parts[2]).is_mount():
-            raise ValueError('Studio_SSD is disconnected. Reconnect it to access the saved projects.')
+            raise ValueError('The configured project storage is disconnected. Reconnect it to access the saved projects.')
 
     def apply_plan(self, pid, raw, revision):
         if not isinstance(raw, dict):
@@ -1385,11 +1386,19 @@ def probe_cloud_video(path, folder):
         raise ValueError('The downloaded video could not be inspected; it is retained for review.') from None
 
 
+class LocalHTTPServer(ThreadingHTTPServer):
+    """The dashboard binds locally without a potentially blocking DNS lookup."""
+    def server_bind(self):
+        TCPServer.server_bind(self)
+        self.server_name = self.server_address[0]
+        self.server_port = self.server_address[1]
+
+
 def serve(data_dir, port):
     os.umask(0o077)
     store = Store(data_dir)
     seed(store)
-    httpd = ThreadingHTTPServer(('127.0.0.1', port), Handler)
+    httpd = LocalHTTPServer(('127.0.0.1', port), Handler)
     httpd.daemon_threads = True
     httpd.store, httpd.token = store, secrets.token_urlsafe(32)
     httpd.renderer = Renderer(store)

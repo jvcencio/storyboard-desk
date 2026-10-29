@@ -313,7 +313,7 @@ class HTTPChecks(unittest.TestCase):
         self.temp=tempfile.TemporaryDirectory();self.store=server.Store(self.temp.name)
         p=self.store.new({'title':'Test','shots':[{'id':'test','title':'Test'}]})
         self.pid=p['id']
-        self.httpd=server.ThreadingHTTPServer(('127.0.0.1',0),server.Handler)
+        self.httpd=server.LocalHTTPServer(('127.0.0.1',0),server.Handler)
         self.httpd.store=self.store;self.httpd.token='test-token'
         self.thread=threading.Thread(target=self.httpd.serve_forever,daemon=True);self.thread.start()
         self.url='http://127.0.0.1:'+str(self.httpd.server_port)
@@ -321,6 +321,15 @@ class HTTPChecks(unittest.TestCase):
 
     def tearDown(self):
         self.httpd.shutdown();self.httpd.server_close();self.thread.join();self.temp.cleanup()
+
+    def test_loopback_bind_does_not_require_reverse_dns(self):
+        with patch.object(server.socket, 'getfqdn', side_effect=AssertionError('DNS is unavailable')):
+            listener = server.LocalHTTPServer(('127.0.0.1', 0), server.Handler)
+            try:
+                self.assertEqual(listener.server_name, '127.0.0.1')
+                self.assertEqual(listener.server_port, listener.socket.getsockname()[1])
+            finally:
+                listener.server_close()
 
     def test_mutations_require_token_and_same_origin(self):
         for headers in [{},{'X-Storyboard-Token':'test-token','Origin':'https://elsewhere.example'}]:
