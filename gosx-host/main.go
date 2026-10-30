@@ -2,10 +2,13 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -58,6 +61,8 @@ func checkService(raw string) error {
 func run() error {
 	raw := flag.String("url", "http://127.0.0.1:4492/", "existing local Storyboard Desk URL")
 	check := flag.Bool("check", false, "validate the backend without opening a native window")
+	board := flag.Bool("board-preview", false, "write a read-only GoSX storyboard preview to standard output")
+	editor := flag.Bool("editor", false, "serve the experimental GoSX shot editor on loopback")
 	flag.Parse()
 	target, err := validateURL(*raw)
 	if err != nil {
@@ -65,6 +70,36 @@ func run() error {
 	}
 	if err = checkService(target); err != nil {
 		return err
+	}
+	if *editor {
+		client, err := NewServiceClient(target)
+		if err != nil {
+			return err
+		}
+		token := make([]byte, 32)
+		if _, err := rand.Read(token); err != nil {
+			return err
+		}
+		listener, err := net.Listen("tcp4", "127.0.0.1:0")
+		if err != nil {
+			return err
+		}
+		defer listener.Close()
+		fmt.Printf("GoSX editor: http://%s/\n", listener.Addr())
+		server := &http.Server{Handler: newEditorHandler(client, hex.EncodeToString(token)), ReadHeaderTimeout: 5 * time.Second}
+		return server.Serve(listener)
+	}
+	if *board {
+		client, err := NewServiceClient(target)
+		if err != nil {
+			return err
+		}
+		state, err := client.State()
+		if err != nil {
+			return err
+		}
+		fmt.Println(RenderBoard(state))
+		return nil
 	}
 	if *check {
 		fmt.Println("Storyboard Desk backend verified")

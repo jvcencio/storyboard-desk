@@ -22,6 +22,7 @@
 !/gosx-host/go.mod
 !/gosx-host/go.sum
 !/gosx-host/*.go
+!/gosx-host/*.gsx
 !/cowboy.json
 !/templates/
 /templates/*
@@ -39,6 +40,7 @@
 /docs/*
 !/docs/GETTING_STARTED.md
 !/docs/PORTABILITY.md
+!/docs/GOSX_PORT.md
 !/.github/
 /.github/*
 !/.github/workflows/

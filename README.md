@@ -29,6 +29,8 @@ python launch.py --gosx
 
 This builds a pinned GoSX native host for Windows (WebView2) or Mac (WKWebView). Linux uses the browser. The existing Python service and browser UI remain shared. See [platform setup and integration details](docs/PORTABILITY.md), including Windows runtime requirements, storage paths and the current verification boundary.
 
+An experimental GoSX shot editor is also available; it currently uses the existing Python service and does not replace the full app. See [the GoSX port guide](docs/GOSX_PORT.md) for how to try it and its limitations.
+
 ## First useful session
 
 The first launch creates a small three-shot demo. Open a shot, edit its direction, import an image or a clip, and compare takes. You can start your own project at any time. For a blank three-shot episode, import [the reusable project template](templates/storyboard-project-template.json).
