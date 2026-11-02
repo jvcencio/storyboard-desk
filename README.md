@@ -2,7 +2,7 @@
 
 A GoSX creative workspace for turning an idea into shots, takes and editable footage. Plan the story, keep reference images and alternative clips, generate selected takes, then export extra footage to shape in an editor.
 
-GoSX and Go own the application. Windows opens a native WebView2 window; Mac and Linux open the GoSX browser workspace. Existing projects retain their format, media and approval/history records. Python code, launchers, build scripts and the legacy UI have been retired; the built app needs no Python or Node.
+GoSX and Go own the application, including browser interaction compiled from Go to WebAssembly. Windows opens a native WebView2 window; Mac and Linux open the GoSX browser workspace. Existing projects retain their format, media and approval/history records. Python and application JavaScript have been retired. Building and testing use Go; Node and npm are unnecessary.
 
 ## Start Storyboard Desk
 
@@ -89,14 +89,15 @@ An unavailable configured `/Volumes/...` drive is never replaced with a newly cr
 
 ## Development
 
-The workspace uses Go services and GoSX Node components with embedded CSS/JavaScript affordances. Swift helpers are optional media adapters. Captured synthetic legacy projects and expected outputs keep compatibility checks independent of the retired runtime.
+The workspace uses Go services, GoSX Node components, CSS and a Go-WASM editor engine. GoSX supplies the browser loader; application behavior lives in `gosx-host/client/*.go`. The packager builds and embeds the runtime automatically. Swift helpers are optional media adapters. Captured synthetic legacy projects and expected outputs keep compatibility checks independent of the retired runtime.
 
 ```sh
+go -C gosx-host run ./cmd/client
 go -C gosx-host test -race ./...
 go -C gosx-host vet ./...
 go -C gosx-host run ./cmd/package -target linux-amd64
-# Optional JavaScript syntax check if Node is installed:
-node --check gosx-host/workspace.js
+# Optional browser checks: installed headless Chrome, driven entirely from Go.
+go -C gosx-host test -tags browser -run '^TestWorkspaceGoClient' .
 \n+# Optional macOS AVFoundation helpers (Apple Command Line Tools required):
 go -C gosx-host run ./cmd/native
 
@@ -105,5 +106,7 @@ go -C gosx-host run . -browser -data-dir /path/to/development-projects -init-dat
 ```
 
 Tests use temporary stores and fake cloud clients; they do not spend model credits. GitHub CI runs Go tests on Windows, Linux and Mac, exercises actual FFmpeg exports, and builds the GoSX packages and optional Mac helpers. See the [retirement verification](docs/gosx-retirement-verification.json) for executed checks and remaining target-specific limits.
+
+The [physical Apple Silicon Mac verification](docs/gosx-mac-verification.json) records native builds, media helpers, exports and a real file-picker import through Peekaboo. The final native Save dialog check remains pending while remote work stays in the background. The [Go editor verification](docs/gosx-go-client-verification.json) records browser behavior and generated runtime checks.
 
 This repository contains application source and a generic demo. Personal projects, lyrics, reference/media libraries, cloud-job receipts, handoff packets, logs, local configuration and built executables are excluded by an explicit source allowlist. No license for public redistribution has been selected.

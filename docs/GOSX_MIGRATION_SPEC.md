@@ -14,7 +14,7 @@ Storyboard Desk is a GoSX product: GoSX owns the interactive workspace and nativ
 
 ## Architecture
 
-GoSX components provide project navigation, direction and shot editing, media library, generation/review, music and sections, settings, and handoffs. A Go application service exposes typed commands and queries to these components; a Go repository owns durable project/media/job data and concurrency. Provider and media adapters isolate HTTP, FFmpeg, platform helpers and filesystem access. Compatibility fixtures capture the retiring Python service as a fixed behavioral oracle; ongoing tests run in Go without that runtime.
+GoSX components provide project navigation, direction and shot editing, media library, generation/review, music and sections, settings, and handoffs. Browser behavior is authored in Go and compiled to a GoSX Go-WASM engine. The build uses Go and supplied framework loaders, without application JavaScript or a Node toolchain. A Go application service exposes typed commands and queries to these components; a Go repository owns durable project/media/job data and concurrency. Provider and media adapters isolate HTTP, FFmpeg, platform helpers and filesystem access. Compatibility fixtures capture the retiring Python service as a fixed behavioral oracle; ongoing tests run in Go without that runtime.
 
 ## Milestones and acceptance criteria
 
@@ -34,11 +34,11 @@ Critical path is safe storage ownership → core domain → dependent media/gene
 
 | Milestone | Implementation and evidence | Remaining acceptance work |
 | --- | --- | --- |
-| 1–2: Reader/core storage | Implemented; opaque JSON/numbers, ownership, revisions, stale/concurrent writes, staged creation and killed-writer recovery tested on Linux and Windows NTFS; Windows junction guards exercised. | Mac filesystem/locks; privileged Windows symlink cases. |
+| 1–2: Reader/core storage | Implemented; opaque JSON/numbers, ownership, revisions, stale/concurrent writes, staged creation and killed-writer recovery tested on Linux, Windows NTFS and physical Apple Silicon Mac; Windows junction/symlink guards exercised in CI. | Process-crash/storage checks complete on the tested hosts. |
 | 3: Core workspace | Implemented in GoSX; desktop/mobile Chromium and actual Windows WebView2 editing/reopen/navigation checks retained. | Interactive native file dialogs; Mac native usability. |
-| 4: Media/exports | Implemented; source hashes and real FFmpeg processing on Linux/Windows, plus Windows WebView2 reel/editor-package downloads to an isolated directory. | Interactive save dialogs, Swift helpers and actual editor imports. |
+| 4: Media/exports | Implemented; source hashes and real FFmpeg processing on Linux/Windows/Mac, plus installed Mac bundle exports using its Swift AVFoundation helpers. ZIP integrity, silent reel geometry/duration and original source bytes checked. | Interactive save dialogs and actual editor imports. |
 | 5: Generation | Implemented; credentials, manual review, quote/brief/allowance gates, reservations, recoverable jobs, original-starter binding, optional offline drawing. Fake providers/child renderers test failure, recovery and cancellation. | Controlled live-provider and actual Mac Draw Things/memory checks. |
 | 6: Music/sections | Implemented; PCM WAV, cues, timing, portions, coverage/reservations, assembly/undo, previews and packages; complete Go fixtures reopen in Python. | Actual iMovie/Final Cut soundtrack/timeline review. |
-| 7: Cutover | Standard launchers and executable now select GoSX. Actual Windows standard-launcher/native-window and Linux launcher checks pass. Python source, tooling, UI and service bridge removed. Go-only build/background launch and always-on legacy fixtures replace them. | Mac native and Windows ARM64 execution, remaining integrations and signing/distribution. |
+| 7: Cutover | Standard launchers and executable select GoSX. Actual Windows native-window and Linux launcher checks pass. A physical Mac has native-window, screenshot and file-picker/import evidence. Python and application JavaScript are removed; the editor engine, tests and packaging use Go. | Final Mac Save dialog and updated native Go-WASM window checks, Windows ARM64 execution, remaining integrations and signing/distribution. |
 
 See the [retirement verification](gosx-retirement-verification.json), [workspace guide](GOSX_PORT.md) and [Windows/default-launch report](gosx-windows-verification.json) for current commands, source and limits. The [full-port report](gosx-port-verification.json) and [storage report](gosx-storage-verification.json) retain their earlier source snapshots.

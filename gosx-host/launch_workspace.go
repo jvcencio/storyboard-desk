@@ -19,6 +19,9 @@ import (
 )
 
 func serveWorkspace(store *ProjectStore, port int, open, native bool, label string) error {
+	if _, err := editorManifest(); err != nil {
+		return err
+	}
 	if _, err := store.State(); err != nil {
 		return err
 	}
@@ -35,9 +38,9 @@ func serveWorkspace(store *ProjectStore, port int, open, native bool, label stri
 	fmt.Printf("%s: %s\n", label, target)
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	server := &http.Server{Handler: &workspaceHandler{store: store, csrf: hex.EncodeToString(token)}, ReadHeaderTimeout: 5 * time.Second, IdleTimeout: 60 * time.Second}
+	handler := &workspaceHandler{store: store, csrf: hex.EncodeToString(token)}
+	server := &http.Server{Handler: handler, ReadHeaderTimeout: 5 * time.Second, IdleTimeout: 60 * time.Second}
 	served := make(chan error, 1)
-	go func() { served <- server.Serve(listener) }()
 	defer server.Shutdown(context.Background())
 	if native {
 		cache, err := os.UserCacheDir()
@@ -49,15 +52,20 @@ func serveWorkspace(store *ProjectStore, port int, open, native bool, label stri
 			server.Close()
 			return fmt.Errorf("GoSX native window unavailable: %w; use -browser for browser mode", err)
 		}
+		handler.saveFile = app.SaveFileDialog
+		go func() { served <- server.Serve(listener) }()
 		err = app.Run()
 		stop()
 		if err != nil {
 			server.Shutdown(context.Background())
 			return err
 		}
-	} else if open {
-		if err := openWorkspaceBrowser(target); err != nil {
-			fmt.Fprintln(os.Stderr, "Open the printed loopback address in a browser.")
+	} else {
+		go func() { served <- server.Serve(listener) }()
+		if open {
+			if err := openWorkspaceBrowser(target); err != nil {
+				fmt.Fprintln(os.Stderr, "Open the printed loopback address in a browser.")
+			}
 		}
 	}
 	select {

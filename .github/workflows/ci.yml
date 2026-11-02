@@ -11,9 +11,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
       - uses: actions/setup-go@v5
         with:
           go-version: '1.26.4'
@@ -27,7 +24,7 @@ jobs:
         run: go -C gosx-host run ./cmd/native
       - if: runner.os == 'Linux'
         run: go install m31labs.dev/gosx/cmd/gosx@v0.57.24
-      - run: node --check gosx-host/workspace.js
+      - run: go -C gosx-host run ./cmd/client
       - working-directory: gosx-host
         shell: bash
         run: |
@@ -43,6 +40,12 @@ jobs:
       - if: runner.os == 'Linux'
         working-directory: gosx-host
         run: go test -race ./...
+      - if: runner.os == 'Linux'
+        working-directory: gosx-host
+        run: go test -tags browser -run '^TestWorkspaceGoClient' -timeout 3m -json . > ../build/verification/go-browser-tests.jsonl
+        env:
+          STORYBOARD_REQUIRE_BROWSER: '1'
+          STORYBOARD_REQUIRE_FFMPEG: '1'
       - working-directory: gosx-host
         run: go run ./cmd/package
       - if: runner.os == 'Windows'

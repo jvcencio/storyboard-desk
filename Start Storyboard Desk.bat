@@ -8,6 +8,8 @@ if defined STORYBOARD_GO_EXECUTABLE (
 ) else if exist "gosx-host\storyboard-desk-go.exe" (
     "gosx-host\storyboard-desk-go.exe" %*
 ) else (
+    go -C "gosx-host" run ./cmd/client 1>&2
+    if errorlevel 1 exit /b 1
     go -C "gosx-host" run . %*
 )
 set "SBD_EXIT=%ERRORLEVEL%"

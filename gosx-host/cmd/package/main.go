@@ -16,6 +16,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/jvcencio/storyboard-desk/gosx-host/internal/clientbuild"
 )
 
 const sdkVersion = "1.0.4314.35"
@@ -114,6 +116,9 @@ func run() error {
 			return fmt.Errorf("run the packager inside the gosx-host module")
 		}
 		module = parent
+	}
+	if err = clientbuild.Build(module); err != nil {
+		return err
 	}
 	cmd := exec.Command("go", "build", "-trimpath", "-o", binary, ".")
 	cmd.Dir = module

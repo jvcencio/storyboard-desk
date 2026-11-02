@@ -11,16 +11,20 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 
 	"m31labs.dev/gosx"
+	"m31labs.dev/gosx/desktop"
 )
 
-//go:embed workspace.css workspace.js
+//go:embed workspace.css
 var workspaceAssets embed.FS
 
 type workspaceHandler struct {
-	store *ProjectStore
-	csrf  string
+	store    *ProjectStore
+	csrf     string
+	saveFile func(desktop.SaveFileOptions) (string, error)
+	saveMu   sync.Mutex
 }
 type workspacePage struct {
 	exportFiles                                         []string
@@ -35,6 +39,7 @@ type workspacePage struct {
 	promptProvider                                      string
 	draft                                               url.Values
 	action                                              string
+	nativeSave                                          bool
 }
 
 func el(tag string, children ...any) gosx.Node { return gosx.El(tag, children...) }
@@ -184,24 +189,24 @@ func (h *workspaceHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 	rw.Header().Set("X-Content-Type-Options", "nosniff")
 	rw.Header().Set("Cache-Control", "no-store")
-	rw.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'self'; script-src 'self'; img-src 'self' data:; media-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'")
-	if r.Method == "GET" && (r.URL.Path == "/workspace.css" || r.URL.Path == "/workspace.js") {
+	rw.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'self'; script-src 'self' 'wasm-unsafe-eval'; img-src 'self' data:; media-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'")
+	if (r.Method == "GET" || r.Method == "HEAD") && strings.HasPrefix(r.URL.Path, "/client/assets/") {
+		h.clientAsset(rw, r)
+		return
+	}
+	if r.Method == "GET" && r.URL.Path == "/workspace.css" {
 		data, err := workspaceAssets.ReadFile(strings.TrimPrefix(r.URL.Path, "/"))
 		if err != nil {
 			http.NotFound(rw, r)
 			return
 		}
-		mime := "text/css; charset=utf-8"
-		if strings.HasSuffix(r.URL.Path, ".js") {
-			mime = "text/javascript; charset=utf-8"
-		}
-		rw.Header().Set("Content-Type", mime)
+		rw.Header().Set("Content-Type", "text/css; charset=utf-8")
 		rw.Write(data)
 		return
 	}
 	if r.Method == "GET" && r.URL.Path == "/api/health" {
 		rw.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(rw).Encode(map[string]string{"app":"Storyboard Desk","backend":"go","version":"0.12.0","storage":storageIdentity(h.store.path)})
+		json.NewEncoder(rw).Encode(map[string]string{"app": "Storyboard Desk", "backend": "go", "version": "0.12.0", "storage": storageIdentity(h.store.path)})
 		return
 	}
 	if r.Method == "GET" && r.URL.Path == "/download/script" {
@@ -278,6 +283,11 @@ func (h *workspaceHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		rev, err = strconv.Atoi(values.Get("revision"))
 		if err == nil {
 			switch r.URL.Path {
+			case "/download":
+				err = h.downloadSaved(rw, r, id, values)
+				if err == nil {
+					return
+				}
 			case "/save":
 				patch := ProjectDocument{}
 				for _, k := range shotFields {
@@ -399,8 +409,10 @@ func (h *workspaceHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 						var rel string
 						rel, err = h.store.ExportClaude(id, scene, shot)
 						if err == nil {
-							http.Redirect(rw, r, mediaURL(id, rel), 303)
-							return
+							err = h.finishExport(rw, r, id, rel)
+							if err == nil {
+								return
+							}
 						}
 					}
 				}
@@ -416,15 +428,19 @@ func (h *workspaceHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 				var rel string
 				updated, rel, err = h.musicCommand(r.URL.Path, id, rev, values)
 				if err == nil && rel != "" {
-					http.Redirect(rw, r, mediaURL(id, rel), 303)
-					return
+					err = h.finishExport(rw, r, id, rel)
+					if err == nil {
+						return
+					}
 				}
 			case "/export":
 				var rel string
 				rel, err = h.store.ExportReview(id)
 				if err == nil {
-					http.Redirect(rw, r, mediaURL(id, rel), 303)
-					return
+					err = h.finishExport(rw, r, id, rel)
+					if err == nil {
+						return
+					}
 				}
 			case "/select":
 				updated, err = h.store.Choose(id, sid, values.Get("kind"), values.Get("asset"), values.Get("approve") == "true", rev)
@@ -467,6 +483,12 @@ func (h *workspaceHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, ErrRevision) {
 			status = 409
 		}
+		if h.saveFile != nil && r.Header.Get("Accept") == "application/json" {
+			rw.Header().Set("Content-Type", "application/json")
+			rw.WriteHeader(status)
+			json.NewEncoder(rw).Encode(map[string]string{"error": err.Error()})
+			return
+		}
 		q := r.URL.Query()
 		q.Set("project", id)
 		q.Set("shot", sid)
@@ -491,12 +513,17 @@ func (h *workspaceHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 }
 
 func (h *workspaceHandler) render(rw http.ResponseWriter, r *http.Request, status int, message string, draft url.Values, action string) {
+	runtime, err := editorRuntime()
+	if err != nil {
+		http.Error(rw, err.Error(), 503)
+		return
+	}
 	projects, err := h.store.List()
 	if err != nil {
 		http.Error(rw, err.Error(), 500)
 		return
 	}
-	w := workspacePage{store: h.store, quoteID: r.URL.Query().Get("quote"), projects: projects, csrf: h.csrf, view: r.URL.Query().Get("view"), scene: r.URL.Query().Get("scene"), message: message, draft: draft, action: action}
+	w := workspacePage{store: h.store, nativeSave: h.saveFile != nil, quoteID: r.URL.Query().Get("quote"), projects: projects, csrf: h.csrf, view: r.URL.Query().Get("view"), scene: r.URL.Query().Get("scene"), message: message, draft: draft, action: action}
 	w.promptProvider = r.URL.Query().Get("provider")
 	if !containsField([]string{"grok", "flow", "gemini", "other"}, w.promptProvider) {
 		w.promptProvider = "grok"
@@ -538,7 +565,7 @@ func (h *workspaceHandler) render(rw http.ResponseWriter, r *http.Request, statu
 	h.loadPageFeatures(&w)
 	rw.Header().Set("Content-Type", "text/html; charset=utf-8")
 	rw.WriteHeader(status)
-	fmt.Fprint(rw, "<!doctype html>\n"+gosx.RenderHTML(w.render()))
+	fmt.Fprint(rw, gosx.RenderHTML(editorDocument(runtime, w, r, status)))
 }
 
 func (w workspacePage) render() gosx.Node {
@@ -551,7 +578,7 @@ func (w workspacePage) render() gosx.Node {
 		nav = append(nav, link(shotText(p, "title"), pageURL(shotText(p, "id"), "board", "", ""), class))
 	}
 	sidebar := cls("aside", "sidebar", link("▤  STORYBOARD DESK", "/", "brand"), cls("p", "eyebrow", txt("YOUR PROJECTS")), el("nav", attrs("aria-label", "Projects"), fragment(nav...)), link("＋ New project", "#new-project", "button secondary"), cls("p", "local-status", txt("● Saved on your computer")))
-	main := []any{cls("header", "topbar", txt("WORKBENCH / "+shotText(w.project, "title")), cls("span", "status", attrs("id", "save-status"), txt("Saved locally")))}
+	main := []any{cls("header", "topbar", txt("WORKBENCH / "+shotText(w.project, "title")), cls("span", "fine", attrs("id", "download-status", "role", "status")), cls("span", "status", attrs("id", "save-status"), txt("Saved locally")))}
 	if w.message != "" {
 		main = append(main, cls("div", "error", attrs("role", "alert"), txt(w.message+". Your submitted values remain below.")))
 	}
@@ -604,7 +631,7 @@ func (w workspacePage) render() gosx.Node {
 		}
 	}
 	main = append(main, w.createForm(), cls("footer", "fine", txt("Local project files · "), txt("Storyboard Desk")))
-	return el("html", attrs("lang", "en"), el("head", el("meta", attrs("charset", "utf-8")), el("meta", attrs("name", "viewport", "content", "width=device-width, initial-scale=1")), el("title", txt("Storyboard Desk")), el("link", attrs("rel", "stylesheet", "href", "/workspace.css")), el("script", attrs("src", "/workspace.js", "defer", "defer"))), el("body", sidebar, cls("main", "workspace", fragment(main...))))
+	return gosx.Fragment(sidebar, cls("main", "workspace", fragment(main...)))
 }
 
 func (w workspacePage) createForm() gosx.Node {

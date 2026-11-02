@@ -82,7 +82,7 @@ func TestWorkspaceCoreCommandsAndRejectedDrafts(t *testing.T) {
 	for _, view := range []string{"board", "episode", "direction", "references", "handoff"} {
 		r = httptest.NewRecorder()
 		h.ServeHTTP(r, httptest.NewRequest("GET", "http://127.0.0.1:4444/?project="+id+"&view="+view, nil))
-		if r.Code != 200 || !strings.Contains(r.Body.String(), "/workspace.js") {
+		if r.Code != 200 || !strings.Contains(r.Body.String(), "/client/assets/") {
 			t.Fatalf("view %s: %d", view, r.Code)
 		}
 	}
