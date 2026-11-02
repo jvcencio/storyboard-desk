@@ -253,10 +253,21 @@
       "unknown_integer_preserved": "900719925474099312345"
     },
     "save_dialog": {
-      "status": "missing native Save dialog reproduced on source 2a08440; fix implemented, final native UI retest pending",
-      "observed": "Clicking Export review package produced no Save dialog on WKWebView. Backend archive exports succeeded independently.",
+      "status": "passed for the displayed default filename and synthetic input directory",
+      "source_commit": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+      "original_failure": {
+        "source_commit": "2a084404a103baaa59cb0cc0401bb93334f329d5",
+        "observed": "Clicking Export review package produced no Save dialog on WKWebView. Backend archive exports succeeded independently."
+      },
       "fix": "Native downloads call the GoSX SaveFileDialog API with matching extension, overwrite confirmation and atomic external copying. Go client requests preserve dirty forms.",
-      "remaining": "Native cancel, reopen and save of the updated build, then ZIP CRC validation. Foreground UI automation was stopped at the user request to avoid stealing focus."
+      "detailed_result": "updated_native_verification",
+      "observed_steps": [
+        "Native Save panel opened",
+        "Cancel confirmed; Go-WASM displayed Save cancelled",
+        "Save panel reopened",
+        "Go-WASM displayed Saved storyboard-a6a95d42c7be.zip; external ZIP CRCs, export equality and original hashes verified"
+      ],
+      "scope": "Displayed default filename and synthetic input directory; custom name/folder and native dirty drafts remain unverified."
     },
     "distinction": "HTTP export checks and injected Save dialog adapter tests do not certify the macOS native Save dialog."
   },
@@ -280,7 +291,7 @@
     }
   },
   "limits": [
-    "The updated Go-WASM native window and Save dialog still need foreground verification; no further foreground remote interaction was performed after the user requested background work.",
+    "Updated native Go-WASM rendering and real Save cancel/reopen/save pass on source cc21af1. Saving used the displayed default filename/input folder; custom name/folder selection and native dirty drafts remain unverified.",
     "GoSX compiler parity was already checked in Linux CI; its optional Mac compiler test skips because the CLI is not installed.",
     "TestStorageWriterProcess is a child-process test helper; the actual ownership/crash tests pass.",
     "Actual Draw Things, live paid-provider requests and real iMovie/Final Cut imports were not exercised.",
@@ -306,7 +317,7 @@
     },
     "desktop_app_relaunched": false,
     "foreground_ui_automation": false,
-    "limits": "Headless browser/native Save adapter tests do not prove the updated native WKWebView or the real Save dialog.",
+    "limits": "These background checks alone do not prove native UI behavior; the later updated_native_verification section records the real WKWebView and native Save results.",
     "race_passes": 69,
     "race_skips": [
       "TestGoSXGeneratedShotCard",
@@ -316,6 +327,137 @@
     "vet_exit_code": 0,
     "native_helper_build_exit_code": 0,
     "detailed_report": "gosx-go-client-verification.json",
-    "report_section": "mac_background_checks"
+    "report_section": "mac_background_checks",
+    "subsequent_native_verification": "updated_native_verification (same production source and binary; foreground checks performed only during idle periods)"
+  },
+  "updated_native_verification": {
+    "status": "passed for the displayed default filename and synthetic input directory",
+    "source_commit": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+    "production_code_unchanged_through": "c87cd92b1edda2de32bc38a7741324348a001146",
+    "binary_sha256": "b09efba8ba74542d1ab227e22b6352c40f017531e8d6d541754e95b6fc165938",
+    "binary_vcs_modified": false,
+    "target": "Physical Apple M1 Max, arm64, macOS 26.6.2; installed GoSX WKWebView bundle",
+    "observed_at_utc": {
+      "save_file_mtime": "2026-11-02T22:36:20Z",
+      "launch_preflight": "2026-11-02T22:13:36Z"
+    },
+    "idle_policy": {
+      "minimum_seconds": 120,
+      "launch_preflight_seconds": 273.79811475,
+      "save_preflight_seconds": 334.383518375,
+      "console_unlocked": true,
+      "stopped_on_resumed_input": true,
+      "previous_app": "Blender",
+      "focus_restored_by_automation": false,
+      "focus_note": "The user resumed Blender activity; no further focus changes were made."
+    },
+    "native_window": {
+      "rendered": true,
+      "window_bounds": {
+        "width": 1440,
+        "height": 988
+      },
+      "screenshot": "gosx-mac-native-go.png",
+      "capture_engine": "ScreenCaptureKit with fresh Accessibility observations",
+      "go_wasm_proof": [
+        "Save cancelled",
+        "Saved storyboard-a6a95d42c7be.zip"
+      ]
+    },
+    "save_dialog": {
+      "cancel": {
+        "title": "Save storyboard-189b9f4035a5.zip",
+        "buttons": [
+          "Cancel",
+          "Save"
+        ],
+        "cancel_action_confirmed": true,
+        "client_status": "Save cancelled",
+        "external_review_zip_absent_after_cancel": true
+      },
+      "reopen": {
+        "title": "Save storyboard-a6a95d42c7be.zip",
+        "buttons": [
+          "Cancel",
+          "Save"
+        ],
+        "screenshot": "gosx-mac-save-dialog.png"
+      },
+      "saved": {
+        "status": "passed",
+        "source_commit": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+        "saved_path": "workspace/input/storyboard-a6a95d42c7be.zip",
+        "archive_bytes": 258822,
+        "archive_sha256": "92ed6a43fd38f129166692514347fa0964530e183ee690572167db3feafeb7d7",
+        "zip_crc_valid": true,
+        "zip_entries": [
+          "plan.json",
+          "buckley-intake.txt",
+          "project.json",
+          "STORYBOARD.txt",
+          "episode-map.json",
+          "generation/jobs.json",
+          "prompts/0010_0ea280ddd70e.txt",
+          "selected/0010_0ea280ddd70e_clip_take01.mp4",
+          "sequence.json",
+          "music-timing.json",
+          "music-cues.json",
+          "song-sections.json",
+          "lyrics.txt",
+          "soundtrack/original.wav",
+          "README.txt"
+        ],
+        "project_id": "d4257d1b8394",
+        "revision": 16,
+        "unknown_integer": "900719925474099312345",
+        "archive_project_matches_source_except_terminal_newline": true,
+        "source_project_sha256": "eb6a5e228e7c33e11a9d29c63434b726a08d86adb074e0567633f071dea0eb23",
+        "selected_clip_sha256": "f8c67d6a1aee16dd0e0e3b5d3a150d7eb878e87622ce6ee52915c2c68761085c",
+        "original_project_and_all_three_media_hashes_unchanged": true,
+        "native_client_status": "Saved storyboard-a6a95d42c7be.zip",
+        "default_filename_and_directory_used": true,
+        "custom_name_and_directory": "The combined Peekaboo file helper did not apply the requested review.zip name or saved directory. Saving was observed and independently verified at the panel's displayed default name and synthetic input directory. No custom-name/location signoff is claimed."
+      },
+      "copy_matches_project_export": true,
+      "scope": "The real Save panel and completed save were observed through Peekaboo and independently verified on disk. The combined path/name helper returned an indeterminate Bridge receipt; it did not apply review.zip or the requested saved folder. No successful helper delivery or custom-name/folder verification is claimed."
+    },
+    "preservation": {
+      "project_sha256": "eb6a5e228e7c33e11a9d29c63434b726a08d86adb074e0567633f071dea0eb23",
+      "project_revision": 16,
+      "original_media_sha256": {
+        "media/0ea280ddd70e/3db2834c103f.mp4": "f8c67d6a1aee16dd0e0e3b5d3a150d7eb878e87622ce6ee52915c2c68761085c",
+        "media/0ea280ddd70e/cf39833aa863.png": "187f2cb6304c06396f82bbd563c5448fa50e5e179f334be05cbdf4a7db1efb85",
+        "media/0ea280ddd70e/d3046566d27a.png": "187f2cb6304c06396f82bbd563c5448fa50e5e179f334be05cbdf4a7db1efb85"
+      },
+      "all_original_hashes_unchanged": true,
+      "opaque_integer": "900719925474099312345"
+    },
+    "limits": [
+      "Saving was verified with the displayed default filename and synthetic input folder. Custom name/folder selection remains unverified.",
+      "The native AX draft-edit attempt did not change the text field; no native dirty-draft signoff is claimed. Separate browser tests cover dirty forms with injected dialog results.",
+      "Historical native file-picker/import evidence remains attributed to source 2a08440."
+    ],
+    "retained_evidence": {
+      "local_directory": "build/verification/jorge-mac/native-final",
+      "file_sha256": {
+        "idle-preflight.json": "65f0bd922188e6e1ec6c9a4806d4b524fb4cac0a0462dcb5506cc18aee08457e",
+        "idle-save-preflight.json": "3ef515660ec9ada72cf75e59d7c1fe141a3999866ad6e1a06a740b8d59727b31",
+        "native-initial.json": "e9000e853e82802540ebf6ecc74d1ef58d6dc4fb212c3d0088d7b56086d7fb2d",
+        "native-save-first.json": "bfd5bb28bb9a43563364b19112b920d6c1b22f5c8ad7eae089cf8b90cc3efe41",
+        "native-save-cancel.json": "b401a038eddce23800e730b0fb45b25d939384b3beb9627e12684af8c3c254f4",
+        "native-after-cancel.json": "eeef72baebd0e8e9888497bb1fb7e1b2b8a25e631e3481d413764d69d3623966",
+        "native-save-reopened.json": "ae6824824a64efac724cf1710e21c7945e1cd767be9246fddc10072f7daae42b",
+        "native-panel-reopened.json": "0bfe1b5b869341ec6bde9eb325defbeff725b7e04c7680f3b6cdc414efe3a148",
+        "native-save-destination.json": "1f0cad02ada8056d3595aa63f72935b714425851c5b5c6af025f7b71d20c264e",
+        "native-panel-after-file.json": "35ce56865a746f9073b46a910aa31c4e79c22f72e0f707e8728074f2d4f8579a",
+        "native-save-paused.json": "d297f35bf924eb3a3e4c0eee2a335a60b9132b857c7bd23586d8abede5960df9",
+        "native-save-verification.json": "af3c2dfaeb0440deea44b2e0c133514ad99a70323e36f666b87d71a0b51a1950"
+      }
+    },
+    "verification_commands": [
+      "unzip -t build/verification/jorge-mac/native-final/native-saved.zip",
+      "Compare saved ZIP and generated export SHA256, read every ZIP entry, compare archived project bytes (plus terminal newline) with source SHA256, verify selected clip SHA256 and opaque integer",
+      "Read the original project and all three original media SHA256 independently over SSH"
+    ]
   }
 }

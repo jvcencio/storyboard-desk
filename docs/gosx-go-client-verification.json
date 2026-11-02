@@ -396,11 +396,12 @@
       "source-status.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
-    "limits": "Headless browser/native Save adapter tests do not prove the updated native WKWebView or the real Save dialog."
+    "limits": "This headless phase did not interact with the native window; subsequent mac_native_checks records actual WKWebView and native Save verification using the same clean binary."
   },
   "limits": [
     "Injected native dialog results in browser tests prove the Go save adapter and UI behavior, not OS dialog interaction.",
-    "Updated WKWebView Go-WASM rendering and final native Save dialog verification remain pending to respect the requested background-only remote work.",
+    "Saving was verified with the displayed default filename and synthetic input folder. Custom name/folder selection remains unverified.",
+    "The native AX draft-edit attempt did not change the text field; no native dirty-draft signoff is claimed. Separate browser tests cover dirty forms with injected dialog results.",
     "Historical Windows native evidence belongs to its recorded source revision; the new native Save adapter still needs interactive Windows verification.",
     "No live paid provider, actual Draw Things model, or iMovie/Final Cut import was exercised."
   ],
@@ -421,5 +422,64 @@
     "mac_test_method": "Go test overlay of this one hash-bound test file on source 019a3bd; source checkout unchanged.",
     "application_source_unchanged_from": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
     "native_ui_retested": false
+  },
+  "mac_native_checks": {
+    "status": "passed for the displayed default filename and synthetic input directory",
+    "source_commit": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+    "production_code_unchanged_through": "c87cd92b1edda2de32bc38a7741324348a001146",
+    "binary_sha256": "b09efba8ba74542d1ab227e22b6352c40f017531e8d6d541754e95b6fc165938",
+    "binary_vcs_modified": false,
+    "target": "Physical Apple M1 Max, arm64, macOS 26.6.2; installed GoSX WKWebView bundle",
+    "observed_at_utc": {
+      "save_file_mtime": "2026-11-02T22:36:20Z",
+      "launch_preflight": "2026-11-02T22:13:36Z"
+    },
+    "idle_policy": {
+      "minimum_seconds": 120,
+      "launch_preflight_seconds": 273.79811475,
+      "save_preflight_seconds": 334.383518375,
+      "console_unlocked": true,
+      "stopped_on_resumed_input": true,
+      "previous_app": "Blender",
+      "focus_restored_by_automation": false,
+      "focus_note": "The user resumed Blender activity; no further focus changes were made."
+    },
+    "native_window": {
+      "rendered": true,
+      "window_bounds": {
+        "width": 1440,
+        "height": 988
+      },
+      "screenshot": "gosx-mac-native-go.png",
+      "capture_engine": "ScreenCaptureKit with fresh Accessibility observations",
+      "go_wasm_proof": [
+        "Save cancelled",
+        "Saved storyboard-a6a95d42c7be.zip"
+      ]
+    },
+    "preservation": {
+      "project_sha256": "eb6a5e228e7c33e11a9d29c63434b726a08d86adb074e0567633f071dea0eb23",
+      "project_revision": 16,
+      "original_media_sha256": {
+        "media/0ea280ddd70e/3db2834c103f.mp4": "f8c67d6a1aee16dd0e0e3b5d3a150d7eb878e87622ce6ee52915c2c68761085c",
+        "media/0ea280ddd70e/cf39833aa863.png": "187f2cb6304c06396f82bbd563c5448fa50e5e179f334be05cbdf4a7db1efb85",
+        "media/0ea280ddd70e/d3046566d27a.png": "187f2cb6304c06396f82bbd563c5448fa50e5e179f334be05cbdf4a7db1efb85"
+      },
+      "all_original_hashes_unchanged": true,
+      "opaque_integer": "900719925474099312345"
+    },
+    "limits": [
+      "Saving was verified with the displayed default filename and synthetic input folder. Custom name/folder selection remains unverified.",
+      "The native AX draft-edit attempt did not change the text field; no native dirty-draft signoff is claimed. Separate browser tests cover dirty forms with injected dialog results.",
+      "Historical native file-picker/import evidence remains attributed to source 2a08440."
+    ],
+    "saved_zip": {
+      "saved_path": "workspace/input/storyboard-a6a95d42c7be.zip",
+      "archive_bytes": 258822,
+      "archive_sha256": "92ed6a43fd38f129166692514347fa0964530e183ee690572167db3feafeb7d7",
+      "zip_crc_valid": true,
+      "archive_project_matches_source_except_terminal_newline": true
+    },
+    "detailed_report": "gosx-mac-verification.json#updated_native_verification"
   }
 }
