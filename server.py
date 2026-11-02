@@ -24,6 +24,7 @@ import urllib.parse
 import urllib.request
 import uuid
 import wave
+import weakref
 import zipfile
 import sys
 # The launcher uses -I; resolve only this application's own sibling module.
@@ -32,6 +33,7 @@ from cloud import CloudEngine
 from sections import SectionStore
 from settings import CONFIG
 from media_tools import probe_video, require_video_tools
+from platform_support import FileLock
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from socketserver import TCPServer
 
@@ -367,7 +369,28 @@ class Store(SectionStore):
                 raise ValueError('Connect the configured storage volume before opening Storyboard Desk.')
         self.root.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.lock = threading.RLock()
+        self._closed = False
+        self._identity = self.root.stat()
+        self._owner = FileLock(self.root/'.storyboard-owner.lock')
+        try:
+            if not self._owner.acquire():
+                raise RuntimeError('Another Storyboard Desk process owns this data directory. Close it before opening this workspace.')
+        except BaseException:
+            self._owner.close()
+            raise
+        self._release_owner = weakref.finalize(self, self._owner.close)
         self.jobs = {}
+
+    def close(self):
+        with self.lock:
+            self._closed = True
+            self._release_owner()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.close()
 
     def folder(self, pid):
         return self.root / valid_id(pid)
@@ -444,6 +467,16 @@ class Store(SectionStore):
                       key=lambda p: p['created_at'])
 
     def ensure_storage(self):
+        if self._closed:
+            raise RuntimeError('Project store is closed.')
+        try:
+            same_root = os.path.samestat(self._identity, self.root.stat())
+            same_owner = os.path.samestat(os.fstat(self._owner.file.fileno()),
+                                         (self.root/'.storyboard-owner.lock').lstat())
+        except OSError:
+            same_root = same_owner = False
+        if not same_root or not same_owner:
+            raise RuntimeError('Project storage or its ownership file changed. Reopen the workspace.')
         if str(self.root).startswith('/Volumes/') and not (Path('/Volumes')/self.root.parts[2]).is_mount():
             raise ValueError('The configured project storage is disconnected. Reconnect it to access the saved projects.')
 
@@ -1401,24 +1434,33 @@ def serve(data_dir, port):
         sys.stdout.reconfigure(errors='backslashreplace')
     os.umask(0o077)
     store = Store(data_dir)
-    seed(store)
-    httpd = LocalHTTPServer(('127.0.0.1', port), Handler)
-    httpd.daemon_threads = True
-    httpd.store, httpd.token = store, secrets.token_urlsafe(32)
-    httpd.renderer = Renderer(store)
-    httpd.cloud = CloudEngine(store,approved,direction_basis,prompt_package,probe=probe_cloud_video)
-    print(f'Storyboard Desk: http://127.0.0.1:{httpd.server_port}', flush=True)
-    print(f'Project media: {store.root}', flush=True)
-    print('Explicit Google generation and manual handoffs. Cloud requests require review and an allowance.', flush=True)
+    httpd = renderer = cloud = None
     try:
+        seed(store)
+        httpd = LocalHTTPServer(('127.0.0.1', port), Handler)
+        httpd.daemon_threads = False
+        httpd.store, httpd.token = store, secrets.token_urlsafe(32)
+        renderer = httpd.renderer = Renderer(store)
+        cloud = httpd.cloud = CloudEngine(store,approved,direction_basis,prompt_package,probe=probe_cloud_video)
+        print(f'Storyboard Desk: http://127.0.0.1:{httpd.server_port}', flush=True)
+        print(f'Project media: {store.root}', flush=True)
+        print('Explicit Google generation and manual handoffs. Cloud requests require review and an allowance.', flush=True)
         httpd.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:
-        httpd.cloud.stop.set()
-        httpd.renderer.stop.set()
-        httpd.renderer.worker.join(timeout=20)
-        httpd.server_close()
+        for engine in (cloud, renderer):
+            if engine is not None:
+                engine.stop.set()
+        if httpd is not None:
+            httpd.server_close()
+        # Keep ownership until all handlers and workers have stopped writing.
+        for engine in (cloud, renderer):
+            if engine is not None and engine.worker is not None:
+                engine.worker.join()
+        if cloud is not None and cloud.worker_lock is not None:
+            cloud.worker_lock.close()
+        store.close()
 
 
 if __name__ == '__main__':

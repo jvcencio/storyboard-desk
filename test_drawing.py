@@ -24,6 +24,7 @@ class DrawingChecks(unittest.TestCase):
         self.renderer.store=self.store;self.renderer.queue=queue.Queue()
 
     def tearDown(self):
+        self.store.close()
         self.tmp.cleanup()
 
     def asset(self,kind='sketch'):

@@ -1,9 +1,19 @@
 @echo off
-cd /d "%~dp0"
-where py >nul 2>nul
-if errorlevel 1 (
-    python -X utf8 launch.py
+setlocal
+pushd "%~dp0" || exit /b 1
+if defined STORYBOARD_GO_EXECUTABLE (
+    "%STORYBOARD_GO_EXECUTABLE%" %*
+) else if exist "build\gosx\storyboard-desk-go.exe" (
+    "build\gosx\storyboard-desk-go.exe" %*
+) else if exist "gosx-host\storyboard-desk-go.exe" (
+    "gosx-host\storyboard-desk-go.exe" %*
 ) else (
-    py -3 -X utf8 launch.py
+    go -C "gosx-host" run . %*
 )
-if errorlevel 1 pause
+set "SBD_EXIT=%ERRORLEVEL%"
+popd
+if not "%SBD_EXIT%"=="0" (
+    echo GoSX could not start. See docs\GOSX_PORT.md. Use -browser for browser mode.
+    pause
+)
+exit /b %SBD_EXIT%

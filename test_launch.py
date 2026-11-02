@@ -37,6 +37,50 @@ def stop_owned(reply):
 
 
 class LaunchChecks(unittest.TestCase):
+    def test_explicit_legacy_does_not_reuse_a_go_listener(self):
+        class GoHealth(BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(json.dumps({'app': 'Storyboard Desk', 'backend': 'go'}).encode())
+            def log_message(self, *args):
+                pass
+        httpd = LocalHTTPServer(('127.0.0.1', 0), GoHealth)
+        worker = threading.Thread(target=httpd.serve_forever, daemon=True)
+        worker.start()
+        try:
+            url = 'http://127.0.0.1:%d/' % httpd.server_port
+            self.assertTrue(launch.ready(url, backend='go'))
+            self.assertFalse(launch.ready(url, backend='python'))
+        finally:
+            httpd.shutdown()
+            httpd.server_close()
+            worker.join(timeout=2)
+
+    def test_go_executable_override_never_falls_back_to_python(self):
+        with tempfile.TemporaryDirectory() as root:
+            binary = Path(root)/'Go workspace with spaces'
+            binary.write_bytes(b'synthetic executable fixture')
+            with patch.dict(os.environ, STORYBOARD_GO_EXECUTABLE=str(binary)):
+                self.assertEqual(launch.go_command(), [str(binary)])
+            with patch.dict(os.environ, STORYBOARD_GO_EXECUTABLE=str(binary)+'-missing'):
+                with self.assertRaisesRegex(SystemExit, 'built Go workspace'):
+                    launch.go_command()
+
+    def test_default_launch_delegates_to_go_and_explicit_legacy_uses_python(self):
+        with patch('sys.argv', ['launch.py']), patch.object(launch, 'launch_go', return_value=0) as go, \
+                patch.object(launch.subprocess, 'Popen') as python_server:
+            with self.assertRaises(SystemExit) as reply:
+                launch.main()
+            self.assertEqual(reply.exception.code, 0)
+            go.assert_called_once()
+            python_server.assert_not_called()
+        with patch('sys.argv', ['launch.py', '--legacy']), patch.object(launch, 'launch_go') as go, \
+                patch.object(launch, 'ready', return_value=True), patch.object(launch.webbrowser, 'open') as browser:
+            launch.main()
+            go.assert_not_called()
+            browser.assert_called_once_with(launch.URL)
+
     def test_explicit_new_storage_can_be_created_without_starting_another_server(self):
         with tempfile.TemporaryDirectory() as root, patch.object(launch, 'ready', return_value=True):
             data = Path(root)/'new-projects'
@@ -75,6 +119,7 @@ class LaunchChecks(unittest.TestCase):
             try:
                 self.assertEqual(first['status'], 'started')
                 self.assertTrue(launch.ready(url))
+                self.assertFalse(launch.ready(url, backend='go'))
                 second = prepare_with_diagnostics(data, url, Path(root)/'logs')
                 self.assertEqual(second['status'], 'reused')
                 self.assertNotIn('pid', second)

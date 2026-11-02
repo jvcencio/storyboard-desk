@@ -30,6 +30,7 @@ class MusicChecks(unittest.TestCase):
         self.pid = self.p['id']
 
     def tearDown(self):
+        self.store.close()
         self.temp.cleanup()
 
     def audio(self, seconds=4):
@@ -66,7 +67,9 @@ class MusicChecks(unittest.TestCase):
         second = self.audio(5)
         self.assertEqual(second['soundtrack_history'][0], old)
         self.assertTrue((self.store.folder(self.pid)/old['path']).is_file())
-        reopened = server.Store(self.temp.name).load(self.pid)
+        self.store.close()
+        self.store = server.Store(self.temp.name)
+        reopened = self.store.load(self.pid)
         self.assertEqual(reopened['soundtrack']['duration_seconds'], 5)
         self.assertEqual(reopened['lyrics'], '[Verse] Exact punctuation “here”  ')
         self.assertEqual(reopened['music_timing']['unallocated_seconds'], 3)

@@ -2,7 +2,7 @@
 
 ## Learn the board without an API key
 
-Run `python3 launch.py` from the checkout and open the three-shot demo. Pick a shot and edit **Purpose**, **Composition**, **Action** and **Camera**. Save it, then insert a shot before or after it. The shot's identity stays stable when you reorder it.
+Build with `go -C gosx-host run ./cmd/package`, then use **Start Storyboard Desk**. Windows opens GoSX natively; Mac/Linux use the GoSX browser workspace. Existing projects appear from the configured data folder. For a new workspace, create a project or import the reusable template. Pick a shot and edit **Purpose**, **Composition**, **Action** and **Camera**. Save it, then insert a shot before or after it. Shot identity stays stable when reordering. `python3 launch.py --legacy` explicitly opens the previous Python implementation and its demo.
 
 Import an image as a composition candidate or finished image. These are different stages: a rough composition helps with framing; a finished image is the reviewed starter for animation. Select the take you want. Approving an image does not generate a video.
 
@@ -22,7 +22,7 @@ The separate **Export editor package** action can include individual silent sour
 
 ## Generate an image, then a video
 
-1. Start a session with your own key using `python3 launch.py --ask-openrouter-key`. No key is saved by this command.
+1. Start a session with your own key using `./build/gosx/storyboard-desk-go -ask-openrouter-key` (Windows: use the `.exe`), or `python3 launch.py --ask-openrouter-key`. No key is saved by this command.
 2. In **Generate**, check the OpenRouter connection and review the production brief. Set a modest project allowance.
 3. Choose a shot and an image model. Attach actual project reference images; a text description or web URL alone does not condition identity.
 4. Edit the image prompt. Review its exact references and reservation, then confirm that one request.

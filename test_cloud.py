@@ -14,7 +14,7 @@ class CloudChecks(unittest.TestCase):
         self.temp=tempfile.TemporaryDirectory();self.store=server.Store(self.temp.name)
         p=self.store.new({'title':'Cloud test','music_video':True,'aspect':'16:9','shots':[{'id':'one','title':'One','composition':'A seated man.'},{'id':'two','title':'Two'}]});self.pid=p['id']
         p=self.store.import_asset(self.pid,'one','keyframe','a.png',io.BytesIO(PNG),len(PNG));self.aid=p['shots'][0]['assets'][0]['id'];self.fake=Fake();self.e=self.engine();self.e.allowance(self.pid,5)
-    def tearDown(self):self.temp.cleanup()
+    def tearDown(self):self.store.close();self.temp.cleanup()
     def engine(self):
         e=cloud.CloudEngine(self.store,server.approved,server.direction_basis,server.prompt_package,client=self.fake,probe=lambda p,f:{'duration_seconds':8,'audio_tracks':0},start_worker=False);e.connected=True;return e
     def image(self,**extra):

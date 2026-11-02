@@ -72,6 +72,26 @@ func (c *ServiceClient) State() (ServiceState, error) {
     return state, err
 }
 
+// CreateProject uses the existing service's project validation and storage.
+func (c *ServiceClient) CreateProject(state ServiceState, title, brief, aspect string) error {
+    var response struct { Project ServiceProject `json:"project"` }
+    return c.request(http.MethodPost, "/api/new", state.Token, map[string]any{
+        "title": title, "brief": brief, "aspect": aspect,
+        "shots": []map[string]any{{"title": "The opening", "duration": 5, "purpose": "Establish the story."}},
+    }, &response)
+}
+
+// InsertShot delegates draft creation and its atomic revision check to the service.
+func (c *ServiceClient) InsertShot(state ServiceState, projectID, anchor, position string, revision int) error {
+    if position != "before" && position != "after" {
+        return fmt.Errorf("choose before or after")
+    }
+    var response struct { Project ServiceProject `json:"project"` }
+    return c.request(http.MethodPost, "/api/insert", state.Token, map[string]any{
+        "project": projectID, "anchor": anchor, "position": position, "revision": revision,
+    }, &response)
+}
+
 // SaveShot copies and patches the existing shot rather than reconstructing it,
 // preserving fields the new UI does not yet understand.
 func (c *ServiceClient) SaveShot(state ServiceState, projectID, shotID string, fields map[string]string) (ServiceProject, error) {

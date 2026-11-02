@@ -15,14 +15,15 @@ class GoSXBridgeChecks(unittest.TestCase):
     def test_real_service_read_save_and_revision_conflict(self):
         with tempfile.TemporaryDirectory() as root:
             store = server.Store(root)
-            store.new({'title': 'Test', 'shots': [{'title': 'Before', 'composition': 'Keep the framing'}]})
+            project = store.new({'title': 'Test', 'shots': [{'title': 'Before', 'composition': 'Keep the framing'}]})
             listener = server.LocalHTTPServer(('127.0.0.1', 0), server.Handler)
             listener.store = store
             listener.token = 'test-token'
             thread = threading.Thread(target=listener.serve_forever, daemon=True)
             thread.start()
             try:
-                env = dict(os.environ, STORYBOARD_TEST_URL=f'http://127.0.0.1:{listener.server_port}/')
+                env = dict(os.environ, STORYBOARD_TEST_URL=f'http://127.0.0.1:{listener.server_port}/',
+                           STORYBOARD_TEST_DATA_DIR=root, STORYBOARD_TEST_PROJECT_ID=project['id'])
                 result = subprocess.run(['go', 'test', '-count=1', './...'],
                                         cwd=Path(__file__).parent/'gosx-host', env=env,
                                         capture_output=True, text=True, timeout=120)
@@ -34,8 +35,19 @@ class GoSXBridgeChecks(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                 self.assertIn('GoSX edit', result.stdout)
                 self.assertNotIn('test-token', result.stdout)
+                insert_env = dict(env, STORYBOARD_INSERT_TEST='1')
+                result = subprocess.run(['go', 'test', '-count=1', '-run', '^TestPythonInsertRoundTrip$', './...'],
+                                        cwd=Path(__file__).parent/'gosx-host', env=insert_env,
+                                        capture_output=True, text=True, timeout=120)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
+                create_env = dict(env, STORYBOARD_CREATE_TEST_URL=env['STORYBOARD_TEST_URL'])
+                result = subprocess.run(['go', 'test', '-count=1', '-run', '^TestPythonEditorCreatesProject$', './...'],
+                                        cwd=Path(__file__).parent/'gosx-host', env=create_env,
+                                        capture_output=True, text=True, timeout=120)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             finally:
                 listener.shutdown()
                 listener.server_close()
                 thread.join()
+                store.close()

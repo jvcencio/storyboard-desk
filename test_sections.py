@@ -14,7 +14,7 @@ class SectionChecks(unittest.TestCase):
         for i,s in enumerate(p['shots']):
             path=self.store.folder(self.pid)/f'media/{s["id"]}/source.mp4';path.parent.mkdir(exist_ok=True);path.write_bytes(b'media fixture '+bytes([i]));s['assets'].append({'id':'clip'+str(i),'kind':'clip','path':path.relative_to(self.store.folder(self.pid)).as_posix(),'sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'duration_seconds':8,'in_seconds':0,'out_seconds':8,'take':1});s['selected_clip']='clip'+str(i)
         self.store.save(p,p['revision']);self.sid=self.create()['section_id']
-    def tearDown(self):self.temp.cleanup()
+    def tearDown(self):self.store.close();self.temp.cleanup()
     def p(self):return self.store.load(self.pid)
     def create(self,**kwargs):
         raw={'label':'Chorus 1','kind':'chorus','start_seconds':60,'end_seconds':78};raw.update(kwargs);return self.store.save_section(self.pid,self.p()['revision'],raw)

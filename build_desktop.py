@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the optional GoSX host; never starts a backend or submits model work."""
+"""Build the explicit legacy GoSX host; use gosx-host/cmd/package for the default app."""
 import argparse
 import hashlib
 import io
@@ -68,7 +68,7 @@ def main():
                            'NSHighResolutionCapable':True,
                            'NSAppTransportSecurity':{'NSAllowsLocalNetworking':True}}, stream)
     print('Built '+str(target))
-    print('Start: python3 launch.py --gosx')
+    print('Start the legacy backend/host: python3 launch.py --legacy --gosx')
 
 
 if __name__ == '__main__':

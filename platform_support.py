@@ -3,6 +3,7 @@ import errno
 import os
 from pathlib import Path
 import signal
+import stat
 import subprocess
 
 if os.name == 'nt':
@@ -13,12 +14,18 @@ else:
 
 class FileLock:
     def __init__(self, path):
-        self.file = Path(path).open('a+b')
+        path = Path(path)
+        if path.is_symlink():
+            raise ValueError('Lock file must be a regular file.')
+        fd = os.open(path, os.O_CREAT | os.O_RDWR | getattr(os, 'O_NOFOLLOW', 0), 0o600)
+        try:
+            if not stat.S_ISREG(os.fstat(fd).st_mode):
+                raise ValueError('Lock file must be a regular file.')
+            self.file = os.fdopen(fd, 'r+b')
+        except BaseException:
+            os.close(fd)
+            raise
         self.locked = False
-        # Windows locks an actual byte, including when two callers race here.
-        if self.file.seek(0, 2) == 0:
-            self.file.write(b'\0')
-            self.file.flush()
 
     def acquire(self):
         if self.locked:
@@ -34,6 +41,11 @@ class FileLock:
                 return False
             raise
         self.locked = True
+        # Both OS adapters can lock past EOF. Initialize only after acquiring so
+        # a Windows contender never writes into another owner's locked byte.
+        if self.file.seek(0, 2) == 0:
+            self.file.write(b'\0')
+            self.file.flush()
         return True
 
     def close(self):

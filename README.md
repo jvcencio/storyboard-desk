@@ -2,38 +2,39 @@
 
 A GoSX creative workspace for turning an idea into shots, takes and editable footage. Plan the story, keep reference images and alternative clips, generate selected takes, then export extra footage to shape in an editor.
 
-The current app is a local Python server with a buildless browser UI. Video inspection and silent MP4 export use FFmpeg on Windows, Mac and Linux, or the optional native Mac helpers. An optional GoSX native host opens the same workspace on Windows and Mac. It is a working development version.
+GoSX and Go are the default implementation. Windows opens a native WebView2 window; Mac and Linux open the GoSX browser workspace. The built app needs no Python, Node or legacy UI. Existing projects retain their format, media and approval/history records. The previous Python implementation remains an explicit fallback.
 
-## Start on Windows, Mac or Linux
+## Start Storyboard Desk
 
-Use Python 3.11 or newer and a modern browser. No pip packages, Node build or API key are needed to try the demo.
-
-```sh
-git clone https://github.com/jvcencio/storyboard-desk.git
-cd storyboard-desk
-python launch.py
-```
-
-On Windows use `py -3 launch.py`, or double-click **Start Storyboard Desk.bat**. On Mac/Linux use `python3` if needed; the Mac `.command` launcher also remains available. The app opens **http://127.0.0.1:4492/**. Keep the Terminal open; **Control-C** stops the server you started.
-
-For video inspection and export install **FFmpeg 6.1+ including ffprobe**, with libx264 support, and put both executables on PATH. [FFmpeg's download page](https://ffmpeg.org/download.html) links platform builds. Mac users can alternatively build the Swift helpers with `python3 build_native.py` after installing Apple's Command Line Tools.
-
-## Run inside GoSX
-
-With Go 1.26+ installed:
+For a source checkout, install Go 1.26+ and build:
 
 ```sh
-python build_desktop.py
-python launch.py --gosx
+go -C gosx-host run ./cmd/package
 ```
 
-This builds a pinned GoSX native host for Windows (WebView2) or Mac (WKWebView). Linux uses the browser. The existing Python service and browser UI remain shared. See [platform setup and integration details](docs/PORTABILITY.md), including Windows runtime requirements, storage paths and the current verification boundary.
+Double-click **Start Storyboard Desk.bat** on Windows or **Start Storyboard Desk.command** on Mac. Linux can run `./build/gosx/storyboard-desk-go` or `sh 'Start Storyboard Desk.command'`. The launchers prefer the packaged executable, then a module-local binary, then `go run`. `STORYBOARD_GO_EXECUTABLE` selects an explicit built workspace. The older **Start Storyboard Desk Go** names are aliases.
 
-An experimental GoSX shot editor is also available; it currently uses the existing Python service and does not replace the full app. See [the GoSX port guide](docs/GOSX_PORT.md) for how to try it and its limitations.
+Windows needs the installed Evergreen WebView2 Runtime and the packaged **WebView2Loader.dll** beside the executable. `-browser` selects browser mode on Windows. Mac native hosting remains available with `-native` or the built app bundle, but still needs real Mac verification; its standard source launcher uses the browser.
+
+To open existing work explicitly:
+
+```sh
+./build/gosx/storyboard-desk-go -data-dir /absolute/path/to/projects
+# A new custom directory also needs -init-data-dir.
+# -no-open prints the local URL without opening a window or browser.
+```
+
+Stop the existing app and back up the complete data directory before switching implementations. Local settings/environment overrides still work. The default port is 4492; `-port 0` selects a random loopback port. See the [workspace guide](docs/GOSX_PORT.md) and [Windows/default-launch verification](docs/gosx-windows-verification.json).
+
+For inspection and silent video export, install FFmpeg/ffprobe with libx264 support and put them on PATH, or configure their paths. [FFmpeg's download page](https://ffmpeg.org/download.html) links platform builds. Existing Swift helpers remain an optional Mac route.
+
+## Explicit Python fallback
+
+With Python 3.11+ installed, run `python3 launch.py --legacy`, or use **Start Storyboard Desk Legacy**. `python3 launch.py` now delegates to GoSX; it does not start the Python backend by default. Background/no-open compatibility arguments also select Go unless `--legacy` is present. `python3 launch.py --legacy --gosx` retains the old native host for a Python service, built with `python3 build_desktop.py`.
 
 ## First useful session
 
-The first launch creates a small three-shot demo. Open a shot, edit its direction, import an image or a clip, and compare takes. You can start your own project at any time. For a blank three-shot episode, import [the reusable project template](templates/storyboard-project-template.json).
+The Go workspace starts empty; the explicit Python fallback creates a small demo. Create a project, edit its direction, import an image or clip, and compare takes. For a blank three-shot episode, import [the reusable project template](templates/storyboard-project-template.json).
 
 For a music video:
 
@@ -54,10 +55,10 @@ The **Generate** workspace calls supported Google image models and silent Veo vi
 Stop an existing server before starting a credentialed session:
 
 ```sh
-python3 launch.py --ask-openrouter-key
+./build/gosx/storyboard-desk-go -ask-openrouter-key
 ```
 
-The prompt hides your input and passes it only through the server's process environment. It does not save the key to the repository or project files. Existing `OPENROUTER_API_KEY` environment setups also work. The creator's optional workstation Keychain adapter remains supported when present; that adapter and its credentials are not included here.
+The prompt hides your input and keeps it in server memory. It does not save the key to settings/projects or pass it to media/browser children. Existing `OPENROUTER_API_KEY` environment setups also work. On Mac, `STORYBOARD_OPENROUTER_KEYCHAIN_SERVICE` can select an existing Keychain item.
 
 In the app, check the connection, review/approve a production brief, and set a project allowance. Inspect the exact prompt, reference images and reservation before confirming each request. Review and approve a finished starter image before creating video. New media returns unselected. Startup, exports and copying prompts do not create paid requests. There is no automatic retry.
 
@@ -88,15 +89,19 @@ An unavailable configured `/Volumes/...` drive is never replaced with a newly cr
 
 ## Development
 
-Python standard library backend; plain HTML/CSS/JavaScript frontend. Swift sources implement local media inspection and silent exports.
+The independent workspace uses Go services and GoSX Node components with embedded CSS/JavaScript affordances. The retained implementation uses Python's standard library and buildless browser assets. Swift helpers are optional media adapters.
 
 ```sh
 python3 -m unittest discover -s . -p 'test_*.py' -v
+go -C gosx-host test -race ./...
+go -C gosx-host vet ./...
+go -C gosx-host run ./cmd/package -target linux-amd64
 # Optional JavaScript syntax check if Node is installed:
 for file in static/*.js; do node --check "$file"; done
+node --check gosx-host/workspace.js
 
 # Use a separate data folder and port for development:
-python3 server.py --data-dir /tmp/storyboard-desk-dev --port 4493
+go -C gosx-host run . -browser -data-dir /path/to/development-projects -init-data-dir -port 4493
 ```
 
 Tests use temporary stores and fake cloud clients; they do not spend model credits. GitHub CI tests Windows, Linux and Mac, exercises actual FFmpeg exports, and builds the GoSX desktop hosts and optional Mac helpers.

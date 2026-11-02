@@ -29,6 +29,7 @@ class LibraryChecks(unittest.TestCase):
         self.p = self.store.save(self.p, self.p['revision'])
 
     def tearDown(self):
+        self.store.close()
         self.temp.cleanup()
 
     def place(self, target, start=0, end=4, source=None):
@@ -58,7 +59,9 @@ class LibraryChecks(unittest.TestCase):
         self.assertEqual(p['shots'][0]['assets'][-1]['in_seconds'], .5)
         self.assertEqual(p['shots'][1]['assets'][-1]['in_seconds'], 3)
         self.assertEqual(p['lyrics'], self.p['lyrics'])
-        reopened = server.Store(self.temp.name).load(self.pid)
+        self.store.close()
+        self.store = server.Store(self.temp.name)
+        reopened = self.store.load(self.pid)
         self.assertEqual(reopened['shots'][1]['selected_clip'], second['id'])
 
     def test_reference_of_reference_flattens_to_original(self):

@@ -24,6 +24,7 @@ class StoreChecks(unittest.TestCase):
         self.sid = self.p['shots'][0]['id']
 
     def tearDown(self):
+        self.store.close()
         self.temp.cleanup()
 
     def asset(self, kind='sketch'):
@@ -33,7 +34,9 @@ class StoreChecks(unittest.TestCase):
     def test_media_and_selection_survive_restart(self):
         p, aid = self.asset()
         self.store.choose(self.pid, self.sid, 'sketch', aid)
-        reopened = server.Store(self.temp.name).load(self.pid)
+        self.store.close()
+        self.store = server.Store(self.temp.name)
+        reopened = self.store.load(self.pid)
         self.assertEqual(reopened['shots'][0]['selected_sketch'], aid)
         self.assertEqual((self.store.folder(self.pid)/reopened['shots'][0]['assets'][0]['path']).read_bytes(), PNG)
 
@@ -320,7 +323,7 @@ class HTTPChecks(unittest.TestCase):
         self.opener=urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
     def tearDown(self):
-        self.httpd.shutdown();self.httpd.server_close();self.thread.join();self.temp.cleanup()
+        self.httpd.shutdown();self.httpd.server_close();self.thread.join();self.store.close();self.temp.cleanup()
 
     def test_loopback_bind_does_not_require_reverse_dns(self):
         with patch.object(server.socket, 'getfqdn', side_effect=AssertionError('DNS is unavailable')):

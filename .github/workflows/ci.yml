@@ -32,11 +32,18 @@ jobs:
         env:
           STORYBOARD_REQUIRE_FFMPEG: '1'
       - shell: bash
-        run: for file in static/*.js; do node --check "$file"; done
+        run: for file in static/*.js gosx-host/workspace.js; do node --check "$file"; done
       - working-directory: gosx-host
         run: go test ./...
         env:
           CGO_ENABLED: '0'
+      - working-directory: gosx-host
+        run: go vet ./...
+      - if: runner.os == 'Linux'
+        working-directory: gosx-host
+        run: go test -race ./...
+      - working-directory: gosx-host
+        run: go run ./cmd/package
       - if: runner.os != 'Linux'
         run: python build_desktop.py
       - if: runner.os == 'Windows'

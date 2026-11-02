@@ -17,12 +17,24 @@
 !/platform_support.py
 !/media_tools.py
 !/Start Storyboard Desk.bat
+!/Start Storyboard Desk Go.command
+!/Start Storyboard Desk Go.bat
+!/Start Storyboard Desk Legacy.command
+!/Start Storyboard Desk Legacy.bat
 !/gosx-host/
 /gosx-host/*
 !/gosx-host/go.mod
 !/gosx-host/go.sum
 !/gosx-host/*.go
 !/gosx-host/*.gsx
+!/gosx-host/workspace.css
+!/gosx-host/workspace.js
+!/gosx-host/cloud_catalog.json
+!/gosx-host/cmd/
+/gosx-host/cmd/*
+!/gosx-host/cmd/package/
+/gosx-host/cmd/package/*
+!/gosx-host/cmd/package/*.go
 !/cowboy.json
 !/templates/
 /templates/*
@@ -41,6 +53,15 @@
 !/docs/GETTING_STARTED.md
 !/docs/PORTABILITY.md
 !/docs/GOSX_PORT.md
+!/docs/GOSX_MIGRATION_SPEC.md
+!/docs/gosx-storage-verification.json
+!/docs/gosx-port-verification.json
+!/docs/gosx-workspace-desktop.png
+!/docs/gosx-workspace-mobile.png
+!/docs/gosx-workspace-media.png
+!/docs/gosx-windows-initial.png
+!/docs/gosx-windows-native.png
+!/docs/gosx-windows-verification.json
 !/.github/
 /.github/*
 !/.github/workflows/
