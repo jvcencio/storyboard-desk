@@ -6,3 +6,5 @@
 *.bat text eol=crlf
 *.png binary
 *.wav binary
+# Captured compatibility contracts include their original file bytes/hashes.
+gosx-host/testdata/legacy/** -text

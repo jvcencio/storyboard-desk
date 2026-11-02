@@ -4,10 +4,10 @@
   "source_snapshot": {
     "git_head": "d6e7bef84cf69742776b18a225c1c62357bb51e7",
     "uncommitted": true,
-    "sha256": "084d6bf018eb0166b882aab33ef30905558d1c7fd3bd96c1662c079780e687b7",
+    "sha256": "0964c05fd32602d9f1ad2d7d290e52272381f4f70bea40c5e601ab1f7330fb68",
     "algorithm": "SHA-256 of sorted UTF-8 path + NUL + file SHA-256 + newline; deleted paths, evidence JSON/images, and ignored build/data outputs excluded",
     "files": {
-      ".gitattributes": "26ba68a3b0e6d52fe686be4aeeb77e52fe514005d782b523430dc42a5615966f",
+      ".gitattributes": "d794a7470905803457a654dac033152f913cd5175f68ce1dc848e2d55ec60a2b",
       ".github/workflows/ci.yml": "ca7f260f0e9c61a39941e2c3a83bc52b0e2693af87b1048401b8ba570f648567",
       ".gitignore": "cec65e2c90a20614de82aced34eaf8d58cace767bebd2497884049f858590e31",
       "README.md": "55d1a07e1015586269aa8ba2607178c2cd74384e5e4b596167d1161829d2a544",
@@ -329,7 +329,12 @@
         "scenario": "Generated receipt persistence",
         "expected_and_observed": "Fake cloud/local renderer results stay unselected and retain provenance; reopening/recovery does not duplicate assets. No live provider or model call."
       }
-    ]
+    ],
+    "windows_checkout": {
+      "command": "git -c core.autocrlf=true cat-file --filters --path=<fixture> HEAD:<fixture>",
+      "before": "CI converted captured project.json line endings, causing its byte-integrity assertion to fail.",
+      "after": "All 4 recorded legacy files match their original SHA-256 after simulated Windows checkout. Fixture attributes now disable text conversion for every captured contract file."
+    }
   },
   "windows_dialogs": {
     "status": "pending exact-fixture retry",
