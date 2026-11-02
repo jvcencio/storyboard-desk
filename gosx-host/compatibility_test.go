@@ -7,12 +7,12 @@ import (
 	"time"
 )
 
-// Invoked by Python to validate Go-written projects, receipts and local jobs
-// through the real legacy loaders. Every integration is a deterministic fake.
+// Persist every supported receipt class, then reopen it with no external runtime.
+// Provider and local renderer integrations are deterministic test doubles.
 func TestCompleteCompatibilityFixture(t *testing.T) {
 	root := os.Getenv("STORYBOARD_COMPLETE_FIXTURE")
 	if root == "" {
-		t.Skip("Python compatibility harness not configured")
+		root = t.TempDir()
 	}
 	store, err := OpenProjectStore(root, true)
 	if err != nil {
@@ -94,5 +94,51 @@ func TestCompleteCompatibilityFixture(t *testing.T) {
 	draw.wg.Wait()
 	if shotText(draw.Status(pid)[0], "status") != "done" {
 		t.Fatal("fixture drawing failed")
+	}
+	draw.Close()
+	p, err = store.Load(pid)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assets := list(list(p, "shots")[0], "assets")
+	if len(assets) != 3 || !imageApproved(p, list(p, "shots")[0]) {
+		t.Fatal("starter approval or unselected generation results lost")
+	}
+	if err = store.Close(); err != nil {
+		t.Fatal(err)
+	}
+	reopened, err := OpenProjectStore(root, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reopened.Close()
+	q, err := reopened.Load(pid)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if jsonText(q) != jsonText(p) {
+		t.Fatal("reopen changed project, media, section, cue or generation provenance")
+	}
+	if len(list(q, "music_sections")) != 1 || len(list(q, "music_cues")) != 1 || shotText(q, "lyrics") != "Original lyrics “here”\n  Keep spacing" {
+		t.Fatal("music data lost")
+	}
+	recovered, err := newDrawingService(reopened, AppSettings{DrawCLI: os.Args[0], ModelsDir: t.TempDir(), Model: "fixture.ckpt"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer recovered.Close()
+	if jobs := recovered.Status(pid); len(jobs) != 1 || shotText(jobs[0], "status") != "done" {
+		t.Fatal("local receipt not readable after reopen")
+	}
+	cloud2, err := newCloudService(reopened, provider)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = cloud2.Process(shotText(quote, "id")); err != nil {
+		t.Fatal(err)
+	}
+	q, err = reopened.Load(pid)
+	if err != nil || len(list(list(q, "shots")[0], "assets")) != 3 {
+		t.Fatal("recovery duplicated generation")
 	}
 }

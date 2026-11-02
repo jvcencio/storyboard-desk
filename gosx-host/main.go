@@ -14,8 +14,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"m31labs.dev/gosx/desktop"
 )
 
 func validateURL(raw string) (string, error) {
@@ -49,100 +47,95 @@ func checkService(raw string) error {
 	}
 	defer response.Body.Close()
 	var health struct {
-		App string `json:"app"`
+		App     string `json:"app"`
+		Backend string `json:"backend"`
 	}
-	if response.StatusCode != http.StatusOK || json.NewDecoder(io.LimitReader(response.Body, 4096)).Decode(&health) != nil || health.App != "Storyboard Desk" {
+	if response.StatusCode != http.StatusOK || json.NewDecoder(io.LimitReader(response.Body, 4096)).Decode(&health) != nil || (health.App != "Storyboard Desk" || health.Backend != "go") {
 		return fmt.Errorf("the local listener is not Storyboard Desk")
 	}
 	return nil
 }
 
 func run() error {
-	raw := flag.String("url", "http://127.0.0.1:4492/", "existing local Storyboard Desk URL")
-	check := flag.Bool("check", false, "validate the backend without opening a native window")
-	board := flag.Bool("board-preview", false, "write a read-only GoSX storyboard preview to standard output")
-	editor := flag.Bool("editor", false, "serve the standalone GoSX shot editor on loopback")
+	raw := flag.String("url", "http://127.0.0.1:4492/", "Go workspace URL for -check")
+	check := flag.Bool("check", false, "check the running Go workspace without opening a window")
+	board := flag.Bool("board-preview", false, "write a read-only GoSX storyboard preview")
+	editor := flag.Bool("editor", false, "serve the GoSX workspace on an available port without opening it")
 	dataDir := flag.String("data-dir", "", "project directory (or STORYBOARD_DATA_DIR)")
 	initData := flag.Bool("init-data-dir", false, "allow creating a new project directory")
-	workspace := flag.Bool("workspace", false, "explicitly select the GoSX workspace (the default launch mode)")
-	native := flag.Bool("native", runtime.GOOS == "windows", "open a native window (default on Windows; opt in on Mac)")
+	flag.Bool("workspace", false, "select the GoSX workspace (the default)")
+	native := flag.Bool("native", runtime.GOOS == "windows", "open a native window (default on Windows)")
 	browser := flag.Bool("browser", false, "open the GoSX workspace in a browser")
-	noOpen := flag.Bool("no-open", false, "print the workspace URL without opening a browser")
+	noOpen := flag.Bool("no-open", false, "print the address without opening a browser or window")
+	background := flag.Bool("background", false, "start or reuse a detached Go workspace and print startup JSON")
 	port := flag.Int("port", -1, "workspace port (0 chooses an available loopback port)")
 	settingsFile := flag.String("settings", "", "optional settings JSON file")
 	askKey := flag.Bool("ask-openrouter-key", false, "read a hidden OpenRouter key for this process only")
 	flag.Parse()
 	explicit := map[string]bool{}
 	flag.Visit(func(f *flag.Flag) { explicit[f.Name] = true })
-	legacyMode := explicit["url"] || *check || *board || *editor
-	if *workspace && legacyMode {
-		return fmt.Errorf("choose the workspace or an explicit host/preview/editor mode")
+	if flag.NArg() != 0 {
+		return fmt.Errorf("unexpected argument %q", flag.Arg(0))
 	}
-	if *workspace || !legacyMode {
-		if *browser && explicit["native"] && *native {
-			return fmt.Errorf("choose -browser or -native")
+	if *check {
+		if *board || *editor || *background || *askKey || *dataDir != "" {
+			return fmt.Errorf("-check uses only the running Go workspace URL")
 		}
-		var config AppSettings
-		var err error
-		if *settingsFile != "" {
-			home, e := os.UserHomeDir()
-			if e != nil {
-				return e
-			}
-			path, e := filepath.Abs(*settingsFile)
-			if e != nil {
-				return e
-			}
-			config, err = loadAppSettings(path, home, runtime.GOOS, os.Getenv)
-		} else {
-			config, err = runtimeSettings()
-		}
+		target, err := validateURL(*raw)
 		if err != nil {
 			return err
 		}
-		data := *dataDir
-		initialize := *initData
-		if data == "" {
-			data = config.DataDir
-			initialize = initialize || config.DefaultData
+		if err = checkService(target); err != nil {
+			return err
 		}
-		selectedPort := config.Port
-		if *port >= 0 {
-			selectedPort = *port
+		fmt.Println("Storyboard Desk Go workspace verified")
+		return nil
+	}
+	if explicit["url"] {
+		return fmt.Errorf("-url is used with -check; launch the Go workspace directly")
+	}
+	if *browser && explicit["native"] && *native {
+		return fmt.Errorf("choose -browser or -native")
+	}
+	if *background && (*board || *editor || (explicit["native"] && *native)) {
+		return fmt.Errorf("-background starts the browser workspace without a native window")
+	}
+	var config AppSettings
+	var err error
+	if *settingsFile != "" {
+		home, e := os.UserHomeDir()
+		if e != nil {
+			return e
 		}
-		if selectedPort > 65535 || (explicit["port"] && *port < 0) {
-			return fmt.Errorf("choose a loopback port from 0 to 65535")
+		path, e := filepath.Abs(*settingsFile)
+		if e != nil {
+			return e
 		}
-		runtimeGenerationKey = strings.TrimSpace(os.Getenv("OPENROUTER_API_KEY"))
-		if *askKey {
-			runtimeGenerationKey, err = askGenerationKey()
-			if err != nil {
-				return err
-			}
-		}
-		os.Unsetenv("OPENROUTER_API_KEY")
-		useNative := *native && !*browser && (!*noOpen || explicit["native"])
-		return startWorkspace(data, initialize, selectedPort, !*noOpen, useNative, config)
+		config, err = loadAppSettings(path, home, runtime.GOOS, os.Getenv)
+	} else {
+		config, err = runtimeSettings()
 	}
-	if explicit["native"] || *browser || *noOpen || *askKey || *settingsFile != "" || *port != -1 {
-		return fmt.Errorf("workspace launch options cannot be combined with host/preview/editor modes")
+	if err != nil {
+		return err
 	}
-
-	if *editor && *dataDir == "" {
-		*dataDir = os.Getenv("STORYBOARD_DATA_DIR")
+	data, initialize := *dataDir, *initData
+	if data == "" {
+		data = config.DataDir
+		initialize = initialize || config.DefaultData
 	}
-	if *initData && *dataDir == "" {
-		return fmt.Errorf("-init-data-dir requires -data-dir")
+	selectedPort := config.Port
+	if explicit["port"] {
+		selectedPort = *port
 	}
-	if *editor || (*board && *dataDir != "") {
-		store, err := OpenProjectStore(*dataDir, *initData)
+	if selectedPort < 0 || selectedPort > 65535 {
+		return fmt.Errorf("choose a loopback port from 0 to 65535")
+	}
+	if *board {
+		store, err := OpenProjectStore(data, initialize)
 		if err != nil {
 			return err
 		}
 		defer store.Close()
-		if *editor {
-			return serveEditor(store)
-		}
 		state, err := store.State()
 		if err != nil {
 			return err
@@ -150,52 +143,29 @@ func run() error {
 		fmt.Println(RenderBoard(state))
 		return nil
 	}
-	if *dataDir != "" || *initData {
-		return fmt.Errorf("-data-dir is used with -editor or -board-preview")
+	if *background {
+		if selectedPort == 0 {
+			return fmt.Errorf("-background requires a fixed port for safe reuse")
+		}
+		if *askKey {
+			return fmt.Errorf("start a foreground session with -ask-openrouter-key; background sessions use the server environment")
+		}
+		return launchBackground(data, initialize, selectedPort, *settingsFile, !*noOpen)
 	}
-	target, err := validateURL(*raw)
-	if err != nil {
-		return err
-	}
-	if err = checkService(target); err != nil {
-		return err
-	}
-	if *board {
-		client, err := NewServiceClient(target)
+	runtimeGenerationKey = strings.TrimSpace(os.Getenv("OPENROUTER_API_KEY"))
+	if *askKey {
+		runtimeGenerationKey, err = askGenerationKey()
 		if err != nil {
 			return err
 		}
-		state, err := client.State()
-		if err != nil {
-			return err
-		}
-		fmt.Println(RenderBoard(state))
-		return nil
 	}
-	if *check {
-		fmt.Println("Storyboard Desk backend verified")
-		return nil
+	os.Unsetenv("OPENROUTER_API_KEY")
+	if *editor {
+		selectedPort = 0
+		*noOpen = true
 	}
-	cache, err := os.UserCacheDir()
-	if err != nil {
-		return err
-	}
-	app, err := desktop.New(desktop.Options{
-		Title: "Storyboard Desk", AppID: "com.gosx.storyboarddesk", Version: "0.11.0",
-		Width: 1440, Height: 960, URL: target,
-		UserDataDir:     filepath.Join(cache, "Storyboard Desk", "webview"),
-		BackgroundColor: "#161b1e",
-		// SBD uses same-origin HTTP; no native filesystem or shell bridge is needed.
-		NativeBridge: false,
-	})
-	if err != nil {
-		return fmt.Errorf("GoSX desktop: %w (see docs/PORTABILITY.md; browser mode is available)", err)
-	}
-	return app.Run()
-}
-
-func serveEditor(service EditorService) error {
-	return serveWorkspace(service, 0, false, false, "GoSX editor")
+	useNative := *native && !*browser && !*editor && (!*noOpen || explicit["native"])
+	return startWorkspace(data, initialize, selectedPort, !*noOpen, useNative, config)
 }
 
 func main() {

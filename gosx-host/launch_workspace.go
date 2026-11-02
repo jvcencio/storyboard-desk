@@ -18,8 +18,8 @@ import (
 	"m31labs.dev/gosx/desktop"
 )
 
-func serveWorkspace(service EditorService, port int, open, native bool, label string) error {
-	if _, err := service.State(); err != nil {
+func serveWorkspace(store *ProjectStore, port int, open, native bool, label string) error {
+	if _, err := store.State(); err != nil {
 		return err
 	}
 	token := make([]byte, 32)
@@ -35,7 +35,7 @@ func serveWorkspace(service EditorService, port int, open, native bool, label st
 	fmt.Printf("%s: %s\n", label, target)
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	server := &http.Server{Handler: newEditorHandler(service, hex.EncodeToString(token)), ReadHeaderTimeout: 5 * time.Second, IdleTimeout: 60 * time.Second}
+	server := &http.Server{Handler: &workspaceHandler{store: store, csrf: hex.EncodeToString(token)}, ReadHeaderTimeout: 5 * time.Second, IdleTimeout: 60 * time.Second}
 	served := make(chan error, 1)
 	go func() { served <- server.Serve(listener) }()
 	defer server.Shutdown(context.Background())

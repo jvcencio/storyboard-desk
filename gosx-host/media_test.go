@@ -227,11 +227,8 @@ func TestActualFFmpegImportPlacementAndSilentExport(t *testing.T) {
 		t.Fatal("FFmpeg modified original")
 	}
 }
-func TestPythonDerivedParity(t *testing.T) {
-	path := os.Getenv("STORYBOARD_PARITY_ORACLE")
-	if path == "" {
-		t.Skip("Python oracle not configured")
-	}
+func TestLegacyDerivedParity(t *testing.T) {
+	path := filepath.Join("testdata", "legacy", "oracle.json")
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)

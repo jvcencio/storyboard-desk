@@ -21,6 +21,7 @@ const maxProjectBytes = 64 << 20
 
 var ErrRevision = errors.New("project changed; reload before saving")
 var ErrNotFound = errors.New("project or shot not found")
+var errNoProjectChange = errors.New("project already contains this operation")
 
 // ProjectDocument retains all fields, including data owned by unported workflows.
 type ProjectDocument map[string]json.RawMessage
@@ -408,7 +409,9 @@ func (s *ProjectStore) mutate(id string, revision int, edit func(ProjectDocument
 	if revision < 0 || documentRevision(p) != revision {
 		return nil, ErrRevision
 	}
-	if err = edit(p); err != nil {
+	if err = edit(p); errors.Is(err, errNoProjectChange) {
+		return s.load(id)
+	} else if err != nil {
 		return nil, err
 	}
 	if revision == int(^uint(0)>>1) {

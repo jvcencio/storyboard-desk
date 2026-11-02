@@ -1,0 +1,161 @@
+{
+  "title": "Existing 雪 project",
+  "brief": "Original brief",
+  "look": "",
+  "continuity": "",
+  "episode_notes": "",
+  "music_video": true,
+  "lyrics": "Original lyrics “here”.\n  Exact spaces",
+  "runtime_limit_seconds": 0.0,
+  "aspect": "16:9",
+  "shots": [
+    {
+      "title": "First",
+      "purpose": "",
+      "composition": "Framing",
+      "action": "",
+      "camera": "",
+      "sound": "",
+      "continuity": "",
+      "feedback": "",
+      "transition": "",
+      "scene": "Verse",
+      "story_status": "",
+      "dialogue": "",
+      "narration": "",
+      "audience": "",
+      "jorge": "",
+      "anomaly": "",
+      "start_state": "",
+      "end_state": "",
+      "screen_direction": "",
+      "assets_needed": "",
+      "reference_notes": "",
+      "blocking": "",
+      "local_prompt": "",
+      "local_negative_prompt": "",
+      "id": "first",
+      "duration": 5.0,
+      "assets": [
+        {
+          "id": "e2d9cf447f23",
+          "kind": "keyframe",
+          "path": "media/first/e2d9cf447f23.png",
+          "original_name": "雪.png",
+          "take": 1,
+          "bytes": 28,
+          "sha256": "dbbf19b9130033e8c93f07bd63a1efc5a4df31f84a4d05a0adeefe49c02f5761",
+          "at": "2026-11-02T17:09:26.209289+00:00",
+          "provider": "manual",
+          "keyframe_id": null,
+          "prompt_snapshot": {
+            "stem": "0010_first",
+            "composition": "Native 16:9 composition.\nFraming\nAPPEARANCE AND TREATMENT: \nSHARED CONTINUITY: \nSHOT CONTINUITY: \nFRAME: 16:9\n\nCreate a single clear STARTING composition for this story beat. Do not depict a later action or ending state.",
+            "local_draft": "Native 16:9. \nFraming\nStarting frame:",
+            "enhancement": "PROJECT: Existing 雪 project\nSHOT: 0010_first — First\nSTORY PURPOSE: \n\nAttach the selected composition image and the approved appearance references.\nPreserve the composition, subject placement, pose, framing and important props in the attached sketch.\nAPPEARANCE AND TREATMENT: \nSHARED CONTINUITY: \nSHOT CONTINUITY: \nFRAME: 16:9\nCOMPOSITION TO PRESERVE: Framing\nImprove the surface detail and apply the specified visual treatment. Keep the result suitable as the first frame of an animation.\nFRAME REQUIREMENT: Native 16:9 composition.",
+            "animation": "PROJECT: Existing 雪 project\nSHOT: 0010_first — First\nSTORY PURPOSE: \n\nAnimate the attached approved starter image.\nTARGET EDIT LENGTH: 5 seconds. Choose a supported generation length in Manual; trim the selected take to the target during review.\nSUBJECT ACTION AND TIMING: \nCAMERA: \nSOUND: \nAPPEARANCE AND TREATMENT: \nSHARED CONTINUITY: \nSHOT CONTINUITY: \nFRAME: 16:9\nENDING / CUT: \nMaintain the subject, wardrobe, objects and environment established in the starter image.\nMUSIC VIDEO: Generate silent picture only. Disable audio generation; no speech, music or sound effects. The original song is added in the edit.",
+            "animation_ready": false,
+            "provider": "manual",
+            "optimized_direction_ready": false,
+            "direction_review": null,
+            "direction_review_status": null,
+            "local_negative": ""
+          },
+          "future": {
+            "source": "preserve"
+          }
+        }
+      ],
+      "selected_sketch": null,
+      "selected_keyframe": "e2d9cf447f23",
+      "selected_clip": null,
+      "approval": {
+        "at": "2026-11-02T17:09:26.213725+00:00",
+        "asset_id": "e2d9cf447f23",
+        "fingerprint": "3a7282e9145e18b0d5fd0891879fc6a175a516676c064ed2a1b0c401d8d51d5e"
+      },
+      "animation_ready": true,
+      "future": {
+        "large": 900719925474099312345
+      },
+      "direction_review": {
+        "current_basis": "retained receipt"
+      }
+    },
+    {
+      "title": "Second",
+      "purpose": "",
+      "composition": "",
+      "action": "",
+      "camera": "",
+      "sound": "",
+      "continuity": "",
+      "feedback": "",
+      "transition": "",
+      "scene": "Chorus",
+      "story_status": "",
+      "dialogue": "",
+      "narration": "",
+      "audience": "",
+      "jorge": "",
+      "anomaly": "",
+      "start_state": "",
+      "end_state": "",
+      "screen_direction": "",
+      "assets_needed": "",
+      "reference_notes": "",
+      "blocking": "",
+      "local_prompt": "",
+      "local_negative_prompt": "",
+      "id": "second",
+      "duration": 5.0,
+      "assets": [],
+      "selected_sketch": null,
+      "selected_keyframe": null,
+      "selected_clip": null,
+      "approval": null,
+      "animation_ready": false
+    }
+  ],
+  "id": "664aadfb5b62",
+  "created_at": "2026-11-02T17:09:26.202911+00:00",
+  "revision": 5,
+  "references": [],
+  "visual_references": [],
+  "updated_at": "2026-11-02T17:09:26.223893+00:00",
+  "soundtrack": {
+    "id": "3f66318ccb25",
+    "path": "media/soundtrack/3f66318ccb25.wav",
+    "sha256": "c46ca7050a32b0bb5133651542091622b93b94b819c066ada3829abaee4b269e",
+    "bytes": 160044,
+    "original_name": "song.wav",
+    "duration_seconds": 10.0,
+    "sample_rate": 8000,
+    "channels": 1,
+    "at": "2026-11-02T17:09:26.217845+00:00"
+  },
+  "soundtrack_history": [],
+  "future": {
+    "large": 900719925474099312345,
+    "nested": [
+      "雪",
+      {
+        "enabled": true
+      }
+    ]
+  },
+  "music_sections": [
+    {
+      "id": "verse",
+      "label": "Verse",
+      "clips": [],
+      "coverage": [],
+      "start_seconds": 0,
+      "end_seconds": 10,
+      "future": {
+        "keep": true
+      },
+      "story_scene": "Verse"
+    }
+  ]
+}

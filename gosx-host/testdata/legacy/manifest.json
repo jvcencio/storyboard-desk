@@ -1,0 +1,17 @@
+{
+  "description": "Synthetic project written and derived by the retiring Python implementation. Never regenerate with Go. Includes opaque large integers, selected and approved keyframe, PCM soundtrack, section metadata, and untouched cloud receipt. Image fixture checks signature and byte preservation only. No live provider calls.",
+  "project_id": "664aadfb5b62",
+  "source_sha256": {
+    "server.py": "957580590133be814ea5f8de9bf39d40a373270580635eb0bbe288401e22abcd",
+    "sections.py": "9cb8430a2b5e969bdce59d91a63448a59d0cc70581a186e7f9d0738b7c9dcc1d",
+    "cloud.py": "b476d558b65610067a00866e47b0507790ef2ababba9e9f7825757aa251dc809",
+    "platform_support.py": "5ee245b7ae4ad3d532ca6442509649d8be2ec9489c12ebeaea9a15381eb8cdde",
+    "test_gosx_store.py": "0edbf69da0f5b302253ffdbe8e1bbb69447638ff20df9c3d98a342d2a3d317a7"
+  },
+  "file_sha256": {
+    "664aadfb5b62/project.json": "5dbd4a537d9b12ec6b3c949bb7b1a03093019c5ac674b8978e780faaa6c06e99",
+    "cloud/jobs/untouched.json": "7e4f8e545161b97e9aed834b602ace94246ea2b0018ec39e8bfc8d52874fbe1f",
+    "664aadfb5b62/media/soundtrack/3f66318ccb25.wav": "c46ca7050a32b0bb5133651542091622b93b94b819c066ada3829abaee4b269e",
+    "664aadfb5b62/media/first/e2d9cf447f23.png": "dbbf19b9130033e8c93f07bd63a1efc5a4df31f84a4d05a0adeefe49c02f5761"
+  }
+}

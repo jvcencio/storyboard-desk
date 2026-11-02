@@ -2,7 +2,7 @@
 
 A GoSX creative workspace for turning an idea into shots, takes and editable footage. Plan the story, keep reference images and alternative clips, generate selected takes, then export extra footage to shape in an editor.
 
-GoSX and Go are the default implementation. Windows opens a native WebView2 window; Mac and Linux open the GoSX browser workspace. The built app needs no Python, Node or legacy UI. Existing projects retain their format, media and approval/history records. The previous Python implementation remains an explicit fallback.
+GoSX and Go own the application. Windows opens a native WebView2 window; Mac and Linux open the GoSX browser workspace. Existing projects retain their format, media and approval/history records. Python code, launchers, build scripts and the legacy UI have been retired; the built app needs no Python or Node.
 
 ## Start Storyboard Desk
 
@@ -28,13 +28,13 @@ Stop the existing app and back up the complete data directory before switching i
 
 For inspection and silent video export, install FFmpeg/ffprobe with libx264 support and put them on PATH, or configure their paths. [FFmpeg's download page](https://ffmpeg.org/download.html) links platform builds. Existing Swift helpers remain an optional Mac route.
 
-## Explicit Python fallback
+## Background startup
 
-With Python 3.11+ installed, run `python3 launch.py --legacy`, or use **Start Storyboard Desk Legacy**. `python3 launch.py` now delegates to GoSX; it does not start the Python backend by default. Background/no-open compatibility arguments also select Go unless `--legacy` is present. `python3 launch.py --legacy --gosx` retains the old native host for a Python service, built with `python3 build_desktop.py`.
+For an on-demand launcher such as Mini Meter, run `./build/gosx/storyboard-desk-go -background -no-open`. It returns JSON with `app`, `url`, `status` and, for a new server, `pid`. Repeated launches reuse only a Go workspace with the same data directory and port. Logs live in `runtime/server.log` inside that directory. Existing integrations that called `launch.py --background --no-open` should call the Go executable with `-background -no-open` instead. Foreground startup accepts `-ask-openrouter-key`; background sessions can inherit the server's environment key.
 
 ## First useful session
 
-The Go workspace starts empty; the explicit Python fallback creates a small demo. Create a project, edit its direction, import an image or clip, and compare takes. For a blank three-shot episode, import [the reusable project template](templates/storyboard-project-template.json).
+The Go workspace starts empty. Create a project, edit its direction, import an image or clip, and compare takes. For a blank three-shot episode, import [the reusable project template](templates/storyboard-project-template.json).
 
 For a music video:
 
@@ -89,21 +89,21 @@ An unavailable configured `/Volumes/...` drive is never replaced with a newly cr
 
 ## Development
 
-The independent workspace uses Go services and GoSX Node components with embedded CSS/JavaScript affordances. The retained implementation uses Python's standard library and buildless browser assets. Swift helpers are optional media adapters.
+The workspace uses Go services and GoSX Node components with embedded CSS/JavaScript affordances. Swift helpers are optional media adapters. Captured synthetic legacy projects and expected outputs keep compatibility checks independent of the retired runtime.
 
 ```sh
-python3 -m unittest discover -s . -p 'test_*.py' -v
 go -C gosx-host test -race ./...
 go -C gosx-host vet ./...
 go -C gosx-host run ./cmd/package -target linux-amd64
 # Optional JavaScript syntax check if Node is installed:
-for file in static/*.js; do node --check "$file"; done
 node --check gosx-host/workspace.js
+\n+# Optional macOS AVFoundation helpers (Apple Command Line Tools required):
+go -C gosx-host run ./cmd/native
 
 # Use a separate data folder and port for development:
 go -C gosx-host run . -browser -data-dir /path/to/development-projects -init-data-dir -port 4493
 ```
 
-Tests use temporary stores and fake cloud clients; they do not spend model credits. GitHub CI tests Windows, Linux and Mac, exercises actual FFmpeg exports, and builds the GoSX desktop hosts and optional Mac helpers.
+Tests use temporary stores and fake cloud clients; they do not spend model credits. GitHub CI runs Go tests on Windows, Linux and Mac, exercises actual FFmpeg exports, and builds the GoSX packages and optional Mac helpers. See the [retirement verification](docs/gosx-retirement-verification.json) for executed checks and remaining target-specific limits.
 
 This repository contains application source and a generic demo. Personal projects, lyrics, reference/media libraries, cloud-job receipts, handoff packets, logs, local configuration and built executables are excluded by an explicit source allowlist. No license for public redistribution has been selected.

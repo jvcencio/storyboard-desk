@@ -6,21 +6,9 @@
 !/README.md
 !/settings.example.json
 !/Start Storyboard Desk.command
-!/server.py
-!/sections.py
-!/cloud.py
-!/cloud_catalog.json
-!/launch.py
-!/settings.py
-!/build_native.py
-!/build_desktop.py
-!/platform_support.py
-!/media_tools.py
 !/Start Storyboard Desk.bat
 !/Start Storyboard Desk Go.command
 !/Start Storyboard Desk Go.bat
-!/Start Storyboard Desk Legacy.command
-!/Start Storyboard Desk Legacy.bat
 !/gosx-host/
 /gosx-host/*
 !/gosx-host/go.mod
@@ -35,16 +23,20 @@
 !/gosx-host/cmd/package/
 /gosx-host/cmd/package/*
 !/gosx-host/cmd/package/*.go
+!/gosx-host/cmd/native/
+/gosx-host/cmd/native/*
+!/gosx-host/cmd/native/*.go
+!/gosx-host/testdata/
+/gosx-host/testdata/*
+!/gosx-host/testdata/legacy/
+!/gosx-host/testdata/legacy/**
 !/cowboy.json
 !/templates/
 /templates/*
 !/templates/storyboard-project-template.json
-!/test_*.py
 !/media_probe.swift
 !/export_range.swift
 !/export_reel.swift
-!/static/
-!/static/**
 !/tests/
 /tests/*
 !/tests/make_video_fixture.swift
@@ -62,6 +54,7 @@
 !/docs/gosx-windows-initial.png
 !/docs/gosx-windows-native.png
 !/docs/gosx-windows-verification.json
+!/docs/gosx-retirement-verification.json
 !/.github/
 /.github/*
 !/.github/workflows/

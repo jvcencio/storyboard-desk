@@ -209,6 +209,16 @@ func (s *ProjectStore) SaveSection(id string, rev int, raw ProjectDocument) (Pro
 			return err
 		}
 		name := strings.TrimSpace(shotText(raw, "label"))
+		for _, key := range []string{"start_seconds", "end_seconds"} {
+			if err := validateNumber(raw[key], 0, number(track, "duration_seconds")); err != nil {
+				return fmt.Errorf("invalid section %s: %w", key, err)
+			}
+		}
+		if value, ok := raw["note"]; ok {
+			if err := validateText(value); err != nil {
+				return err
+			}
+		}
 		start, end := number(raw, "start_seconds"), number(raw, "end_seconds")
 		kind := shotText(raw, "kind")
 		if len([]rune(name)) < 1 || len([]rune(name)) > 100 || !finite(start) || !finite(end) || start < 0 || end <= start || end > number(track, "duration_seconds") || !containsField(musicKinds, kind) {
@@ -314,15 +324,17 @@ func (s *ProjectStore) SectionEdit(id, sid string, rev int, raw ProjectDocument,
 		if err != nil {
 			return err
 		}
-		if _, err = soundtrack(p, section); err != nil {
-			return err
+		operation := shotText(raw, "operation")
+		if !coverage || operation == "add" || (operation == "update" && boolean(raw, "exclusive")) {
+			if _, err = soundtrack(p, section); err != nil {
+				return err
+			}
 		}
 		key := "clips"
 		if coverage {
 			key = "coverage"
 		}
 		rows := list(section, key)
-		operation := shotText(raw, "operation")
 		sectionHistory(p)
 		if operation == "add" {
 			limit := 200
@@ -337,6 +349,18 @@ func (s *ProjectStore) SectionEdit(id, sid string, rev int, raw ProjectDocument,
 				return err
 			}
 			start, end := number(raw, "in_seconds"), number(raw, "out_seconds")
+			for _, key := range []string{"in_seconds", "out_seconds"} {
+				if err := validateNumber(raw[key], 0, 7200); err != nil {
+					return err
+				}
+			}
+			for _, key := range []string{"duration_seconds"} {
+				if v, ok := raw[key]; ok {
+					if err := validateNumber(v, 0, 7200); err != nil {
+						return err
+					}
+				}
+			}
 			duration, err := sectionRange(a, start, end, number(raw, "duration_seconds"))
 			if err != nil {
 				return err
@@ -348,10 +372,17 @@ func (s *ProjectStore) SectionEdit(id, sid string, rev int, raw ProjectDocument,
 			}
 			e["id"] = rawValue(uid)
 			if coverage {
+				for _, key := range []string{"angle", "note", "music_tag"} {
+					if v, ok := raw[key]; ok {
+						if err := validateText(v); err != nil {
+							return err
+						}
+					}
+				}
 				key := coverageKey(e)
 				for _, row := range rows {
 					if coverageKey(row) == key {
-						return nil
+						return errNoProjectChange
 					}
 				}
 				e["id"] = rawValue(coverageID(key))
@@ -414,7 +445,14 @@ func (s *ProjectStore) SectionEdit(id, sid string, rev int, raw ProjectDocument,
 				}
 				rows = append(rows[:index], rows[index+1:]...)
 			case "move":
-				delta := int(number(raw, "delta"))
+				if err := validateNumber(raw["delta"], -1, 1); err != nil {
+					return err
+				}
+				n := number(raw, "delta")
+				if n != 1 && n != -1 {
+					return fmt.Errorf("choose an earlier or later position")
+				}
+				delta := int(n)
 				if (delta != 1 && delta != -1) || index+delta < 0 || index+delta >= len(rows) {
 					return fmt.Errorf("choose an earlier or later position")
 				}
@@ -448,27 +486,31 @@ func (s *ProjectStore) SectionEdit(id, sid string, rev int, raw ProjectDocument,
 						row[k] = v
 					}
 				}
-				start, end := number(row, "in_seconds"), number(row, "out_seconds")
-				if v, ok := raw["in_seconds"]; ok {
-					if err := validateNumber(v, 0, 7200); err != nil {
+				_, hasStart := raw["in_seconds"]
+				_, hasEnd := raw["out_seconds"]
+				if !coverage || hasStart || hasEnd {
+					start, end := number(row, "in_seconds"), number(row, "out_seconds")
+					if v, ok := raw["in_seconds"]; ok {
+						if err := validateNumber(v, 0, 7200); err != nil {
+							return err
+						}
+						start = number(raw, "in_seconds")
+					}
+					if v, ok := raw["out_seconds"]; ok {
+						if err := validateNumber(v, 0, 7200); err != nil {
+							return err
+						}
+						end = number(raw, "out_seconds")
+					}
+					_, a, _, err := s.sectionSource(p, shotText(row, "source_shot"), shotText(row, "source_asset"))
+					if err != nil {
 						return err
 					}
-					start = number(raw, "in_seconds")
-				}
-				if v, ok := raw["out_seconds"]; ok {
-					if err := validateNumber(v, 0, 7200); err != nil {
+					if _, err = sectionRange(a, start, end, number(row, "source_duration_seconds")); err != nil {
 						return err
 					}
-					end = number(raw, "out_seconds")
+					row["in_seconds"], row["out_seconds"] = rawValue(start), rawValue(end)
 				}
-				_, a, _, err := s.sectionSource(p, shotText(row, "source_shot"), shotText(row, "source_asset"))
-				if err != nil {
-					return err
-				}
-				if _, err = sectionRange(a, start, end, number(row, "source_duration_seconds")); err != nil {
-					return err
-				}
-				row["in_seconds"], row["out_seconds"] = rawValue(start), rawValue(end)
 			default:
 				return fmt.Errorf("unknown section operation")
 			}

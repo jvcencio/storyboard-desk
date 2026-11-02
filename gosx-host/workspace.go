@@ -201,7 +201,7 @@ func (h *workspaceHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 	if r.Method == "GET" && r.URL.Path == "/api/health" {
 		rw.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(rw, `{"app":"Storyboard Desk","backend":"go","version":"0.12.0"}`)
+		json.NewEncoder(rw).Encode(map[string]string{"app":"Storyboard Desk","backend":"go","version":"0.12.0","storage":storageIdentity(h.store.path)})
 		return
 	}
 	if r.Method == "GET" && r.URL.Path == "/download/script" {

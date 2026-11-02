@@ -186,10 +186,17 @@ func copyImportedFile(dir *os.Root, rel string, src io.Reader, length int64) (st
 		return "", err
 	}
 	head := make([]byte, 32)
-	n, _ := f.Read(head)
-	f.Close()
-	if !mediaSignature(strings.ToLower(filepath.Ext(rel)), head[:n]) {
-		return "", fmt.Errorf("file contents do not match its extension")
+	n, readErr := io.ReadFull(f, head)
+	closeErr = f.Close()
+	if readErr != nil && readErr != io.EOF && readErr != io.ErrUnexpectedEOF {
+		return "", fmt.Errorf("could not verify the copied media: %w", readErr)
+	}
+	if closeErr != nil {
+		return "", closeErr
+	}
+	ext := strings.ToLower(filepath.Ext(rel))
+	if !mediaSignature(ext, head[:n]) {
+		return "", fmt.Errorf("file contents do not match the %s extension; export the original in that format and import the exported file", ext)
 	}
 	if err = replaceStoredFile(dir, temp, rel); err != nil {
 		return "", err

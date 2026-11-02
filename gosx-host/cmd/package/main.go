@@ -150,6 +150,20 @@ func run() error {
 		if err = os.WriteFile(filepath.Join(macos, "storyboard-desk-go"), data, 0755); err != nil {
 			return err
 		}
+		if runtime.GOOS == "darwin" && runtime.GOARCH == parts[1] {
+			for _, name := range []string{"media_probe", "export_range", "export_reel"} {
+				data, e := os.ReadFile(filepath.Join(filepath.Dir(module), name))
+				if os.IsNotExist(e) {
+					continue
+				}
+				if e != nil {
+					return e
+				}
+				if err = os.WriteFile(filepath.Join(macos, name), data, 0755); err != nil {
+					return err
+				}
+			}
+		}
 		script := "#!/bin/sh\nexec \"$(dirname \"$0\")/storyboard-desk-go\" -native \"$@\"\n"
 		if err = os.WriteFile(filepath.Join(macos, "start-workspace"), []byte(script), 0755); err != nil {
 			return err

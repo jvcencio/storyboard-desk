@@ -17,9 +17,9 @@ go run ./cmd/package
 go run . -browser -data-dir /absolute/path/to/existing-projects
 ```
 
-The standard **Start Storyboard Desk.command** and **Start Storyboard Desk.bat** launch GoSX. They prefer `build/gosx/storyboard-desk-go[.exe]`, then a module-local binary, then Go from source. `STORYBOARD_GO_EXECUTABLE` selects an explicit binary; a bad override fails instead of switching backends. **Start Storyboard Desk Go** remains an alias. `python launch.py` also delegates to Go; `--legacy` or **Start Storyboard Desk Legacy** explicitly selects Python.
+The standard **Start Storyboard Desk.command** and **Start Storyboard Desk.bat** launch GoSX. They prefer `build/gosx/storyboard-desk-go[.exe]`, then a module-local binary, then Go from source. `STORYBOARD_GO_EXECUTABLE` selects an explicit binary; a bad override fails instead of switching backends. **Start Storyboard Desk Go** remains an alias. Python launch/build scripts, the legacy UI and its service bridge have been removed.
 
-No Python, Node, npm or frontend compiler is required by a built Go app. `-browser` overrides Windows native hosting. `-no-open` prints the address without opening either a window or browser (an explicitly supplied `-native` still selects native hosting). `-port 0` chooses a random loopback port. `-editor` opens the same workspace on a random port without a browser. Existing `-workspace` invocations remain supported. Explicit `-url`, `-check`, `-board-preview` and `-editor` modes retain their prior contracts.
+No Python, Node, npm or frontend compiler is required by a built Go app. `-browser` overrides Windows native hosting. `-no-open` prints the address without opening either a window or browser (an explicitly supplied `-native` still selects native hosting). `-port 0` chooses a random loopback port. `-editor` opens the same workspace on a random port without a browser. Existing `-workspace` invocations remain supported. `-check -url http://127.0.0.1:PORT/` verifies an existing Go workspace. The retired Python service bridge is no longer a host mode.
 
 The workspace reads existing `settings.local.json` and documented `STORYBOARD_*` environment variables. Use `-settings /path/to/settings.local.json` for an explicit file. Precedence is command flags, environment, local settings, then OS defaults. A fresh OS-default data directory can be initialized automatically; a custom missing directory requires `-init-data-dir`. An unavailable `/Volumes` mount is never recreated. A new Go workspace starts empty; use **New project** or import the reusable template.
 
@@ -47,13 +47,13 @@ For manual review, download the image/brief ZIP from **Plans & handoffs**, attac
 
 ## Storage compatibility and rollback
 
-Updated Python and Go stores hold the same `.storyboard-owner.lock` for their lifetime. A second writer fails before opening. A crash releases the OS lock; do not delete its file while a process runs. Go also holds an existing legacy `cloud/worker.lock`. Stop older builds before upgrading: they do not implement the root ownership protocol.
+Go and the last migration-era Python store hold the same `.storyboard-owner.lock` for their lifetime. A second writer fails before opening. A crash releases the OS lock; do not delete its file while a process runs. Go also holds an existing legacy `cloud/worker.lock`. Stop older builds before upgrading: they do not implement the root ownership protocol.
 
-Go patches existing `project.json` files. IDs, paths, selections, approval/history records, source bytes and unknown JSON survive normal edits. Approval, direction and music timing use current inputs and Python-compatible fingerprints. Tests reopen complete Go projects, media, cues, sections and fake job receipts through Python loaders.
+Go patches existing `project.json` files. IDs, paths, selections, approval/history records, source bytes and unknown JSON survive normal edits. Approval, direction and music timing use current inputs and Python-compatible fingerprints. Always-on Go tests read captured Python-created project/oracle fixtures and reopen complete Go projects, media, cues, sections and fake job receipts. The original bidirectional Python-loader checks are retained as historical verification evidence.
 
 Writes flush a private temporary file, replace the document and sync the directory on Unix. Windows uses replacement/write-through after flushing. Incomplete temporary files/staging directories are ignored after a crash. Unsafe paths, replaced roots and invalid documents are rejected. Device/power-loss behavior depends on the filesystem; retain backups.
 
-To switch back, stop Go and run `python3 launch.py --legacy` against the same configured directory, or use **Start Storyboard Desk Legacy**. No conversion is required. Back up the **whole data directory**, including root-level `cloud/` reservations/jobs. Restoring an old backup does not undo provider charges: reconcile account activity before new generation. For rollback to an older app version, restore a complete backup to a separate directory after stopping every writer.
+Python is available in repository history rather than as an installed fallback. Back up the **whole data directory**, including root-level `cloud/` reservations/jobs. For rollback to an older app version, stop every writer and restore a complete backup to a separate directory. Restoring a backup does not undo provider charges: reconcile account activity before new generation.
 
 ## Build and verify
 
@@ -68,9 +68,12 @@ go vet ./...
 
 The Windows packager verifies the pinned Microsoft WebView2 SDK checksum and places its matching loader/license beside the executable and standard batch launcher. The Evergreen runtime is separate. Mac packaging creates **Storyboard Desk.app**, whose bundle launcher explicitly selects native hosting; signing/notarization and real Mac execution remain pending. Builds retain Git revision stamping.
 
-From the repository root, run `python3 -m unittest discover -s . -p 'test_*.py' -v` for compatibility/regression checks. Python is a migration test oracle, not a built-app dependency. `board.gsx` and checked-in `board_generated.go` remain the typed shot-card source/output; the complete workspace uses GoSX Node/component APIs in `workspace*.go`, embedded CSS and small browser playback/form affordances. It does not load `static/app.js`.
+Compatibility tests are Go-only. The frozen synthetic fixture in `gosx-host/testdata/legacy` records its original source hashes, file hashes and expected approval, direction, prompt and timing outputs. Never regenerate its oracle with Go. The suite exercises opaque fields/large integers, revision/CSRF rejection, source preservation, editing/undo, reservations, exports, fake provider/local jobs, and actual built-app launch with an empty PATH.
 
-For a static read-only board, `go run . -board-preview -data-dir /path/to/projects` briefly acquires ownership and prints HTML containing project data. The legacy `-url` bridge remains available for an already-running Python service.
+`board.gsx` and checked-in `board_generated.go` remain the typed shot-card source/output; the complete workspace uses GoSX Node/component APIs in `workspace*.go`, embedded CSS and small browser playback/form affordances. CI installs the pinned GoSX compiler on Linux to check generated-source parity. No frontend build step is required. On Mac, `go -C gosx-host run ./cmd/native` builds the optional Swift helpers; native tests run on Mac CI and matching-architecture helpers are copied into the app bundle.
+
+For on-demand background launch, run the built executable with `-background -no-open` and a fixed port. Startup returns JSON. It reuses only the matching Go backend and data directory, serializes concurrent starts, and keeps `runtime/server.log` in that directory. Update Mini Meter or other integrations that previously called `launch.py` to invoke this command.
+
 
 ## Remaining release gates
 
@@ -78,4 +81,4 @@ Linux browser workflows, real FFmpeg processing, fake-provider/local-render reco
 
 Windows UI checks use WebView2's temporary debugging connection because the desktop computer-use connector cannot attach to this WSL checkout. File inputs use Playwright payloads, and downloads use an isolated test directory; native picker/save-dialog interaction is not certified. No debugging flags are added to normal launchers.
 
-Real Mac native execution, interactive Windows file dialogs, actual Swift/Draw Things, controlled live-provider checks and Final Cut/iMovie imports remain open. GoSX is now the normal launch path; Python remains an explicit fallback until those broader retirement gates pass.
+Real Mac native execution, interactive Windows file dialogs, actual Swift/Draw Things, controlled live-provider checks and Final Cut/iMovie imports remain open. Python has been retired at the requested cutover. These platform/integration limits remain visible release verification work; retirement does not certify unexecuted integrations. See the [retirement report](gosx-retirement-verification.json) for current checks; earlier reports identify their historical source snapshots.
