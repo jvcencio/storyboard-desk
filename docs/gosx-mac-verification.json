@@ -285,5 +285,37 @@
     "TestStorageWriterProcess is a child-process test helper; the actual ownership/crash tests pass.",
     "Actual Draw Things, live paid-provider requests and real iMovie/Final Cut imports were not exercised.",
     "No distribution signing/notarization is claimed."
-  ]
+  ],
+  "updated_go_client_verification": {
+    "status": "passed",
+    "source_commit": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+    "source_worktree_clean": true,
+    "environment": {
+      "hardware": "Apple M1 Max, arm64",
+      "macos": "26.6.2",
+      "go": "1.26.5",
+      "browser": "Google Chrome 156.0.8078.76, isolated headless profile"
+    },
+    "package": {
+      "path": "~/work/storyboard-desk/build/gosx/Storyboard Desk.app",
+      "binary_sha256": "b09efba8ba74542d1ab227e22b6352c40f017531e8d6d541754e95b6fc165938",
+      "CGO_ENABLED": "0",
+      "GOARCH": "arm64",
+      "vcs_revision": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+      "vcs_modified": false
+    },
+    "desktop_app_relaunched": false,
+    "foreground_ui_automation": false,
+    "limits": "Headless browser/native Save adapter tests do not prove the updated native WKWebView or the real Save dialog.",
+    "race_passes": 69,
+    "race_skips": [
+      "TestGoSXGeneratedShotCard",
+      "TestStorageWriterProcess"
+    ],
+    "browser_passes": 3,
+    "vet_exit_code": 0,
+    "native_helper_build_exit_code": 0,
+    "detailed_report": "gosx-go-client-verification.json",
+    "report_section": "mac_background_checks"
+  }
 }

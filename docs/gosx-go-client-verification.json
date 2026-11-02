@@ -1,6 +1,6 @@
 {
   "purpose": "Replace application JavaScript with Go-WASM, remove the Node toolchain, and repair native export saving while preserving projects.",
-  "verified_at_utc": "2026-11-02T20:09:00.890321+00:00",
+  "verified_at_utc": "2026-11-02T20:18:11.930072+00:00",
   "tested_source": {
     "base_commit": "2a084404a103baaa59cb0cc0401bb93334f329d5",
     "working_tree_changes": true,
@@ -94,7 +94,14 @@
     },
     "deleted": [
       "gosx-host/workspace.js"
-    ]
+    ],
+    "equivalent_committed_source": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+    "git_eol_normalized_paths": [
+      "Start Storyboard Desk.bat"
+    ],
+    "git_blob_sha256_for_eol_paths": {
+      "Start Storyboard Desk.bat": "a7aa800f3903deeedbcb45a67cf1fd3be756e07348a3e55d6dc9ec78e6fc787f"
+    }
   },
   "toolchain": {
     "application": "Go 1.26+, pinned GoSX 0.57.24 Go-WASM engine builder",
@@ -248,10 +255,148 @@
   "screenshots": {
     "desktop": "gosx-go-client-desktop.png",
     "mobile": "gosx-go-client-mobile.png",
-    "environment": "Actual Go-WASM UI in isolated headless Linux Chrome; separately captured Mac native screenshot is source 2a08440."
+    "environment": "Actual Go-WASM UI in isolated headless Chrome on Jorge’s physical Apple Silicon Mac, source cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+    "capture_source_commit": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+    "desktop_sha256": "08bf473c74a6b07ec6c614144c2a25015fd1589a25f9d093a1ba9cd9bbdb82ab",
+    "mobile_sha256": "e86bc39a09ccf4dd08b6cb7906492dba591246344d479f1eaac6b8de71db00b5"
   },
   "mac_background_checks": {
-    "status": "pending source sync and target execution"
+    "status": "passed",
+    "source_commit": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+    "source_worktree_clean": true,
+    "environment": {
+      "hardware": "Apple M1 Max, arm64",
+      "macos": "26.6.2",
+      "go": "1.26.5",
+      "browser": "Google Chrome 156.0.8078.76, isolated headless profile"
+    },
+    "race": {
+      "passed_cases": [
+        "TestShotCardRendersAndEscapesProjectContent",
+        "TestRenderBoardListsProjectsAndEscapesShotFields",
+        "TestCloudConfirmationBudgetAndIdempotentImageImport",
+        "TestCloudUnknownRequestKeepsReservationAndIsNeverReplayed",
+        "TestCloudStaleQuotesAndChangedReferencesFailBeforeSubmission",
+        "TestCloudReportedCostAboveEstimateAndBriefApproval",
+        "TestCloudVideoResumesExistingJobAndPreservesStarterBinding",
+        "TestProviderRejectsArbitraryEndpointsBeforeReadingCredentials",
+        "TestCompleteCompatibilityFixture",
+        "TestLocalDrawingSnapshotsOfflineArgumentsAndIdempotentRecovery",
+        "TestLocalDrawingCancellationAndCriticalMemoryPreserveMedia/false",
+        "TestLocalDrawingCancellationAndCriticalMemoryPreserveMedia/true",
+        "TestLocalDrawingCancellationAndCriticalMemoryPreserveMedia",
+        "TestReviewedDirectionImportUsesCurrentImageAndBasis",
+        "TestCoverageCollectionPreservesAssemblyAndEditorialNotes",
+        "TestCoverageReservationSurvivesTrackReplacementAndBlocksDuplicateBytes",
+        "TestInvalidSectionInputsAndPortionBatchesNeverWrite",
+        "TestPlacementsFlattenLineageAndUndoProtectsLaterSelection",
+        "TestLargeEpisodeAndDirectionContextCompatibility",
+        "TestLegacyFixtureIntegrityAndUnchangedMedia",
+        "TestOnlyExplicitLoopbackRootIsAccepted",
+        "TestHealthRejectsAnotherAppAndRedirects",
+        "TestMediaImportApprovalBinAndRangeServing",
+        "TestMultipartImportAndTraversalRejection",
+        "TestActualFFmpegImportPlacementAndSilentExport",
+        "TestLegacyDerivedParity",
+        "TestMusicPortionsCuesAndUndo",
+        "TestActualSectionCoverageReservationsAndExports",
+        "TestActualMacNativeMediaHelpers",
+        "TestGoSettingsPreserveOverridesAndRejectCredentials",
+        "TestChildProcessesDoNotInheritGenerationKey",
+        "TestStandaloneLegacyProjectRoundTripWithoutToolRuntimes",
+        "TestStandaloneBackgroundStartupReusesOnlyMatchingGoStorage",
+        "TestReadProjectPreservesExistingData",
+        "TestReadProjectRejectsBadInputWithoutCreatingFiles",
+        "TestReadProjectDoesNotFollowProjectDirectorySymlink",
+        "TestReadProjectDoesNotFollowProjectFileSymlink",
+        "TestReadLegacyProjectFixture",
+        "TestStorePreservesLegacyDataAcrossEditsAndReopen",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/stale",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/missing_shot",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/media_injection",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/unknown_mutation",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/bad_duration",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/invalid_raw_number",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/padded_null",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/null_title",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/long_text",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/bad_aspect",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/bad_music_flag",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/bad_insert",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/missing_anchor",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/remove_by_reorder",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/replace_by_reorder",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/traversal",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting",
+        "TestStoreConcurrentCommandsOnlyOneRevisionWins",
+        "TestStoreOwnershipAndUnavailablePaths",
+        "TestStoreRejectsSymlinksAndReplacedRoot",
+        "TestStoreIgnoresCrashTempsAndRejectsMalformedProjects",
+        "TestStoreSceneEditHonorsExistingCoverageReservation",
+        "TestStoreSurvivesWriterProcessCrash",
+        "TestNativeExportSaveCancelAndCopy",
+        "TestNativeDownloadAuthorizationPathsAndErrors",
+        "TestExportCopyPreservesDestinationOnFailureAndProtectsStorage/symlink",
+        "TestExportCopyPreservesDestinationOnFailureAndProtectsStorage",
+        "TestWorkspaceCoreCommandsAndRejectedDrafts",
+        "TestTemplateAndPlanPreserveMediaAndUnknownData",
+        "TestSceneFilterChoosesShotFromThatScene"
+      ],
+      "skipped_cases": [
+        "TestGoSXGeneratedShotCard",
+        "TestStorageWriterProcess"
+      ],
+      "failures": [],
+      "log_sha256": "462a08a2f7d207bc53d921ccfb6374fcddadd846559de1655caf9f4a973df580"
+    },
+    "browser": {
+      "passed_cases": [
+        "TestWorkspaceGoClientFormsFilesAndNativeSaving",
+        "TestWorkspaceGoClientMediaImportMetadataAndCoverage",
+        "TestWorkspaceGoClientReviewAndCloudControls"
+      ],
+      "skipped_cases": [],
+      "failures": [],
+      "log_sha256": "c7045b0973c00f71e0c8a215a071d05edc6f765aefcc9dd891f3943372eda257"
+    },
+    "vet_exit_code": 0,
+    "native_helper_build_exit_code": 0,
+    "package_exit_code": 0,
+    "package": {
+      "path": "~/work/storyboard-desk/build/gosx/Storyboard Desk.app",
+      "binary_sha256": "b09efba8ba74542d1ab227e22b6352c40f017531e8d6d541754e95b6fc165938",
+      "CGO_ENABLED": "0",
+      "GOARCH": "arm64",
+      "vcs_revision": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+      "vcs_modified": false
+    },
+    "generated_module": {
+      "file": "workspace.7bdc551a5f547895.wasm",
+      "hash": "7bdc551a5f547895",
+      "size": 5407943,
+      "gzipSize": 1472933,
+      "brotliSize": 1223156
+    },
+    "desktop_app_relaunched": false,
+    "foreground_ui_automation": false,
+    "evidence_sha256": {
+      "binary.sha256": "99f66156b4ff190155847d0b0296fc234fa0235de69ae4e4977bb316c28d410b",
+      "browser.jsonl": "c7045b0973c00f71e0c8a215a071d05edc6f765aefcc9dd891f3943372eda257",
+      "browser.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "buildinfo.txt": "e9cc925210a3379d80c5dc288b62548aadee9b5e3c0d5301ba0381f841565646",
+      "client-build.log": "9b26a6684dc246165335494e90657d648382bdb0420d5d885440f31d19f13959",
+      "client-manifest.json": "39426003d0eba55a2742ddad65fe2250b345b1a86b3f21a5c69a5ba9ade4e9c8",
+      "desktop.png": "08bf473c74a6b07ec6c614144c2a25015fd1589a25f9d093a1ba9cd9bbdb82ab",
+      "mobile.png": "e86bc39a09ccf4dd08b6cb7906492dba591246344d479f1eaac6b8de71db00b5",
+      "native-build.log": "be6815abe2c665299dd8b839ec34877d631c2b0eecda33ff6e25d9bb357f94f3",
+      "package.log": "7617f1dbec31db0211365f3dd0ff707b057aa41dd958e3a1724242cc08d8d800",
+      "race.jsonl": "462a08a2f7d207bc53d921ccfb6374fcddadd846559de1655caf9f4a973df580",
+      "race.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "run.state": "2700165975f68815c97d605c56eca8e90d497ade1264b6282401d13fee99ac27",
+      "source-status.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "limits": "Headless browser/native Save adapter tests do not prove the updated native WKWebView or the real Save dialog."
   },
   "limits": [
     "Injected native dialog results in browser tests prove the Go save adapter and UI behavior, not OS dialog interaction.",
