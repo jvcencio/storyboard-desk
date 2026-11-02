@@ -379,6 +379,8 @@ func TestWorkspaceGoClientReviewAndCloudControls(t *testing.T) {
 		browserText("[data-review-status]", "Shot 1 of 1"), chromedp.Click("[data-review-play]", chromedp.ByQuery),
 		chromedp.WaitReady(`[data-review-play][aria-pressed="true"]`, chromedp.ByQuery),
 		chromedp.Click("[data-review-play]", chromedp.ByQuery),
+		chromedp.WaitReady(`[data-review-play][aria-pressed="false"]`, chromedp.ByQuery),
+		browserText("[data-review-status]", "Shot 1 of 1"),
 		chromedp.AttributeValue("[data-review-play]", "aria-pressed", &pressed, nil, chromedp.ByQuery),
 	); err != nil {
 		t.Fatal(err)

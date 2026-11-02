@@ -403,5 +403,23 @@
     "Updated WKWebView Go-WASM rendering and final native Save dialog verification remain pending to respect the requested background-only remote work.",
     "Historical Windows native evidence belongs to its recorded source revision; the new native Save adapter still needs interactive Windows verification.",
     "No live paid provider, actual Draw Things model, or iMovie/Final Cut import was exercised."
-  ]
+  ],
+  "browser_test_followup": {
+    "reason": "CI read aria-pressed immediately after a click and observed the previous state.",
+    "change": "Wait for aria-pressed=false and verify Shot 1 of 1 before reading the pause state; natural sequence completion cannot satisfy the check.",
+    "source_path": "gosx-host/workspace_browser_test.go",
+    "source_sha256": "79a79c9a242cc0de2e8452faf330c1a4f7b57a4acbac70d380e8d9832a12f758",
+    "linux_playback_repetitions_passed": 5,
+    "linux_log_sha256": "9f7b5d17d7f73f538006d2ae18e9e5fa328aef8a3c951a1923083b14acc632fe",
+    "mac_browser_cases_passed": [
+      "TestWorkspaceGoClientFormsFilesAndNativeSaving",
+      "TestWorkspaceGoClientMediaImportMetadataAndCoverage",
+      "TestWorkspaceGoClientReviewAndCloudControls"
+    ],
+    "mac_log_sha256": "9074ecbe04029a5164d650abb71ceada728ab8796704969ef7c53f23b88215ae",
+    "mac_source_checkout_clean": true,
+    "mac_test_method": "Go test overlay of this one hash-bound test file on source 019a3bd; source checkout unchanged.",
+    "application_source_unchanged_from": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+    "native_ui_retested": false
+  }
 }
