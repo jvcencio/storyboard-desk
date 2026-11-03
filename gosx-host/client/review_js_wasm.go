@@ -15,7 +15,7 @@ import (
 )
 
 type reviewPlayer struct {
-	ui                    *workspaceClient
+	*eventScope
 	shots                 []js.Value
 	audio, status, button js.Value
 	index                 int
@@ -33,8 +33,8 @@ func dataNumber(node js.Value, name string) float64 {
 	return n
 }
 
-func (ui *workspaceClient) review(root js.Value) {
-	p := &reviewPlayer{ui: ui, audio: query(root, "[data-review-audio]"), status: query(root, "[data-review-status]"), button: query(root, "[data-review-play]")}
+func mountReview(parent context.Context, root js.Value) *reviewPlayer {
+	p := &reviewPlayer{eventScope: newEventScope(parent), audio: query(root, "[data-review-audio]"), status: query(root, "[data-review-status]"), button: query(root, "[data-review-play]")}
 	each(root, "[data-review-shot]", func(shot js.Value) {
 		p.shots = append(p.shots, shot)
 		video := query(shot, "video")
@@ -51,23 +51,31 @@ func (ui *workspaceClient) review(root js.Value) {
 				seek(video, dataNumber(shot, "start"))
 			}
 		}
-		ui.on(video, "loadedmetadata", metadata)
+		p.on(video, "loadedmetadata", metadata)
 		if video.Get("readyState").Int() > 0 {
 			metadata(js.Undefined())
 		}
 	})
-	ui.on(p.button, "click", func(js.Value) {
+	p.on(p.button, "click", func(js.Value) {
 		if p.playing {
 			p.pause()
 		} else {
 			p.play()
 		}
 	})
-	ui.on(query(root, "[data-review-prev]"), "click", func(js.Value) { p.index = max(0, p.index-1); p.show() })
-	ui.on(query(root, "[data-review-next]"), "click", func(js.Value) { p.index = max(0, min(len(p.shots)-1, p.index+1)); p.show() })
-	ui.on(js.Global(), "pagehide", func(js.Value) { p.pause() })
-	ui.players = append(ui.players, p)
+	p.on(query(root, "[data-review-prev]"), "click", func(js.Value) { p.index = max(0, p.index-1); p.show() })
+	p.on(query(root, "[data-review-next]"), "click", func(js.Value) { p.index = max(0, min(len(p.shots)-1, p.index+1)); p.show() })
+	p.on(js.Global(), "pagehide", func(js.Value) { p.pause() })
 	p.show()
+	return p
+}
+
+func (p *reviewPlayer) Dispose() {
+	if p.disposed {
+		return
+	}
+	p.pause()
+	p.eventScope.Dispose()
 }
 
 func seek(media js.Value, seconds float64) {
@@ -115,7 +123,7 @@ func (p *reviewPlayer) show() {
 }
 
 func (p *reviewPlayer) play() {
-	if p.ui.disposed || len(p.shots) == 0 {
+	if p.disposed || len(p.shots) == 0 {
 		return
 	}
 	shot := p.shots[p.index]
@@ -135,11 +143,11 @@ func (p *reviewPlayer) play() {
 	}
 	if p.audio.Truthy() {
 		audioPromise := p.audio.Call("play")
-		go func() { _, _ = jsutil.AwaitPromiseContext(p.ui.ctx, audioPromise) }()
+		go func() { _, _ = jsutil.AwaitPromiseContext(p.ctx, audioPromise) }()
 	}
 	go func() {
 		if videoPromise.Truthy() {
-			if _, err := jsutil.AwaitPromiseContext(p.ui.ctx, videoPromise); err != nil {
+			if _, err := jsutil.AwaitPromiseContext(p.ctx, videoPromise); err != nil {
 				if p.version == version {
 					p.pause()
 					setText(p.status, "This source could not play. Review it in the Media Library.")
@@ -147,11 +155,11 @@ func (p *reviewPlayer) play() {
 				return
 			}
 		}
-		if p.ui.disposed || p.version != version || !p.playing {
+		if p.disposed || p.version != version || !p.playing {
 			return
 		}
 		p.started = browser.Now() - p.elapsed*1000
-		ctx, cancel := context.WithCancel(p.ui.ctx)
+		ctx, cancel := context.WithCancel(p.ctx)
 		p.stopFrames = cancel
 		defer cancel()
 		_ = wasm.EachFrame(ctx, func(frame wasm.Frame) error {

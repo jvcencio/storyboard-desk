@@ -559,6 +559,44 @@
     "screenshot": "gosx-shot-validation.png",
     "limits": "Headless browser evidence does not certify the updated native Mac dirty-draft path or Windows native dialogs. No live generation requests were made."
   },
+  "client_controller_slice": {
+    "date": "2026-11-03",
+    "source_parent": "8651e7916bb001e0049a91d94cd0ff78329628ae",
+    "source_sha256": {
+      "gosx-host/client/workspace_js_wasm.go": "b08bdb6074a9ad3e5a17a260ce787a95bd31fa9a0488aaa97179f9f973a81bfa",
+      "gosx-host/client/forms_js_wasm.go": "ffe9212429007cf8efeb130f50b523409a0738cb95a4a415ff83f03f5814bf68",
+      "gosx-host/client/capabilities_js_wasm.go": "2b3212d4f24ee7ec4b2ca8f12db59300bc53971e63ef7bdc52d3fd341c3f3626",
+      "gosx-host/client/cloud_js_wasm.go": "7725bb976045f84597937b3ed29176007684f028c9b82f380e80c5da5e1d4f88",
+      "gosx-host/client/review_js_wasm.go": "f45993eb7c9d2ef398fe23df8cc82cc14afbdf32ab915e614605cb8122b9ef79",
+      "gosx-host/client/scope_js_wasm.go": "64e6d59707c7b838f7f9d90ddf00d47f0f12df91dfe71bb5fe5cb7a9fec3ed24",
+      "gosx-host/client/dom_js_wasm.go": "aa81cb6b9fcd8be2adebf62e97f162a75d4b3bc1956a73fa91f2e8b8fa3bf57d"
+    },
+    "checks": {
+      "go_wasm_build": "passed, pinned GoSX 0.57.24",
+      "go_wasm_vet": "GOOS=js GOARCH=wasm go vet ./client passed",
+      "browser": "All four existing workflows passed against the rebuilt module: rejected drafts, native-save adapters, clipboard/JSON previews, copied media/metadata, cloud choices and review playback",
+      "host_checks": "Reused the passing host race/vet evidence from the shot-action slice; this slice changes browser controllers only."
+    },
+    "runtime": {
+      "file": "workspace.1583b171b5669347.wasm",
+      "bytes": 5440825,
+      "gzip_bytes": 1480915,
+      "brotli_bytes": 1229579,
+      "gosx_size_total_bytes": 5896001,
+      "gosx_size_total_brotli_bytes": 1198955
+    },
+    "headless_profile": {
+      "scope": "One cold isolated Chromium load of the synthetic legacy project on Linux/WSL; no complete interaction or cross-machine benchmark is claimed.",
+      "gosx_version": "0.57.24",
+      "ttfb_ms": 2.2,
+      "document_content_loaded_ms": 144.4,
+      "navigation_loaded_ms": 172.3,
+      "bytes_transferred": 1328948,
+      "total_blocking_time_ms": 14,
+      "smoke_assertions": "network_kb < 2048 and tbt < 200 both passed; these are local smoke limits, not product performance guarantees."
+    },
+    "limits": "Controller separation retains the existing Go-WASM runtime. A declarative island still requires explicit VM/manifest packaging. This browser run does not replace source-bound native verification."
+  },
   "mac_custom_folder_checks": {
     "status": "passed",
     "source_commit": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
