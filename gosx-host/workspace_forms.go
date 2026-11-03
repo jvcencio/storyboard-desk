@@ -42,7 +42,9 @@ func (w workspacePage) form(endpoint string) FormView {
 		// A deleted or unavailable entity must never turn a rejected draft into
 		// an edit of whichever entity the page selected as a fallback.
 		f.Scope.ProjectID = f.value("project", f.Scope.ProjectID)
-		f.Scope.ShotID = f.value("shot", f.Scope.ShotID)
+		if endpoint == "/save" || endpoint == "/insert" {
+			f.Scope.ShotID = f.value("shot", f.Scope.ShotID)
+		}
 	}
 	return f
 }

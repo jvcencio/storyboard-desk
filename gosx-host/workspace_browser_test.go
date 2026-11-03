@@ -198,6 +198,98 @@ func TestWorkspaceGoClientRejectedDraftNavigation(t *testing.T) {
 	}
 }
 
+func TestWorkspaceGoClientProjectActions(t *testing.T) {
+	s := testStore(t)
+	p := createTestProject(t, s)
+	id, sid := shotText(p, "id"), shotText(list(p, "shots")[0], "id")
+	if _, err := s.UpdateProject(id, 1, ProjectDocument{"music_video": rawValue(true)}); err != nil {
+		t.Fatal(err)
+	}
+	h := &workspaceHandler{store: s, csrf: "browser-token"}
+	ctx, origin := editorBrowser(t, h)
+	const titleField = `form[action="/project"] input[name="title"]`
+	const budgetField = `form[action="/project"] input[name="runtime_limit_seconds"]`
+	const draft = "Project draft 雪 <keep>"
+	if err := chromedp.Run(ctx, chromedp.Navigate(origin+pageURL(id, "direction", sid, "")), browserReady(),
+		chromedp.Clear(titleField, chromedp.ByQuery), chromedp.SendKeys(titleField, draft, chromedp.ByQuery),
+		chromedp.Click(`form[action="/project"] input[name="music_video"]`, chromedp.ByQuery),
+		chromedp.Clear(budgetField, chromedp.ByQuery), chromedp.SendKeys(budgetField, "4000", chromedp.ByQuery)); err != nil {
+		t.Fatal(err)
+	}
+	response, err := chromedp.RunResponse(ctx, chromedp.Click(`form[action="/project"] button`, chromedp.ByQuery))
+	if err != nil || response == nil || response.Status != 400 {
+		t.Fatalf("project validation response: %+v, %v", response, err)
+	}
+	var title string
+	if err = chromedp.Run(ctx, browserReady(), browserText("#save-status", "Unsaved changes"),
+		chromedp.Value(titleField, &title, chromedp.ByQuery),
+		chromedp.WaitVisible(`form[action="/project"] input[name="music_video"]:not(:checked)`, chromedp.ByQuery),
+		chromedp.WaitVisible(`form[action="/project"] input[name="runtime_limit_seconds"][aria-invalid="true"]`, chromedp.ByQuery)); err != nil {
+		t.Fatal(err)
+	}
+	if title != draft {
+		t.Fatal("project rejection lost its title")
+	}
+	cancelled := make(chan error, 1)
+	chromedp.ListenTarget(ctx, func(event any) {
+		if _, ok := event.(*page.EventJavascriptDialogOpening); ok {
+			go func() { cancelled <- chromedp.Run(ctx, page.HandleJavaScriptDialog(false)) }()
+		}
+	})
+	if err = chromedp.Run(ctx, chromedp.Click(`a[href*="view=library"]`, chromedp.ByQuery)); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case err = <-cancelled:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("project rejection lost its navigation guard")
+	}
+	if err = chromedp.Run(ctx, chromedp.Value(titleField, &title, chromedp.ByQuery)); err != nil || title != draft {
+		t.Fatal("cancelled navigation lost the project draft", err)
+	}
+	if err = chromedp.Run(ctx, chromedp.Clear(budgetField, chromedp.ByQuery), chromedp.SendKeys(budgetField, "120", chromedp.ByQuery)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = chromedp.RunResponse(ctx, chromedp.Click(`form[action="/project"] button`, chromedp.ByQuery)); err != nil {
+		t.Fatal(err)
+	}
+	if err = chromedp.Run(ctx, browserReady(), browserText("#save-status", "Saved locally")); err != nil {
+		t.Fatal(err)
+	}
+	p, _ = s.Load(id)
+	if documentRevision(p) != 3 || boolean(p, "music_video") || shotText(p, "title") != draft {
+		t.Fatal("corrected project draft did not save once with the checkbox off")
+	}
+	if _, err = chromedp.RunResponse(ctx, chromedp.Click(`a[href*="view=board"]`, chromedp.ByQuery)); err != nil {
+		t.Fatal(err)
+	}
+	if err = chromedp.Run(ctx, browserReady()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = chromedp.RunResponse(ctx, chromedp.Click(`form[action="/insert"] button[value="after"]`, chromedp.ByQuery)); err != nil {
+		t.Fatal(err)
+	}
+	if err = chromedp.Run(ctx, browserReady()); err != nil {
+		t.Fatal(err)
+	}
+	move := `form[action="/move"]:has(input[name="shot"][value="` + sid + `"]) button[value="1"]`
+	if _, err = chromedp.RunResponse(ctx, chromedp.Click(move, chromedp.ByQuery)); err != nil {
+		t.Fatal(err)
+	}
+	if err = chromedp.Run(ctx, browserReady()); err != nil {
+		t.Fatal(err)
+	}
+	p, _ = s.Load(id)
+	shots := list(p, "shots")
+	if documentRevision(p) != 5 || len(shots) != 2 || shotText(shots[1], "id") != sid {
+		t.Fatal("rendered insertion/reorder controls changed identities or revision behavior")
+	}
+	t.Log("project rejection retained title, unchecked checkbox and navigation guard; correcting and saving, inserting, then moving each incremented the revision once")
+}
+
 func TestWorkspaceGoClientFormsFilesAndNativeSaving(t *testing.T) {
 	s := testStore(t)
 	p := createTestProject(t, s)

@@ -597,6 +597,40 @@
     },
     "limits": "Controller separation retains the existing Go-WASM runtime. A declarative island still requires explicit VM/manifest packaging. This browser run does not replace source-bound native verification."
   },
+  "project_action_slice": {
+    "date": "2026-11-03",
+    "source_parent": "38165ca24fd694dca2aef71895f8aa6931c102b1",
+    "source_sha256": {
+      "gosx-host/workspace.go": "6594e7333e544aee7e28c8486dec723e7cebff5ab46a0e34232a5566dae891f7",
+      "gosx-host/workspace_actions.go": "cc0e97b31808bc9cbb14903efc2c6fc5bb9b3436e54ce5e548f210e029c63e7b",
+      "gosx-host/workspace_project.go": "5eca0d7742c9af9722016c6a13692e0074bc6a478d18e2c392425c0d20e651d8",
+      "gosx-host/workspace_project_action.go": "df42d4d95225d9d79b663cd6f86b84a10b2533b62e10d5356a7141aa2f73021b",
+      "gosx-host/workspace_project_action_test.go": "0b5260c1ad6d79b5e79a7dfd6f5e02d347bc8fa1ab14e03eaea852afc37722d1",
+      "gosx-host/workspace_shot_action.go": "329dd8b487a89057a43181ced18de5bb0b569010cc6c41e2cc7d09f4a9e54487",
+      "gosx-host/workspace_forms.go": "162a3553d4ad682f58dda1b363a44c2ed7584c6055d0196765bdcccb55065353",
+      "gosx-host/workspace_browser_test.go": "fd68adcc318b72f1694a2397e258f73feec0ac9dc49d56fb8d72fa5deaa69d7c"
+    },
+    "tests": [
+      "TestWorkspaceProjectActionsPreserveLegacyData",
+      "TestWorkspaceRejectedMoveScopesEachShotCard",
+      "TestWorkspaceGoClientProjectActions"
+    ],
+    "acceptance": [
+      "The project editor and /project, /insert and /move use typed commands and the same GoSX action/legacy-form adapter as shot saves.",
+      "Rejected project edits retain all text, the submitted revision and an unchecked Music video field; navigation asks, and Cancel keeps the draft.",
+      "Correcting and saving the project, inserting a shot and moving it through the real editor each increments the revision once.",
+      "New shots receive fresh identities without copied media or approval; existing shot identities, original media bytes and opaque large integers remain intact.",
+      "Stale insertion retries and edge moves leave project bytes unchanged.",
+      "A rejected move only restores action state into its own card; other cards retain their distinct shot targets. Missing shot edits retain their original target."
+    ],
+    "checks": {
+      "race": "76 passing cases including transport subcases; the existing native-Mac and child-process-helper skips remain",
+      "browser": "All five Go-WASM workflows passed",
+      "vet": "passed",
+      "reproduction": "go -C gosx-host test -race ./...; go -C gosx-host test -tags browser -run '^TestWorkspaceGoClient' -timeout 3m ."
+    },
+    "limits": "No project-format migration or live generation call. Declarative island packaging, remaining feature-action extraction and source-current native platform verification remain separate slices."
+  },
   "mac_custom_folder_checks": {
     "status": "passed",
     "source_commit": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",

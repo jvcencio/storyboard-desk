@@ -195,8 +195,8 @@ func (h *workspaceHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		http.Error(rw, "Invalid token", 403)
 		return
 	}
-	if r.URL.Path == "/save" {
-		h.saveShot(rw, r)
+	if handler := h.coreAction(r.URL.Path); handler != nil {
+		h.serveFormAction(rw, r, handler)
 		return
 	}
 	values := r.PostForm
@@ -227,27 +227,6 @@ func (h *workspaceHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 				if err == nil {
 					return
 				}
-			case "/project":
-				patch := ProjectDocument{}
-				for _, k := range append(append([]string{}, projectTextFields...), "aspect") {
-					if values.Has(k) {
-						patch[k] = rawValue(values.Get(k))
-					}
-				}
-				patch["music_video"] = rawValue(values.Get("music_video") == "true")
-				if values.Has("runtime_limit_seconds") {
-					var n float64
-					n, err = strconv.ParseFloat(values.Get("runtime_limit_seconds"), 64)
-					if err == nil && !finite(n) {
-						err = fmt.Errorf("enter a finite number")
-					}
-					if err == nil {
-						patch["runtime_limit_seconds"] = rawValue(n)
-					}
-				}
-				if err == nil {
-					updated, err = h.store.UpdateProject(id, rev, patch)
-				}
 			case "/reference-note":
 				index, _ := strconv.Atoi(values.Get("index"))
 				updated, err = h.store.ReferenceNote(id, rev, index, values.Get("operation"), values.Get("title"), values.Get("url"), values.Get("notes"))
@@ -257,42 +236,6 @@ func (h *workspaceHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 					err = fmt.Errorf("references must be a JSON array")
 				} else {
 					updated, err = h.store.UpdateProject(id, rev, ProjectDocument{"references": rawValue(refs)})
-				}
-			case "/insert":
-				updated, err = h.store.Insert(id, sid, values.Get("position"), rev)
-			case "/move":
-				var p ProjectDocument
-				p, err = h.store.Load(id)
-				if err == nil {
-					shots, _ := documentShots(p)
-					order := []string{}
-					for _, s := range shots {
-						order = append(order, shotText(s, "id"))
-					}
-					delta, _ := strconv.Atoi(values.Get("delta"))
-					if delta != 1 && delta != -1 {
-						err = fmt.Errorf("choose earlier or later")
-					} else {
-						found := false
-						for i, v := range order {
-							if v == sid {
-								found = true
-								j := i + delta
-								if j < 0 || j >= len(order) {
-									err = fmt.Errorf("shot is already at the edge")
-								} else {
-									order[i], order[j] = order[j], order[i]
-								}
-								break
-							}
-						}
-						if !found {
-							err = ErrNotFound
-						}
-					}
-					if err == nil {
-						updated, err = h.store.Reorder(id, rev, order)
-					}
 				}
 			case "/draw", "/draw-cancel", "/draw-recover":
 				err = h.drawingCommand(r.URL.Path, id, sid, rev, values)
@@ -562,20 +505,6 @@ func (w workspacePage) createForm() gosx.Node {
 	return cls("details", "paper new-project", attrs("id", "new-project"), el("summary", txt("＋ A new story")), el("form", children...))
 }
 
-func (w workspacePage) direction() gosx.Node {
-	children := w.controls("/project")
-	children = append(children, el("h2", txt("Brief & appearance")))
-	for _, f := range [][2]string{{"title", "Project title"}, {"brief", "The idea"}, {"look", "Shared appearance"}, {"continuity", "Shared continuity"}, {"episode_notes", "Story commitments"}, {"lyrics", "Lyrics · exact original text"}} {
-		kind := "textarea"
-		if f[0] == "title" {
-			kind = "text"
-		}
-		children = append(children, w.field("/project", f[1], f[0], shotText(w.project, f[0]), kind))
-	}
-	children = append(children, w.selectField("/project", "Format", "aspect", shotText(w.project, "aspect"), []string{"9:16", "16:9", "1:1"}), w.field("/project", "Episode budget in seconds", "runtime_limit_seconds", fmt.Sprint(number(w.project, "runtime_limit_seconds")), "number"), w.field("/project", "Music video", "music_video", strconv.FormatBool(boolean(w.project, "music_video")), "checkbox"), button("Save project"))
-	return cls("section", "paper", el("form", children...))
-}
-
 func (w workspacePage) references() gosx.Node {
 	refs := list(w.project, "references")
 	cards := []any{}
@@ -644,6 +573,7 @@ func (w workspacePage) board() gosx.Node {
 		card := []any{cls("div", "card-top", el("span", txt(fmt.Sprintf("SHOT %03d", (i+1)*10))), el("span", txt(fmt.Sprintf("%.1fs", number(s, "duration"))))), w.cardArt(s), cls("div", "card-body", cls("p", "eyebrow", txt(scene)), el("h2", txt(shotText(s, "title"))), el("p", txt(shotText(s, "purpose"))))}
 		c := w
 		c.shot = s
+		c = c.scoped("shot", shotText(s, "id"))
 		f := c.controls("/move")
 		f = append(f, el("button", attrs("name", "delta", "value", "-1", "title", "Move earlier"), txt("←")), el("button", attrs("name", "delta", "value", "1", "title", "Move later"), txt("→")), link("Edit shot ↗", w.href("board", shotText(s, "id")), "button secondary"))
 		card = append(card, cls("div", "card-footer", el("form", f...)))
