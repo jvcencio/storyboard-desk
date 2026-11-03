@@ -267,7 +267,7 @@
         "Save panel reopened",
         "Go-WASM displayed Saved storyboard-a6a95d42c7be.zip; external ZIP CRCs, export equality and original hashes verified"
       ],
-      "scope": "The initial case used the default filename/input folder; custom_filename_verification records the later Unicode filename case. Custom-folder selection and native dirty drafts remain unverified."
+      "scope": "The initial default-name case and subsequent custom filename/folder cases pass. Native dirty drafts remain unverified."
     },
     "distinction": "HTTP export checks and injected Save dialog adapter tests do not certify the macOS native Save dialog."
   },
@@ -291,7 +291,7 @@
     }
   },
   "limits": [
-    "Native Go-WASM rendering, Save cancel/reopen/save and a custom filename containing spaces and Unicode pass on source cc21af1. Custom-folder selection and native dirty drafts remain unverified.",
+    "Native Go-WASM rendering, Save cancel/reopen/save and custom filenames/folders containing spaces and Unicode pass on source cc21af1. Native dirty drafts remain unverified.",
     "GoSX compiler parity was already checked in Linux CI; its optional Mac compiler test skips because the CLI is not installed.",
     "TestStorageWriterProcess is a child-process test helper; the actual ownership/crash tests pass.",
     "Actual Draw Things, live paid-provider requests and real iMovie/Final Cut imports were not exercised.",
@@ -433,7 +433,7 @@
       "opaque_integer": "900719925474099312345"
     },
     "limits": [
-      "This initial Save case used the displayed default filename/input folder. The later custom_filename_verification passes a custom Unicode filename; custom-folder selection remains unverified.",
+      "This initial case used defaults. Later custom_filename_verification and custom_folder_verification pass names and locations containing spaces and Unicode.",
       "The native AX draft-edit attempt did not change the text field; no native dirty-draft signoff is claimed. Separate browser tests cover dirty forms with injected dialog results.",
       "Historical native file-picker/import evidence remains attributed to source 2a08440."
     ],
@@ -479,7 +479,7 @@
     "native_client_status": "Saved Custom review 雪.zip",
     "native_filename_observed_before_save": true,
     "custom_folder_verified": false,
-    "limits": "The custom filename with spaces and Unicode is verified in the existing input directory. The requested Custom folder 雪 remains unverified. Native dirty drafts remain unverified.",
+    "limits": "This earlier filename-only case used workspace/input; custom_folder_verification records the subsequent successful folder case. Native dirty drafts remain unverified.",
     "screenshot": "gosx-mac-custom-name.png",
     "verified_at_utc": "2026-11-03T00:07:47Z",
     "raw_evidence_sha256": {
@@ -488,6 +488,75 @@
       "custom-name.json": "53083d134c41bcbe0d819b611b9ec7b14c53c04cb1efedd47e95bfee6aeaf984",
       "custom-panel-name.json": "13450b36d7231e555cdce7e9098fc4a04b0dccc1224e306a299eb468685eafb6",
       "custom-after-name-save.json": "faf2e08411949455e609df78d5e687622dda207dc240201b28d80aa915b09341"
+    },
+    "subsequent_folder_result": "custom_folder_verification"
+  },
+  "custom_folder_verification": {
+    "status": "passed",
+    "source_commit": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+    "production_code_unchanged_through": "6d14be69fb5dc841d7e26971d6eb54769c6f5d53",
+    "binary_sha256": "b09efba8ba74542d1ab227e22b6352c40f017531e8d6d541754e95b6fc165938",
+    "saved_path": "workspace/saved/Custom folder 雪/Custom review 雪.zip",
+    "filename": "Custom review 雪.zip",
+    "directory": "Custom folder 雪",
+    "source_export": "exports/storyboard-9035c676a0b7.zip",
+    "archive_bytes": 258822,
+    "archive_sha256": "1d851377524c4a6b919bb891d8c73e7fd371fff1f2224ba7c003a68473f929d4",
+    "matches_generated_export": true,
+    "zip_crc_valid": true,
+    "archive_entries": [
+      "buckley-intake.txt",
+      "project.json",
+      "STORYBOARD.txt",
+      "episode-map.json",
+      "plan.json",
+      "generation/jobs.json",
+      "prompts/0010_0ea280ddd70e.txt",
+      "selected/0010_0ea280ddd70e_clip_take01.mp4",
+      "sequence.json",
+      "lyrics.txt",
+      "music-timing.json",
+      "music-cues.json",
+      "song-sections.json",
+      "soundtrack/original.wav",
+      "README.txt"
+    ],
+    "archive_project_matches_original_except_terminal_newline": true,
+    "project_revision": 16,
+    "unknown_integer": "900719925474099312345",
+    "original_project_sha256": "eb6a5e228e7c33e11a9d29c63434b726a08d86adb074e0567633f071dea0eb23",
+    "original_media_sha256": {
+      "media/0ea280ddd70e/3db2834c103f.mp4": "f8c67d6a1aee16dd0e0e3b5d3a150d7eb878e87622ce6ee52915c2c68761085c",
+      "media/0ea280ddd70e/cf39833aa863.png": "187f2cb6304c06396f82bbd563c5448fa50e5e179f334be05cbdf4a7db1efb85",
+      "media/0ea280ddd70e/d3046566d27a.png": "187f2cb6304c06396f82bbd563c5448fa50e5e179f334be05cbdf4a7db1efb85"
+    },
+    "original_project_and_three_media_hashes_unchanged": true,
+    "native_client_status": "Saved Custom review 雪.zip",
+    "both_filename_and_directory_observed_before_save": true,
+    "destination_absent_before_save": true,
+    "save_button_action_confirmed": true,
+    "screenshot": "gosx-mac-custom-folder.png",
+    "verified_at_utc": "2026-11-03T00:25:30Z",
+    "idle_policy": {
+      "initial_resume_hid_seconds": 416.32027075,
+      "initial_resume_combined_session_seconds": 416.149875958,
+      "keyboard_receiver": "com.gosx.storyboarddesk",
+      "own_keyboard_input_resets_idle_counters": true,
+      "paused_on_resumed_activity": true,
+      "no_further_focus_change_after_resuming": true
+    },
+    "scope": "Custom filename and folder each contain spaces and Unicode. Native Save selected the exact existing test directory and created a previously absent ZIP there. No application code changes were needed. Native dirty-draft and overwrite scenarios were not part of this case.",
+    "raw_evidence_sha256": {
+      "folder-resume-active.json": "0a050463018292bc2654ac118ebef5004d44533dc0f6fd7a4930c29c3f60c0df",
+      "folder-resume-panel.json": "81a4d0d2556453f244f438587f3161324195517fd75c0d08bd9441f97be73e88",
+      "folder-type-path.json": "5529201c6c85e4072ad3dfc860ce06232f9882839f34000e6b0b5e98960901dc",
+      "folder-typed-panel.json": "59ea6c4ce8dff15766861d50310732c683837359c1f0fa8f1878c8473d10d46f",
+      "folder-selected-panel.json": "67469b78a6955505a10b7e123bd1e3a84500a92bba2a102caa18b5021dc234a5",
+      "folder-custom-name.json": "5aeeb293d1a2f83ae27804d3cd6b8344c4563670764380383c998d0352ed1189",
+      "folder-final-panel.json": "fbfce17e5977d4229a82869bd8be8f543903280d7c4145c4ef448e8cbb95c9a5",
+      "folder-before-save.json": "c0874e88db9d638f0fe5a93e6178e7294549518477a3fafeb9f82fd65ec863fa",
+      "folder-save.json": "a1ca283aff5db9177e2e680df61122dc67521dc0c450875d582053e72f738f27",
+      "folder-saved-status.json": "8248b05a02aeeeab254827779ff6dea3d7442c0c3b35216abc95ab0a5de8775d"
     }
   }
 }
