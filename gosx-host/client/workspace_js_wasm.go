@@ -83,6 +83,7 @@ func (ui *workspaceClient) on(target js.Value, event string, fn func(js.Value)) 
 
 func (ui *workspaceClient) mount() {
 	ui.ctx, ui.cancel = context.WithCancel(context.Background())
+	each(ui.doc, `form[data-rejected-draft="true"]`, ui.markDirty)
 	for _, event := range []string{"input", "change"} {
 		ui.on(ui.doc, event, func(e js.Value) { ui.markDirty(closest(e.Get("target"), "form[data-dirty]")) })
 	}

@@ -104,6 +104,85 @@ func browserReady() chromedp.Action {
 	return chromedp.WaitReady(`body[data-editor-ready="true"]`, chromedp.ByQuery)
 }
 
+func TestWorkspaceGoClientRejectedDraftNavigation(t *testing.T) {
+	for _, reason := range []string{"stale", "invalid"} {
+		t.Run(reason, func(t *testing.T) {
+			s := testStore(t)
+			p := createTestProject(t, s)
+			id, sid := shotText(p, "id"), shotText(list(p, "shots")[0], "id")
+			h := &workspaceHandler{store: s, csrf: "browser-token"}
+			ctx, origin := editorBrowser(t, h)
+			const selector = `form[action="/save"] input[name="title"]`
+			const draft = "Rejected draft 雪 <keep>"
+			if err := chromedp.Run(ctx, chromedp.Navigate(origin+pageURL(id, "board", sid, "")), browserReady(),
+				chromedp.Clear(selector, chromedp.ByQuery), chromedp.SendKeys(selector, draft, chromedp.ByQuery)); err != nil {
+				t.Fatal(err)
+			}
+			wantStatus, wantRevision := int64(409), 2
+			if reason == "stale" {
+				if _, err := s.UpdateShot(id, sid, 1, ProjectDocument{"title": rawValue("Saved in another window")}); err != nil {
+					t.Fatal(err)
+				}
+			} else {
+				wantStatus, wantRevision = 400, 1
+				if err := chromedp.Run(ctx, chromedp.Clear(`form[action="/save"] input[name="duration"]`, chromedp.ByQuery),
+					chromedp.SendKeys(`form[action="/save"] input[name="duration"]`, "61", chromedp.ByQuery)); err != nil {
+					t.Fatal(err)
+				}
+			}
+			projectPath := filepath.Join(s.path, id, "project.json")
+			before, err := os.ReadFile(projectPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			response, err := chromedp.RunResponse(ctx, chromedp.Click(`form[action="/save"] button`, chromedp.ByQuery))
+			if err != nil || response == nil || response.Status != wantStatus {
+				t.Fatalf("save rejection: response=%+v, err=%v", response, err)
+			}
+			var title, revision string
+			if err = chromedp.Run(ctx, browserReady(), chromedp.Value(selector, &title, chromedp.ByQuery),
+				chromedp.Value(`form[action="/save"] input[name="revision"]`, &revision, chromedp.ByQuery)); err != nil {
+				t.Fatal(err)
+			}
+			if title != draft || revision != "1" {
+				t.Fatalf("rejection changed submitted draft/revision: %q, %q", title, revision)
+			}
+			cancelled := make(chan error, 1)
+			chromedp.ListenTarget(ctx, func(event any) {
+				if _, ok := event.(*page.EventJavascriptDialogOpening); ok {
+					go func() { cancelled <- chromedp.Run(ctx, page.HandleJavaScriptDialog(false)) }()
+				}
+			})
+			if err = chromedp.Run(ctx, chromedp.Click(`a[href*="view=library"]`, chromedp.ByQuery)); err != nil {
+				t.Fatal(err)
+			}
+			select {
+			case err = <-cancelled:
+				if err != nil {
+					t.Fatal(err)
+				}
+			case <-time.After(3 * time.Second):
+				t.Fatal("navigation discarded a rejected draft without asking")
+			}
+			if err = chromedp.Run(ctx, chromedp.Value(selector, &title, chromedp.ByQuery), browserText("#save-status", "Unsaved changes")); err != nil {
+				t.Fatal(err)
+			}
+			if title != draft {
+				t.Fatalf("cancelled navigation lost rejected draft: %q", title)
+			}
+			p, err = s.Load(id)
+			if err != nil || documentRevision(p) != wantRevision || shotText(list(p, "shots")[0], "title") == draft {
+				t.Fatal("rejected edit wrote to storage", err)
+			}
+			after, err := os.ReadFile(projectPath)
+			if err != nil || !bytes.Equal(before, after) {
+				t.Fatal("rejection changed project bytes", err)
+			}
+			t.Logf("HTTP %d retained the draft and submitted revision 1; navigation asked, Cancel kept the draft and Unsaved changes; storage stayed byte-identical at revision %d", wantStatus, wantRevision)
+		})
+	}
+}
+
 func TestWorkspaceGoClientFormsFilesAndNativeSaving(t *testing.T) {
 	s := testStore(t)
 	p := createTestProject(t, s)

@@ -121,11 +121,7 @@ func (w workspacePage) controls(action string) []any {
 	if w.action == action && w.draft.Has("revision") {
 		rev = w.draft.Get("revision")
 	}
-	a := attrs("method", "post", "action", action, "data-dirty", "true")
-	if containsField([]string{"/export", "/claude", "/section-reel", "/section-export"}, action) {
-		a = attrs("method", "post", "action", action, "data-download-form", "true")
-	}
-	return []any{a, hidden("csrf", w.csrf), hidden("project", shotText(w.project, "id")), hidden("shot", shotText(w.shot, "id")), hidden("revision", rev), hidden("view", w.view), hidden("scene_filter", w.scene)}
+	return []any{w.formAttrs(action), hidden("csrf", w.csrf), hidden("project", shotText(w.project, "id")), hidden("shot", shotText(w.shot, "id")), hidden("revision", rev), hidden("view", w.view), hidden("scene_filter", w.scene)}
 }
 func (w workspacePage) field(action, label, name, value, kind string) gosx.Node {
 	if w.action == action && w.draft.Has(name) {
@@ -578,7 +574,11 @@ func (w workspacePage) render() gosx.Node {
 		nav = append(nav, link(shotText(p, "title"), pageURL(shotText(p, "id"), "board", "", ""), class))
 	}
 	sidebar := cls("aside", "sidebar", link("▤  STORYBOARD DESK", "/", "brand"), cls("p", "eyebrow", txt("YOUR PROJECTS")), el("nav", attrs("aria-label", "Projects"), fragment(nav...)), link("＋ New project", "#new-project", "button secondary"), cls("p", "local-status", txt("● Saved on your computer")))
-	main := []any{cls("header", "topbar", txt("WORKBENCH / "+shotText(w.project, "title")), cls("span", "fine", attrs("id", "download-status", "role", "status")), cls("span", "status", attrs("id", "save-status"), txt("Saved locally")))}
+	saveStatus := "Saved locally"
+	if w.draft != nil && !downloadForm(w.action) {
+		saveStatus = "Unsaved changes"
+	}
+	main := []any{cls("header", "topbar", txt("WORKBENCH / "+shotText(w.project, "title")), cls("span", "fine", attrs("id", "download-status", "role", "status")), cls("span", "status", attrs("id", "save-status"), txt(saveStatus)))}
 	if w.message != "" {
 		main = append(main, cls("div", "error", attrs("role", "alert"), txt(w.message+". Your submitted values remain below.")))
 	}
@@ -635,7 +635,7 @@ func (w workspacePage) render() gosx.Node {
 }
 
 func (w workspacePage) createForm() gosx.Node {
-	children := []any{attrs("method", "post", "action", "/create", "data-dirty", "true"), hidden("csrf", w.csrf), hidden("view", "board"), w.field("/create", "Project title", "title", "", "text"), w.field("/create", "Your idea", "brief", "", "textarea"), w.selectField("/create", "Format", "aspect", "9:16", []string{"9:16", "16:9", "1:1"}), w.field("/create", "Music video", "music_video", "false", "checkbox"), button("Create storyboard"), el("details", el("summary", txt("Start from a template")), jsonFileField("template"), w.field("/create", "Project template JSON", "template", "", "textarea"), el("p", attrs("class", "fine"), txt("A template creates a new project with fresh shot identities and no media or approvals.")))}
+	children := []any{w.formAttrs("/create"), hidden("csrf", w.csrf), hidden("view", "board"), w.field("/create", "Project title", "title", "", "text"), w.field("/create", "Your idea", "brief", "", "textarea"), w.selectField("/create", "Format", "aspect", "9:16", []string{"9:16", "16:9", "1:1"}), w.field("/create", "Music video", "music_video", "false", "checkbox"), button("Create storyboard"), el("details", el("summary", txt("Start from a template")), jsonFileField("template"), w.field("/create", "Project template JSON", "template", "", "textarea"), el("p", attrs("class", "fine"), txt("A template creates a new project with fresh shot identities and no media or approvals.")))}
 	return cls("details", "paper new-project", attrs("id", "new-project"), el("summary", txt("＋ A new story")), el("form", children...))
 }
 

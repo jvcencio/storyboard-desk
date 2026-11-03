@@ -497,6 +497,38 @@
     "screenshot": "gosx-mac-custom-name.png",
     "detailed_report": "gosx-mac-verification.json: custom_filename_verification"
   },
+  "rejected_draft_regression": {
+    "date": "2026-11-03",
+    "baseline_commit": "7d297d871c120e9a5f8bdccb643896578a8ebde4",
+    "environment": "Linux/WSL, Go-driven isolated headless Chrome for Testing 156.0.8078.4, synthetic temporary projects",
+    "test": "TestWorkspaceGoClientRejectedDraftNavigation",
+    "reproduction": "go -C gosx-host run ./cmd/client && go -C gosx-host test -tags browser -run '^TestWorkspaceGoClientRejectedDraftNavigation$' -count=1 -v . (set STORYBOARD_BROWSER_EXECUTABLE if Chrome is not on PATH)",
+    "before": {
+      "stale_save_http_status": 409,
+      "invalid_duration_http_status": 400,
+      "observed": "Both rejected pages retained the field value but immediately navigating to Media Library discarded it without asking. Both regression cases failed at the missing navigation confirmation."
+    },
+    "after": {
+      "observed": "Each rejected save retains the Unicode draft and submitted revision 1, reports Unsaved changes, asks before navigation, and retains the draft on Cancel without any further input event.",
+      "storage": "Project bytes remain identical across rejection and cancelled navigation: revision 2 for the stale case (the separate window's write), revision 1 for invalid input.",
+      "automatic_conflict_retry": false,
+      "source_sha256": {
+        "gosx-host/workspace.go": "8d49a57813a30d1e5dac655964f58571c820f67da21cb6445e5fd9db01555366",
+        "gosx-host/workspace_drafts.go": "3e1f4b27b429a26f6aee67b7053f8f69e4a608d07a4276181102a8f23b747533",
+        "gosx-host/client/workspace_js_wasm.go": "31e42b700cf859d204351bf823fba27ca34087d507e9f6f5a568c2f566491624",
+        "gosx-host/workspace_browser_test.go": "20c5558080954ad2c2776774530ad6605c88fe61c471d62374cb0b6dedaa8d7f",
+        "gosx-host/workspace_test.go": "c884fd43f9824007018068e3d1bdfb6e4a533273a8f57ef59acacbb4a6315348"
+      }
+    },
+    "checks": {
+      "go_wasm_build": "passed using pinned GoSX 0.57.24 without Node or application JavaScript",
+      "browser_workflows": "4 top-level workflows passed, including both rejection subcases",
+      "race": "69 cases passed; existing native-Mac and child-process-helper skips retained",
+      "vet": "passed",
+      "ci_evidence": "Source checks uploads go-browser-tests.jsonl and go-tests-Linux.jsonl for each tested commit."
+    },
+    "limits": "This is browser interaction proof; the updated native Mac dirty-draft path and current Windows native dialogs remain separate verification. Earlier native evidence retains its original source attribution."
+  },
   "mac_custom_folder_checks": {
     "status": "passed",
     "source_commit": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",

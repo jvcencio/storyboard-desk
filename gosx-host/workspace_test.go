@@ -37,6 +37,9 @@ func TestWorkspaceCoreCommandsAndRejectedDrafts(t *testing.T) {
 	if r.Code != 409 || !strings.Contains(r.Body.String(), "Unsaved &lt;angle&gt; text") {
 		t.Fatalf("stale draft lost: %d", r.Code)
 	}
+	if strings.Count(r.Body.String(), `data-rejected-draft="true"`) != 1 || !strings.Contains(r.Body.String(), `id="save-status">Unsaved changes`) {
+		t.Fatal("rejected shot draft must be unsaved before the client mounts")
+	}
 	if strings.Contains(r.Body.String(), "<script>alert(1)</script>") {
 		t.Fatal("unsafe HTML")
 	}
@@ -82,7 +85,7 @@ func TestWorkspaceCoreCommandsAndRejectedDrafts(t *testing.T) {
 	for _, view := range []string{"board", "episode", "direction", "references", "handoff"} {
 		r = httptest.NewRecorder()
 		h.ServeHTTP(r, httptest.NewRequest("GET", "http://127.0.0.1:4444/?project="+id+"&view="+view, nil))
-		if r.Code != 200 || !strings.Contains(r.Body.String(), "/client/assets/") {
+		if r.Code != 200 || !strings.Contains(r.Body.String(), "/client/assets/") || strings.Contains(r.Body.String(), "data-rejected-draft") {
 			t.Fatalf("view %s: %d", view, r.Code)
 		}
 	}
