@@ -267,7 +267,7 @@
         "Save panel reopened",
         "Go-WASM displayed Saved storyboard-a6a95d42c7be.zip; external ZIP CRCs, export equality and original hashes verified"
       ],
-      "scope": "Displayed default filename and synthetic input directory; custom name/folder and native dirty drafts remain unverified."
+      "scope": "The initial case used the default filename/input folder; custom_filename_verification records the later Unicode filename case. Custom-folder selection and native dirty drafts remain unverified."
     },
     "distinction": "HTTP export checks and injected Save dialog adapter tests do not certify the macOS native Save dialog."
   },
@@ -291,7 +291,7 @@
     }
   },
   "limits": [
-    "Updated native Go-WASM rendering and real Save cancel/reopen/save pass on source cc21af1. Saving used the displayed default filename/input folder; custom name/folder selection and native dirty drafts remain unverified.",
+    "Native Go-WASM rendering, Save cancel/reopen/save and a custom filename containing spaces and Unicode pass on source cc21af1. Custom-folder selection and native dirty drafts remain unverified.",
     "GoSX compiler parity was already checked in Linux CI; its optional Mac compiler test skips because the CLI is not installed.",
     "TestStorageWriterProcess is a child-process test helper; the actual ownership/crash tests pass.",
     "Actual Draw Things, live paid-provider requests and real iMovie/Final Cut imports were not exercised.",
@@ -433,7 +433,7 @@
       "opaque_integer": "900719925474099312345"
     },
     "limits": [
-      "Saving was verified with the displayed default filename and synthetic input folder. Custom name/folder selection remains unverified.",
+      "This initial Save case used the displayed default filename/input folder. The later custom_filename_verification passes a custom Unicode filename; custom-folder selection remains unverified.",
       "The native AX draft-edit attempt did not change the text field; no native dirty-draft signoff is claimed. Separate browser tests cover dirty forms with injected dialog results.",
       "Historical native file-picker/import evidence remains attributed to source 2a08440."
     ],
@@ -459,5 +459,35 @@
       "Compare saved ZIP and generated export SHA256, read every ZIP entry, compare archived project bytes (plus terminal newline) with source SHA256, verify selected clip SHA256 and opaque integer",
       "Read the original project and all three original media SHA256 independently over SSH"
     ]
+  },
+  "custom_filename_verification": {
+    "status": "passed",
+    "source_commit": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+    "production_code_unchanged_through": "f0ee46562ad46bd6b8c978a5211baad6e466acba",
+    "binary_sha256": "b09efba8ba74542d1ab227e22b6352c40f017531e8d6d541754e95b6fc165938",
+    "filename": "Custom review 雪.zip",
+    "directory": "workspace/input",
+    "source_export": "exports/storyboard-f84863189b6e.zip",
+    "archive_bytes": 258822,
+    "archive_sha256": "747c9e62979b1296a98c9745585d5f862f4df75a6bc68695e47c68543ff15dcb",
+    "matches_generated_export": true,
+    "zip_crc_valid": true,
+    "archive_project_matches_original_except_terminal_newline": true,
+    "project_revision": 16,
+    "unknown_integer": "900719925474099312345",
+    "original_project_and_three_media_hashes_unchanged": true,
+    "native_client_status": "Saved Custom review 雪.zip",
+    "native_filename_observed_before_save": true,
+    "custom_folder_verified": false,
+    "limits": "The custom filename with spaces and Unicode is verified in the existing input directory. The requested Custom folder 雪 remains unverified. Native dirty drafts remain unverified.",
+    "screenshot": "gosx-mac-custom-name.png",
+    "verified_at_utc": "2026-11-03T00:07:47Z",
+    "raw_evidence_sha256": {
+      "idle-preflight.json": "b38c7a14f80640bbdc8fbc07b2a699d7b366923c07435a4badb9a35e5993372d",
+      "custom-dialog.json": "c216df7a572c4f49c2f2b48589ba4e87f869acd12932ad3247365b5e203b859d",
+      "custom-name.json": "53083d134c41bcbe0d819b611b9ec7b14c53c04cb1efedd47e95bfee6aeaf984",
+      "custom-panel-name.json": "13450b36d7231e555cdce7e9098fc4a04b0dccc1224e306a299eb468685eafb6",
+      "custom-after-name-save.json": "faf2e08411949455e609df78d5e687622dda207dc240201b28d80aa915b09341"
+    }
   }
 }

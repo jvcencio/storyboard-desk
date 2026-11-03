@@ -400,7 +400,7 @@
   },
   "limits": [
     "Injected native dialog results in browser tests prove the Go save adapter and UI behavior, not OS dialog interaction.",
-    "Saving was verified with the displayed default filename and synthetic input folder. Custom name/folder selection remains unverified.",
+    "Native Go-WASM rendering, Save cancel/reopen/save and a custom filename containing spaces and Unicode pass on source cc21af1. Custom-folder selection and native dirty drafts remain unverified.",
     "The native AX draft-edit attempt did not change the text field; no native dirty-draft signoff is claimed. Separate browser tests cover dirty forms with injected dialog results.",
     "Historical Windows native evidence belongs to its recorded source revision; the new native Save adapter still needs interactive Windows verification.",
     "No live paid provider, actual Draw Things model, or iMovie/Final Cut import was exercised."
@@ -469,7 +469,7 @@
       "opaque_integer": "900719925474099312345"
     },
     "limits": [
-      "Saving was verified with the displayed default filename and synthetic input folder. Custom name/folder selection remains unverified.",
+      "This initial Save case used the displayed default filename/input folder. The later custom_filename_verification passes a custom Unicode filename; custom-folder selection remains unverified.",
       "The native AX draft-edit attempt did not change the text field; no native dirty-draft signoff is claimed. Separate browser tests cover dirty forms with injected dialog results.",
       "Historical native file-picker/import evidence remains attributed to source 2a08440."
     ],
@@ -481,5 +481,20 @@
       "archive_project_matches_source_except_terminal_newline": true
     },
     "detailed_report": "gosx-mac-verification.json#updated_native_verification"
+  },
+  "mac_custom_filename_checks": {
+    "status": "passed",
+    "source_commit": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+    "binary_sha256": "b09efba8ba74542d1ab227e22b6352c40f017531e8d6d541754e95b6fc165938",
+    "filename": "Custom review 雪.zip",
+    "directory": "workspace/input",
+    "archive_bytes": 258822,
+    "archive_sha256": "747c9e62979b1296a98c9745585d5f862f4df75a6bc68695e47c68543ff15dcb",
+    "zip_crc_valid": true,
+    "matches_generated_export": true,
+    "native_client_status": "Saved Custom review 雪.zip",
+    "limits": "The custom filename with spaces and Unicode is verified in the existing input directory. The requested Custom folder 雪 remains unverified. Native dirty drafts remain unverified.",
+    "screenshot": "gosx-mac-custom-name.png",
+    "detailed_report": "gosx-mac-verification.json: custom_filename_verification"
   }
 }
