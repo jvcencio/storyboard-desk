@@ -529,6 +529,36 @@
     },
     "limits": "This is browser interaction proof; the updated native Mac dirty-draft path and current Windows native dialogs remain separate verification. Earlier native evidence retains its original source attribution."
   },
+  "shot_action_slice": {
+    "date": "2026-11-03",
+    "source_parent": "ca9368d29493a7923fd79d85a785ce698cbb4008",
+    "source_sha256": {
+      "gosx-host/workspace.go": "0682770a2af0f8e06ad9cb42aabe5e2cf6fc10fe652a9c017df3529d839420ec",
+      "gosx-host/workspace_forms.go": "b5d77996d20ea2f0e775043b06cc9b020f78a41f8f7012acfbbc246db9d30c05",
+      "gosx-host/workspace_shot.go": "658d464ef089344f9acaabd0c9e1f03735143946af849bd001ed1866e49e1612",
+      "gosx-host/workspace_shot_action.go": "34f74453915672652cddbf1aa8a54215c740635819e609799305128cdebed306",
+      "gosx-host/workspace_shot_action_test.go": "7192ff289431d9bd60bf5d1c2a828c13342cfa08d05fefe003938a479417abdc",
+      "gosx-host/workspace_browser_test.go": "11a9a31f5a7c9d6cbfc8e12b58a2270422a1e2e99c1250c4fa13bbfa075ff84c",
+      "gosx-host/workspace.css": "79b45f690c37459bd5433e2d2d782db20a3f94c1f2e50d1068e492ffab408bd9"
+    },
+    "test": "TestWorkspaceShotActionContractAndLegacyCompatibility",
+    "acceptance": [
+      "HTML /save retains 303 redirects, partial-field clients and the original root redirect when view is absent.",
+      "Accept: application/json invokes the same GoSX action and returns structured validation errors or a successful project/shot/revision receipt.",
+      "All submitted shot fields survive validation; invalid fields receive aria-invalid and aria-describedby with visible errors.",
+      "Success increments the project revision once. Invalid and repeated stale requests leave project bytes unchanged; stale revisions are never automatically replaced.",
+      "Legacy media bytes, asset metadata, selection, approval receipt and opaque large integers remain intact.",
+      "POST values win over query parameters; loopback Host, Origin and per-run CSRF rejection remain enforced.",
+      "A missing shot's rejected draft keeps its submitted target instead of editing a fallback shot."
+    ],
+    "checks": {
+      "race": "74 passing test cases including transport-guard subcases; the two existing scoped skips remain",
+      "browser": "All four Go-WASM workflows passed, including stale/invalid draft navigation, native-save adapters, file import, playback and cloud controls",
+      "vet": "passed"
+    },
+    "screenshot": "gosx-shot-validation.png",
+    "limits": "Headless browser evidence does not certify the updated native Mac dirty-draft path or Windows native dialogs. No live generation requests were made."
+  },
   "mac_custom_folder_checks": {
     "status": "passed",
     "source_commit": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",

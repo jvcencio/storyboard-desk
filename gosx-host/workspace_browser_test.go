@@ -147,6 +147,21 @@ func TestWorkspaceGoClientRejectedDraftNavigation(t *testing.T) {
 			if title != draft || revision != "1" {
 				t.Fatalf("rejection changed submitted draft/revision: %q, %q", title, revision)
 			}
+			if reason == "invalid" {
+				var screenshot []byte
+				if err = chromedp.Run(ctx,
+					chromedp.WaitVisible(`form[action="/save"] input[name="duration"][aria-invalid="true"]`, chromedp.ByQuery),
+					browserText(`#shot-editor .field-error`, "number must be between 1 and 60"),
+					chromedp.Screenshot(`#shot-editor label:has(input[name="duration"])`, &screenshot, chromedp.ByQuery)); err != nil {
+					t.Fatal(err)
+				}
+				if err = os.MkdirAll("../build/verification/go-client", 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err = os.WriteFile("../build/verification/go-client/shot-validation.png", screenshot, 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
 			cancelled := make(chan error, 1)
 			chromedp.ListenTarget(ctx, func(event any) {
 				if _, ok := event.(*page.EventJavascriptDialogOpening); ok {

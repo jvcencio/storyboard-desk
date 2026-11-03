@@ -14,7 +14,7 @@ Storyboard Desk is a GoSX product: GoSX owns the interactive workspace and nativ
 
 ## Architecture
 
-GoSX components provide project navigation, direction and shot editing, media library, generation/review, music and sections, settings, and handoffs. Browser behavior is authored in Go and compiled to a GoSX Go-WASM engine. The build uses Go and supplied framework loaders, without application JavaScript or a Node toolchain. A Go application service exposes typed commands and queries to these components; a Go repository owns durable project/media/job data and concurrency. Provider and media adapters isolate HTTP, FFmpeg, platform helpers and filesystem access. Compatibility fixtures capture the retiring Python service as a fixed behavioral oracle; ongoing tests run in Go without that runtime.
+GoSX components provide project navigation, direction and shot editing, media library, generation/review, music and sections, settings, and handoffs. Browser behavior is authored in Go and compiled to a GoSX Go-WASM engine. The build uses Go and supplied framework loaders, without application JavaScript or a Node toolchain. Shot editing now has a typed command, a GoSX action and explicit component props; the remaining feature commands and queries are being separated from the HTTP dispatcher one slice at a time. The Go repository owns durable project/media/job data and concurrency. Provider and media adapters isolate HTTP, FFmpeg, platform helpers and filesystem access. Compatibility fixtures capture the retiring Python service as a fixed behavioral oracle; ongoing tests run in Go without that runtime.
 
 ## Milestones and acceptance criteria
 

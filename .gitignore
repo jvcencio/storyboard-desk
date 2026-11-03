@@ -78,6 +78,7 @@
 !/docs/gosx-go-client-verification.json
 !/docs/gosx-go-client-desktop.png
 !/docs/gosx-go-client-mobile.png
+!/docs/gosx-shot-validation.png
 !/.github/
 /.github/*
 !/.github/workflows/

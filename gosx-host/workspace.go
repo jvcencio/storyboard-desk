@@ -14,6 +14,7 @@ import (
 	"sync"
 
 	"m31labs.dev/gosx"
+	"m31labs.dev/gosx/action"
 	"m31labs.dev/gosx/desktop"
 )
 
@@ -37,8 +38,7 @@ type workspacePage struct {
 	project, shot                                       ProjectDocument
 	csrf, view, scene, message                          string
 	promptProvider                                      string
-	draft                                               url.Values
-	action                                              string
+	submission                                          action.View
 	nativeSave                                          bool
 }
 
@@ -116,67 +116,6 @@ func pageURL(id, view, shot, scene string) string {
 func (w workspacePage) href(view, shot string) string {
 	return pageURL(shotText(w.project, "id"), view, shot, w.scene)
 }
-func (w workspacePage) controls(action string) []any {
-	rev := strconv.Itoa(documentRevision(w.project))
-	if w.action == action && w.draft.Has("revision") {
-		rev = w.draft.Get("revision")
-	}
-	return []any{w.formAttrs(action), hidden("csrf", w.csrf), hidden("project", shotText(w.project, "id")), hidden("shot", shotText(w.shot, "id")), hidden("revision", rev), hidden("view", w.view), hidden("scene_filter", w.scene)}
-}
-func (w workspacePage) field(action, label, name, value, kind string) gosx.Node {
-	if w.action == action && w.draft.Has(name) {
-		value = w.draft.Get(name)
-	}
-	var input gosx.Node
-	switch kind {
-	case "textarea":
-		limit := "12000"
-		if name == "plan" || name == "template" {
-			limit = "1048576"
-		}
-		input = el("textarea", attrs("name", name, "rows", "3", "maxlength", limit), txt(value))
-	case "checkbox":
-		a := []any{attrs("type", "checkbox", "name", name, "value", "true")}
-		if value == "true" {
-			a = append(a, attrs("checked", "checked"))
-		}
-		input = el("input", a...)
-	default:
-		a := []string{"type", kind, "name", name, "value", value}
-		if kind == "number" {
-			a = append(a, "step", "0.01", "min", "0")
-		}
-		input = el("input", attrs(a...))
-	}
-	return el("label", txt(label), input)
-}
-func (w workspacePage) selectField(action, label, name, value string, options []string) gosx.Node {
-	if w.action == action && w.draft.Has(name) {
-		value = w.draft.Get(name)
-	}
-	children := []any{attrs("name", name)}
-	found := false
-	for _, opt := range options {
-		a := []any{attrs("value", opt)}
-		if opt == value {
-			a = append(a, attrs("selected", "selected"))
-			found = true
-		}
-		label := opt
-		if label == "" {
-			label = "Unspecified"
-			if name == "scene" && action == "" {
-				label = "Whole episode"
-			}
-		}
-		children = append(children, el("option", append(a, txt(label))...))
-	}
-	if !found && value != "" {
-		children = append(children, el("option", attrs("value", value, "selected", "selected"), txt(value)))
-	}
-	return el("label", txt(label), el("select", children...))
-}
-
 func (h *workspaceHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	host, port, err := net.SplitHostPort(r.Host)
 	if err != nil || host != "127.0.0.1" || port == "" {
@@ -217,7 +156,7 @@ func (h *workspaceHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if r.Method == "GET" && r.URL.Path == "/" {
-		h.render(rw, r, 200, "", nil, "")
+		h.render(rw, r, 200, action.View{})
 		return
 	}
 	if r.Method == "GET" && r.URL.Path == "/download/plan" {
@@ -256,6 +195,10 @@ func (h *workspaceHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		http.Error(rw, "Invalid token", 403)
 		return
 	}
+	if r.URL.Path == "/save" {
+		h.saveShot(rw, r)
+		return
+	}
 	values := r.PostForm
 	id, sid := values.Get("project"), values.Get("shot")
 	view := values.Get("view")
@@ -283,26 +226,6 @@ func (h *workspaceHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 				err = h.downloadSaved(rw, r, id, values)
 				if err == nil {
 					return
-				}
-			case "/save":
-				patch := ProjectDocument{}
-				for _, k := range shotFields {
-					if values.Has(k) {
-						patch[k] = rawValue(values.Get(k))
-					}
-				}
-				if values.Has("duration") {
-					var n float64
-					n, err = strconv.ParseFloat(values.Get("duration"), 64)
-					if err == nil && !finite(n) {
-						err = fmt.Errorf("enter a finite number")
-					}
-					if err == nil {
-						patch["duration"] = rawValue(n)
-					}
-				}
-				if err == nil {
-					updated, err = h.store.UpdateShot(id, sid, rev, patch)
 				}
 			case "/project":
 				patch := ProjectDocument{}
@@ -490,7 +413,7 @@ func (h *workspaceHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		q.Set("shot", sid)
 		q.Set("view", view)
 		r.URL.RawQuery = q.Encode()
-		h.render(rw, r, status, err.Error(), values, r.URL.Path)
+		h.render(rw, r, status, formFailure(r.URL.Path, formValues(values), err))
 		return
 	}
 	if updated != nil {
@@ -508,7 +431,7 @@ func (h *workspaceHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	http.Redirect(rw, r, target, 303)
 }
 
-func (h *workspaceHandler) render(rw http.ResponseWriter, r *http.Request, status int, message string, draft url.Values, action string) {
+func (h *workspaceHandler) render(rw http.ResponseWriter, r *http.Request, status int, submission action.View) {
 	runtime, err := editorRuntime()
 	if err != nil {
 		http.Error(rw, err.Error(), 503)
@@ -519,7 +442,7 @@ func (h *workspaceHandler) render(rw http.ResponseWriter, r *http.Request, statu
 		http.Error(rw, err.Error(), 500)
 		return
 	}
-	w := workspacePage{store: h.store, nativeSave: h.saveFile != nil, quoteID: r.URL.Query().Get("quote"), projects: projects, csrf: h.csrf, view: r.URL.Query().Get("view"), scene: r.URL.Query().Get("scene"), message: message, draft: draft, action: action}
+	w := workspacePage{store: h.store, nativeSave: h.saveFile != nil, quoteID: r.URL.Query().Get("quote"), projects: projects, csrf: h.csrf, view: r.URL.Query().Get("view"), scene: r.URL.Query().Get("scene"), message: submission.Message(), submission: submission}
 	w.promptProvider = r.URL.Query().Get("provider")
 	if !containsField([]string{"grok", "flow", "gemini", "other"}, w.promptProvider) {
 		w.promptProvider = "grok"
@@ -575,7 +498,7 @@ func (w workspacePage) render() gosx.Node {
 	}
 	sidebar := cls("aside", "sidebar", link("▤  STORYBOARD DESK", "/", "brand"), cls("p", "eyebrow", txt("YOUR PROJECTS")), el("nav", attrs("aria-label", "Projects"), fragment(nav...)), link("＋ New project", "#new-project", "button secondary"), cls("p", "local-status", txt("● Saved on your computer")))
 	saveStatus := "Saved locally"
-	if w.draft != nil && !downloadForm(w.action) {
+	if w.submission.Submitted() && !downloadForm(w.submission.Name) {
 		saveStatus = "Unsaved changes"
 	}
 	main := []any{cls("header", "topbar", txt("WORKBENCH / "+shotText(w.project, "title")), cls("span", "fine", attrs("id", "download-status", "role", "status")), cls("span", "status", attrs("id", "save-status"), txt(saveStatus)))}
@@ -728,36 +651,4 @@ func (w workspacePage) board() gosx.Node {
 	}
 	filters := []any{attrs("method", "get", "class", "scene-filter"), hidden("project", shotText(w.project, "id")), hidden("view", "board"), w.selectField("", "Scene / sequence", "scene", w.scene, scenes), button("Filter")}
 	return el("section", el("form", filters...), cls("div", "board-layout", cls("div", "shot-grid", fragment(cards...)), w.shotForm()))
-}
-
-func (w workspacePage) shotForm() gosx.Node {
-	if w.shot == nil {
-		return el("div")
-	}
-	children := w.controls("/save")
-	children = append(children, cls("p", "eyebrow", txt("THE SHOT BRIEF")), el("h2", txt(shotText(w.shot, "title"))))
-	children = append(children, button("Save shot brief"))
-	for _, k := range shotFields {
-		kind := "textarea"
-		if k == "title" || k == "scene" {
-			kind = "text"
-		}
-		var field gosx.Node
-		switch k {
-		case "story_status":
-			field = w.selectField("/save", fieldLabels[k], k, shotText(w.shot, k), []string{"", "proposed", "reported_existing", "existing_candidate"})
-		case "blocking":
-			field = w.selectField("/save", fieldLabels[k], k, shotText(w.shot, k), []string{"", "selfie", "mirror", "terminal", "walkway", "sign", "reaction", "passenger", "pass", "help", "turbulence", "gate", "portal"})
-		default:
-			field = w.field("/save", fieldLabels[k], k, shotText(w.shot, k), kind)
-		}
-		children = append(children, field)
-		if k == "title" {
-			children = append(children, w.field("/save", "Target duration (seconds)", "duration", fmt.Sprint(number(w.shot, "duration")), "number"))
-		}
-	}
-	children = append(children, button("Save shot brief"))
-	insert := w.controls("/insert")
-	insert = append(insert, el("button", attrs("name", "position", "value", "before"), txt("＋ Insert before")), el("button", attrs("name", "position", "value", "after"), txt("＋ Insert after")))
-	return cls("aside", "paper shot-editor", attrs("id", "shot-editor"), el("form", children...), el("form", insert...))
 }

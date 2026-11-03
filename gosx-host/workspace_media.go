@@ -97,7 +97,7 @@ func (h *workspaceHandler) upload(rw http.ResponseWriter, r *http.Request) {
 		q.Set("shot", values.Get("shot"))
 		q.Set("view", values.Get("view"))
 		r.URL.RawQuery = q.Encode()
-		h.render(rw, r, status, err.Error(), values, "/upload")
+		h.render(rw, r, status, formFailure("/upload", formValues(values), err))
 		return
 	}
 	http.Redirect(rw, r, pageURL(values.Get("project"), values.Get("view"), values.Get("shot"), values.Get("scene_filter")), 303)
