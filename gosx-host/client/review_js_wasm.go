@@ -11,7 +11,7 @@ import (
 
 	"m31labs.dev/gosx/client/browser"
 	"m31labs.dev/gosx/client/jsutil"
-	"m31labs.dev/gosx/engine/wasm"
+	"m31labs.dev/gosx/game/host"
 )
 
 type reviewPlayer struct {
@@ -22,7 +22,7 @@ type reviewPlayer struct {
 	playing               bool
 	version               int
 	started, elapsed      float64
-	stopFrames            context.CancelFunc
+	stopFrames            func()
 }
 
 func dataNumber(node js.Value, name string) float64 {
@@ -159,30 +159,57 @@ func (p *reviewPlayer) play() {
 			return
 		}
 		p.started = browser.Now() - p.elapsed*1000
-		ctx, cancel := context.WithCancel(p.ctx)
-		p.stopFrames = cancel
-		defer cancel()
-		_ = wasm.EachFrame(ctx, func(frame wasm.Frame) error {
-			if !p.playing || p.version != version {
-				return wasm.StopFrames
-			}
-			p.elapsed = (frame.Time - p.started) / 1000
-			target, available := dataNumber(shot, "duration"), dataNumber(shot, "available")
-			if p.elapsed < math.Min(target, available) {
-				return nil
-			}
-			if available+.05 < target {
-				p.pause()
-				setText(p.status, fmt.Sprintf("This take leaves %.2f seconds of missing coverage. Choose another range or advance manually.", target-available))
-			} else if p.index+1 < len(p.shots) {
-				p.index++
-				p.show()
-				p.play()
-			} else {
-				p.pause()
-				setText(p.status, "Sequence complete")
-			}
-			return wasm.StopFrames
-		})
+		p.trackFrames(shot)
 	}()
+}
+
+func (p *reviewPlayer) trackFrames(shot js.Value) {
+	source := host.NewFrameSourceJS()
+	visibility := newEventScope(p.ctx)
+	var frame int
+	var pending bool
+	cancelFrame := func() {
+		if pending {
+			source.CancelFrame(frame)
+			pending = false
+		}
+	}
+	var step func(float64)
+	updateFrame := func() {
+		if source.Hidden() {
+			cancelFrame()
+		} else if !pending {
+			frame = source.RequestFrame(step)
+			pending = true
+		}
+	}
+	step = func(at float64) {
+		pending = false
+		if source.Hidden() {
+			return
+		}
+		p.elapsed = (at - p.started) / 1000
+		target, available := dataNumber(shot, "duration"), dataNumber(shot, "available")
+		if p.elapsed < math.Min(target, available) {
+			updateFrame()
+			return
+		}
+		if available+.05 < target {
+			p.pause()
+			setText(p.status, fmt.Sprintf("This take leaves %.2f seconds of missing coverage. Choose another range or advance manually.", target-available))
+		} else if p.index+1 < len(p.shots) {
+			p.index++
+			p.show()
+			p.play()
+		} else {
+			p.pause()
+			setText(p.status, "Sequence complete")
+		}
+	}
+	visibility.on(js.Global().Get("document"), "visibilitychange", func(js.Value) { updateFrame() })
+	p.stopFrames = func() {
+		visibility.Dispose()
+		cancelFrame()
+	}
+	updateFrame()
 }

@@ -584,6 +584,22 @@ func TestWorkspaceGoClientReviewAndCloudControls(t *testing.T) {
 	if err = chromedp.Run(ctx, chromedp.Click("[data-review-play]", chromedp.ByQuery), browserText("[data-review-status]", "Sequence complete")); err != nil {
 		t.Fatal(err)
 	}
+	// Exercise the actual mounted handle that the pinned GoSX loader received.
+	// Disposal must stop active playback and release its button listener.
+	var disposed bool
+	if err = chromedp.Run(ctx, chromedp.Evaluate(`(() => {
+		const engine = [...window.__gosx.engines.values()].find(e => e.component === "Workspace");
+		const play = document.querySelector("[data-review-play]");
+		document.querySelector("[data-review-prev]").click();
+		play.click();
+		if (play.getAttribute("aria-pressed") !== "true") return false;
+		engine.handle.dispose();
+		if (play.getAttribute("aria-pressed") !== "false" || engine.handle.dispose !== undefined) return false;
+		play.click();
+		return play.getAttribute("aria-pressed") === "false";
+	})()`, &disposed)); err != nil || !disposed {
+		t.Fatalf("GoSX handle did not dispose the active review: %v", err)
+	}
 	if err = chromedp.Run(ctx, chromedp.Click(`a[href*="view=generate"]`, chromedp.ByQuery), browserReady(), chromedp.WaitReady("[data-cloud-form]", chromedp.ByQuery)); err != nil {
 		t.Fatal(err)
 	}

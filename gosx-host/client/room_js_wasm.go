@@ -10,11 +10,10 @@ import (
 	"syscall/js"
 	"time"
 
-	"m31labs.dev/gosx/engine/wasm"
 	"m31labs.dev/gosx/hub/socket"
 )
 
-func mountRoom(parent context.Context, root js.Value) wasm.Handle {
+func mountRoom(parent context.Context, root js.Value) func() {
 	scope := newEventScope(parent)
 	status := query(root, "#room-presence")
 	shown, _ := strconv.Atoi(attr(root, "data-revision"))
@@ -86,8 +85,8 @@ func mountRoom(parent context.Context, root js.Value) wasm.Handle {
 	scope.on(js.Global(), "pagehide", disconnect)
 	scope.on(js.Global(), "pageshow", connect)
 	connect(js.Undefined())
-	return wasm.HandleFunc(func() {
+	return func() {
 		scope.Dispose()
 		disconnect(js.Undefined())
-	})
+	}
 }
