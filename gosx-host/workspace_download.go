@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"m31labs.dev/gosx/desktop"
@@ -62,11 +63,19 @@ func (h *workspaceHandler) saveDownload(w http.ResponseWriter, r *http.Request, 
 	}
 	defer h.saveMu.Unlock()
 	ext := filepath.Ext(name)
-	destination, err := h.saveFile(desktop.SaveFileOptions{
-		Title: "Save " + name, InitialFilename: name, DefaultExt: strings.TrimPrefix(ext, "."),
-		Filters:         []desktop.FileFilter{{Name: strings.ToUpper(strings.TrimPrefix(ext, ".")) + " file", Pattern: "*" + ext}},
+	options := desktop.SaveFileOptions{
+		Title:           "Save " + name,
+		InitialFilename: name,
+		DefaultExt:      strings.TrimPrefix(ext, "."),
 		OverwritePrompt: true,
-	})
+	}
+	// GoSX v0.57.24 rejects the NUL separators in Win32 file filters before
+	// opening the dialog. The default extension and destination check still
+	// enforce the export type.
+	if runtime.GOOS != "windows" {
+		options.Filters = []desktop.FileFilter{{Name: strings.ToUpper(options.DefaultExt) + " file", Pattern: "*" + ext}}
+	}
+	destination, err := h.saveFile(options)
 	if err != nil {
 		return fmt.Errorf("open Save dialog: %w", err)
 	}

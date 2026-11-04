@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -28,8 +29,15 @@ func TestNativeExportSaveCancelAndCopy(t *testing.T) {
 	cancel, calls := true, 0
 	h := &workspaceHandler{store: s, csrf: "token", saveFile: func(options desktop.SaveFileOptions) (string, error) {
 		calls++
-		if options.DefaultExt != "zip" || !options.OverwritePrompt || options.Filters[0].Pattern != "*.zip" {
+		if options.DefaultExt != "zip" || !strings.HasSuffix(options.InitialFilename, ".zip") || !options.OverwritePrompt {
 			t.Fatalf("unsafe save options: %+v", options)
+		}
+		if runtime.GOOS == "windows" {
+			if len(options.Filters) != 0 {
+				t.Fatalf("Win32 dialog rejects these filters: %+v", options.Filters)
+			}
+		} else if len(options.Filters) != 1 || options.Filters[0].Pattern != "*.zip" {
+			t.Fatalf("missing ZIP filter: %+v", options.Filters)
 		}
 		if cancel {
 			return "", nil
