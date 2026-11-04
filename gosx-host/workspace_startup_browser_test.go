@@ -10,8 +10,10 @@ import (
 	"image/png"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 
+	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 )
@@ -22,6 +24,14 @@ func TestColdWorkspaceStartup(t *testing.T) {
 	report := os.Getenv("STORYBOARD_COLD_START_REPORT")
 	if report == "" {
 		t.Skip("set STORYBOARD_COLD_START_REPORT to collect a cold-start sample")
+	}
+	var wasmRate int64
+	if rate := os.Getenv("STORYBOARD_COLD_START_WASM_BYTES_PER_SECOND"); rate != "" {
+		var err error
+		wasmRate, err = strconv.ParseInt(rate, 10, 64)
+		if err != nil || wasmRate <= 0 {
+			t.Fatal("STORYBOARD_COLD_START_WASM_BYTES_PER_SECOND must be a positive integer")
+		}
 	}
 	store, id := workspaceBoardFixture(t)
 	project, err := store.snapshot(id)
@@ -88,6 +98,13 @@ func TestColdWorkspaceStartup(t *testing.T) {
 	}
 	var raw json.RawMessage
 	if err := chromedp.Run(ctx, chromedp.ActionFunc(func(ctx context.Context) error {
+		if wasmRate > 0 {
+			if _, err := network.EmulateNetworkConditionsByRule(false, []*network.Conditions{{
+				URLPattern: origin + "/client/assets/go-wasm/*", DownloadThroughput: float64(wasmRate), UploadThroughput: -1,
+			}}).Do(ctx); err != nil {
+				return err
+			}
+		}
 		_, err := page.AddScriptToEvaluateOnNewDocument(instrumentation).Do(ctx)
 		return err
 	}), chromedp.Navigate(origin+pageURL(id, "board", "", "")), browserReady(),

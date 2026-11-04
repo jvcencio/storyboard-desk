@@ -61,6 +61,11 @@ func Build(module string) error {
 	manifest.Runtime.Bootstrap = manifest.Runtime.BootstrapRuntime
 	manifest.SourceRoot = ""
 	for bucket, assets := range assetGroups(manifest) {
+		brotliQuality := 9
+		if bucket == "go-wasm" {
+			// Spend more build time on the largest cold-start download.
+			brotliQuality = brotli.BestCompression
+		}
 		for _, asset := range assets {
 			path := filepath.Join(root, "assets", bucket, asset.File)
 			data, err := os.ReadFile(path)
@@ -71,7 +76,7 @@ func Build(module string) error {
 			if err != nil {
 				return err
 			}
-			br := brotli.NewWriterLevel(out, 9)
+			br := brotli.NewWriterLevel(out, brotliQuality)
 			_, err = br.Write(data)
 			if e := br.Close(); err == nil {
 				err = e
