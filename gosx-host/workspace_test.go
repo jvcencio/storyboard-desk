@@ -237,3 +237,26 @@ func TestWorkspaceSelectsTheValidatedProject(t *testing.T) {
 		t.Fatalf("default project did not follow sidebar order: %d", w.Code)
 	}
 }
+
+func TestBoardPreviewKeepsSelectionAndLegacySemantics(t *testing.T) {
+	for _, tc := range []struct {
+		name, assets, keyframe, want string
+		found                        bool
+	}{
+		{"keyframe priority", `[{"id":"clip","kind":"clip","poster_path":"media/poster.png"},{"id":"frame","kind":"keyframe","path":"media/frame.png","future":900719925474099312345}]`, "frame", "media/frame.png", true},
+		{"binned keyframe", `[{"id":"frame","binned_at":"yesterday","path":"media/frame.png"},{"id":"clip","kind":"clip","poster_path":"media/poster.png"}]`, "frame", "media/poster.png", true},
+		{"clip without poster", `[{"id":"clip","kind":"clip","path":"media/take.mp4"}]`, "frame", "", true},
+		{"exact field names", `[{"id":"frame","ID":"other","PATH":"wrong","path":"media/frame.png"}]`, "frame", "media/frame.png", true},
+		{"legacy duplicate name", `[{"id":"old","id":"frame","path":"media/frame.png"}]`, "frame", "media/frame.png", true},
+		{"legacy non-string field", `[{"id":"frame","binned_at":false,"path":"media/frame.png"}]`, "frame", "media/frame.png", true},
+		{"legacy null take", `[null,{"id":"clip","kind":"clip","poster_path":"media/poster.png"}]`, "", "", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			shot := ProjectDocument{"assets": json.RawMessage(tc.assets), "selected_keyframe": rawValue(tc.keyframe),
+				"selected_sketch": rawValue("rough"), "selected_clip": rawValue("clip")}
+			if path, found := boardPreview(shot); path != tc.want || found != tc.found {
+				t.Fatalf("preview = %q, %t, want %q, %t", path, found, tc.want, tc.found)
+			}
+		})
+	}
+}

@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	jsonv2 "github.com/go-json-experiment/json"
 	"m31labs.dev/gosx"
 )
 
@@ -129,28 +130,63 @@ func (w workspacePage) assetPreview(a ProjectDocument) gosx.Node {
 	}
 	return el("img", attrs("src", src, "alt", shotText(a, "original_name"), "loading", "lazy"))
 }
-func boardPreview(s ProjectDocument) (ProjectDocument, string) {
-	a := selectedAsset(s, "keyframe", "sketch", "clip")
-	if a == nil {
-		return nil, ""
+
+type boardTake struct {
+	ID         string `json:"id"`
+	BinnedAt   string `json:"binned_at"`
+	Kind       string `json:"kind"`
+	Path       string `json:"path"`
+	PosterPath string `json:"poster_path"`
+}
+
+func previewPath(kind, source, poster string) string {
+	if kind == "clip" {
+		return poster
 	}
-	path := shotText(a, "path")
-	if shotText(a, "kind") == "clip" {
-		path = shotText(a, "poster_path")
+	return source
+}
+
+func boardPreview(s ProjectDocument) (string, bool) {
+	raw := s["assets"]
+	if len(raw) == 0 {
+		return "", false
 	}
-	return a, path
+	kinds := []string{"keyframe", "sketch", "clip"}
+	var takes []*boardTake
+	if err := jsonv2.Unmarshal(raw, &takes); err != nil {
+		// Keep the document reader's behavior for legacy values the typed
+		// projection cannot decode, such as duplicate or non-string fields.
+		a := selectedAsset(s, kinds...)
+		if a == nil {
+			return "", false
+		}
+		return previewPath(shotText(a, "kind"), shotText(a, "path"), shotText(a, "poster_path")), true
+	}
+	for _, kind := range kinds {
+		id := shotText(s, "selected_"+kind)
+		for _, take := range takes {
+			if take == nil {
+				if id == "" {
+					return "", false
+				}
+				continue
+			}
+			if take.ID == id && take.BinnedAt == "" {
+				return previewPath(take.Kind, take.Path, take.PosterPath), true
+			}
+		}
+	}
+	return "", false
 }
 
 func (w workspacePage) cardArt(s ProjectDocument) gosx.Node {
 	href := w.href("library", shotText(s, "id"))
-	a, path := boardPreview(s)
+	path, hasPreview := boardPreview(s)
 	if w.shared {
 		href = w.href("board", shotText(s, "id"))
-		if !shareablePreview(path) {
-			a = nil
-		}
+		hasPreview = hasPreview && shareablePreview(path)
 	}
-	if a == nil {
+	if !hasPreview {
 		return el("a", attrs("href", href, "class", "card-art"), blockingDiagram(s, shotText(w.project, "aspect")))
 	}
 	if path == "" {

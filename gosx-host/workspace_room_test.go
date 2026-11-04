@@ -76,7 +76,7 @@ func TestStoryboardRoomAccessScope(t *testing.T) {
 		t.Fatal(err)
 	}
 	first := list(p, "shots")[0]
-	_, rel := boardPreview(first)
+	rel, _ := boardPreview(first)
 	if rel == "" {
 		t.Fatal("legacy fixture lacks a board preview")
 	}

@@ -252,7 +252,7 @@ func (room *storyboardRoom) preview(w http.ResponseWriter, r *http.Request) {
 		project, err := room.workspace.store.snapshot(room.projectID)
 		if err == nil {
 			for _, shot := range project.shots {
-				if _, selected := boardPreview(shot); rel == selected {
+				if selected, ok := boardPreview(shot); ok && rel == selected {
 					room.workspace.media(w, r)
 					return
 				}
