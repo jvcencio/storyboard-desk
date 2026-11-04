@@ -282,7 +282,7 @@ func TestWorkspaceGoClientProjectActions(t *testing.T) {
 	if err = chromedp.Run(ctx, browserReady()); err != nil {
 		t.Fatal(err)
 	}
-	move := `form[action="/move"]:has(input[name="shot"][value="` + sid + `"]) button[value="1"]`
+	move := `button[form="board-move"][name="move"][value="1:` + sid + `"]`
 	if _, err = chromedp.RunResponse(ctx, chromedp.Click(move, chromedp.ByQuery)); err != nil {
 		t.Fatal(err)
 	}

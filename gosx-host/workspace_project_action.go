@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"m31labs.dev/gosx/action"
 )
@@ -144,6 +145,11 @@ func (command MoveShotCommand) apply(store *ProjectStore) (ProjectDocument, erro
 
 func (h *workspaceHandler) moveShotAction(ctx *action.Context) error {
 	values := ctx.FormData
+	// A board button carries the direction and shot in one submitter value.
+	if delta, shot, ok := strings.Cut(values["move"], ":"); ok && values["shot"] == "" && values["delta"] == "" {
+		values["shot"], values["delta"] = shot, delta
+		delete(values, "move")
+	}
 	revision, err := strconv.Atoi(values["revision"])
 	if err != nil {
 		return validationFailure(values, map[string]string{"revision": "Reopen the project to get a valid revision."}, "Invalid revision")

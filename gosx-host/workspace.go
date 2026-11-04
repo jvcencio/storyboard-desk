@@ -556,6 +556,7 @@ func (w workspacePage) board() gosx.Node {
 	cardClass, selectedClass := attrs("class", "shot-card"), attrs("class", "shot-card selected")
 	cardTop, cardBody, cardFooter := attrs("class", "card-top"), attrs("class", "card-body"), attrs("class", "card-footer")
 	eyebrow := attrs("class", "eyebrow")
+	const moveFormID = "board-move"
 	for i, s := range w.shots {
 		scene := shotText(s, "scene")
 		if scene != "" && !seen[scene] {
@@ -570,27 +571,41 @@ func (w workspacePage) board() gosx.Node {
 		if shotID == scope.ShotID {
 			class = selectedClass
 		}
-		controls := moveControls
-		if rejectedMove {
-			card := w.scoped("shot", shotID)
-			if card.submission.Submitted() {
-				card.shot = s
-				controls = card.form("/move").sharedControls()
-			}
-		}
 		editHref := pageURL(scope.ProjectID, "board", shotID, w.scene)
 		artHref := editHref
 		if !w.shared {
 			artHref = pageURL(scope.ProjectID, "library", shotID, w.scene)
 		}
 		title := shotText(s, "title")
-		f := controls.forShot(shotID, moveButtons[0], moveButtons[1], link("Edit shot ↗", editHref, "button secondary"))
+		edit := link("Edit shot ↗", editHref, "button secondary")
+		var footer gosx.Node
+		if rejectedMove {
+			// Only the rejected shot's controls carry its submitted revision.
+			controls := moveControls
+			card := w.scoped("shot", shotID)
+			if card.submission.Submitted() {
+				card.shot = s
+				controls = card.form("/move").sharedControls()
+			}
+			footer = el("form", controls.forShot(shotID, moveButtons[0], moveButtons[1], edit)...)
+		} else {
+			footer = cls("div", "card-move",
+				el("button", attrs("form", moveFormID, "name", "move", "value", "-1:"+shotID, "title", "Move earlier"), txt("←")),
+				el("button", attrs("form", moveFormID, "name", "move", "value", "1:"+shotID, "title", "Move later"), txt("→")), edit)
+		}
 		cards = append(cards, el("article", class,
 			el("div", cardTop, el("span", txt(fmt.Sprintf("SHOT %03d", (i+1)*10))), el("span", txt(fmt.Sprintf("%.1fs", number(s, "duration"))))),
 			w.cardArt(s, scope.ProjectID, artHref, title),
 			el("div", cardBody, el("p", eyebrow, txt(scene)), el("h2", txt(title)), el("p", txt(shotText(s, "purpose")))),
-			el("div", cardFooter, el("form", f...))))
+			el("div", cardFooter, footer)))
 	}
 	filters := []any{attrs("method", "get", "action", "/", "class", "scene-filter"), hidden("project", shotText(w.project, "id")), hidden("view", "board"), w.selectField("", "Scene / sequence", "scene", w.scene, scenes), button("Filter")}
-	return el("section", el("form", filters...), cls("div", "board-layout", cls("div", "shot-grid", gosx.Fragment(cards...)), w.shotForm()))
+	var moveForm gosx.Node
+	if !rejectedMove && len(cards) != 0 {
+		fields := []any{attrs("id", moveFormID, "hidden", "hidden")}
+		fields = append(fields, moveControls.beforeShot[:]...)
+		fields = append(fields, moveControls.afterShot[:]...)
+		moveForm = el("form", fields...)
+	}
+	return el("section", el("form", filters...), moveForm, cls("div", "board-layout", cls("div", "shot-grid", gosx.Fragment(cards...)), w.shotForm()))
 }

@@ -143,7 +143,7 @@ func TestWorkspaceRejectedMoveScopesEachShotCard(t *testing.T) {
 	const token = `token<&"`
 	h := &workspaceHandler{store: s, csrf: token}
 	current, rejected := strconv.Itoa(documentRevision(p)), strconv.Itoa(documentRevision(p)-1)
-	form := url.Values{"csrf": {token}, "project": {id}, "shot": {"second"}, "revision": {rejected}, "view": {"board"}, "delta": {"0"}}
+	form := url.Values{"csrf": {token}, "project": {id}, "move": {"0:second"}, "revision": {rejected}, "view": {"board"}}
 	r := workspacePost(h, "/move", form)
 	if r.Code != 400 {
 		t.Fatal("invalid movement was accepted")

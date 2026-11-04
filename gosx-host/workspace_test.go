@@ -10,12 +10,13 @@ import (
 	"testing"
 )
 
-func BenchmarkWorkspaceBoard(b *testing.B) {
-	store, err := OpenProjectStore(b.TempDir(), false)
+func workspaceBoardFixture(t testing.TB) (*ProjectStore, string) {
+	t.Helper()
+	store, err := OpenProjectStore(t.TempDir(), false)
 	if err != nil {
-		b.Fatal(err)
+		t.Fatal(err)
 	}
-	b.Cleanup(func() { store.Close() })
+	t.Cleanup(func() { store.Close() })
 	shots := make([]ProjectDocument, 240)
 	for i := range shots {
 		shots[i] = ProjectDocument{"title": rawValue(fmt.Sprintf("Storyboard shot %03d", i+1)),
@@ -24,7 +25,7 @@ func BenchmarkWorkspaceBoard(b *testing.B) {
 	}
 	p, err := store.CreateTemplate(ProjectDocument{"title": rawValue("Board benchmark"), "shots": rawValue(shots)})
 	if err != nil {
-		b.Fatal(err)
+		t.Fatal(err)
 	}
 	id := shotText(p, "id")
 	shots = list(p, "shots")
@@ -45,13 +46,18 @@ func BenchmarkWorkspaceBoard(b *testing.B) {
 	p["shots"] = rawValue(shots)
 	dir, err := projectDirectory(store.root, id)
 	if err != nil {
-		b.Fatal(err)
+		t.Fatal(err)
 	}
 	err = writeProjectDocument(dir, p)
 	dir.Close()
 	if err != nil {
-		b.Fatal(err)
+		t.Fatal(err)
 	}
+	return store, id
+}
+
+func BenchmarkWorkspaceBoard(b *testing.B) {
+	store, id := workspaceBoardFixture(b)
 	h := &workspaceHandler{store: store, csrf: "benchmark"}
 	r := httptest.NewRequest(http.MethodGet, "http://127.0.0.1:4444"+pageURL(id, "board", "", ""), nil)
 	w := benchmarkResponseWriter{header: make(http.Header)}
