@@ -130,12 +130,7 @@ func (w workspacePage) assetPreview(a ProjectDocument) gosx.Node {
 	return el("img", attrs("src", src, "alt", shotText(a, "original_name"), "loading", "lazy"))
 }
 func boardPreview(s ProjectDocument) (ProjectDocument, string) {
-	var a ProjectDocument
-	for _, kind := range []string{"keyframe", "sketch", "clip"} {
-		if a = selectedAsset(s, kind); a != nil {
-			break
-		}
-	}
+	a := selectedAsset(s, "keyframe", "sketch", "clip")
 	if a == nil {
 		return nil, ""
 	}
@@ -168,7 +163,7 @@ func (w workspacePage) mediaLibrary() gosx.Node {
 	selector := []any{attrs("method", "get", "action", "/"), hidden("project", shotText(w.project, "id")), hidden("view", "library"), w.shotSelector("shot", shotText(w.shot, "id")), w.selectField("", "Prompt destination", "provider", w.promptProvider, []string{"grok", "flow", "gemini", "other"}), button("Choose shot")}
 	panels = append(panels, el("form", selector...), cls("div", "paper", el("h3", txt("Import to "+shotText(w.shot, "title"))), w.uploadForm("")))
 	cards := []any{}
-	for _, s := range list(w.project, "shots") {
+	for _, s := range w.shots {
 		for _, a := range list(s, "assets") {
 			c := w
 			c.shot = s
@@ -183,7 +178,7 @@ func (w workspacePage) mediaLibrary() gosx.Node {
 }
 func (w workspacePage) shotSelector(name, selected string) gosx.Node {
 	options := []any{attrs("name", name)}
-	for _, s := range list(w.project, "shots") {
+	for _, s := range w.shots {
 		a := []any{attrs("value", shotText(s, "id"))}
 		if shotText(s, "id") == selected {
 			a = append(a, attrs("selected", "selected"))

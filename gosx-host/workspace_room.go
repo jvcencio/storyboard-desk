@@ -220,15 +220,7 @@ func (room *storyboardRoom) render(w http.ResponseWriter, r *http.Request, statu
 		return
 	}
 	page := workspacePage{project: p, csrf: room.sessionToken(r), view: "board", scene: r.URL.Query().Get("scene"), submission: submission, shared: true}
-	page.shot, _ = findShot(p, r.URL.Query().Get("shot"))
-	if page.shot == nil {
-		for _, shot := range list(p, "shots") {
-			if page.scene == "" || shotText(shot, "scene") == page.scene {
-				page.shot = shot
-				break
-			}
-		}
-	}
+	page.selectShot(r.URL.Query().Get("shot"))
 	saveStatus := "Saved to project"
 	if submission.Submitted() {
 		saveStatus = "Unsaved changes"

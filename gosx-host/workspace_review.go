@@ -8,14 +8,8 @@ import (
 func (w workspacePage) review() gosx.Node {
 	rows := []any{}
 	elapsed := 0.0
-	for _, s := range list(w.project, "shots") {
-		a := selectedAsset(s, "clip")
-		if a == nil {
-			a = selectedAsset(s, "keyframe")
-		}
-		if a == nil {
-			a = selectedAsset(s, "sketch")
-		}
+	for _, s := range w.shots {
+		a := selectedAsset(s, "clip", "keyframe", "sketch")
 		kind := "gap"
 		available := number(s, "duration")
 		var preview gosx.Node

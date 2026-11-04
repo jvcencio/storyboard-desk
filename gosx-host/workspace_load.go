@@ -2,6 +2,24 @@ package main
 
 import "fmt"
 
+func (w *workspacePage) selectShot(id string) {
+	w.shots = list(w.project, "shots")
+	if id != "" {
+		for _, shot := range w.shots {
+			if shotText(shot, "id") == id {
+				w.shot = shot
+				return
+			}
+		}
+	}
+	for _, shot := range w.shots {
+		if w.scene == "" || shotText(shot, "scene") == w.scene {
+			w.shot = shot
+			return
+		}
+	}
+}
+
 func (h *workspaceHandler) loadPageFeatures(w *workspacePage) {
 	if w.project == nil {
 		return

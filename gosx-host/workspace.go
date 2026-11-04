@@ -29,6 +29,7 @@ type workspaceHandler struct {
 	onSave   func(int)
 }
 type workspacePage struct {
+	shots                                               []ProjectDocument
 	exportFiles                                         []string
 	store                                               *ProjectStore
 	cloudState, quote                                   ProjectDocument
@@ -410,23 +411,7 @@ func (h *workspaceHandler) render(rw http.ResponseWriter, r *http.Request, statu
 		}
 		w.project = projects[0]
 	}
-	if w.project != nil {
-		shots, _ := documentShots(w.project)
-		for _, s := range shots {
-			if shotText(s, "id") == r.URL.Query().Get("shot") {
-				w.shot = s
-				break
-			}
-		}
-		if w.shot == nil {
-			for _, s := range shots {
-				if w.scene == "" || shotText(s, "scene") == w.scene {
-					w.shot = s
-					break
-				}
-			}
-		}
-	}
+	w.selectShot(r.URL.Query().Get("shot"))
 	h.loadPageFeatures(&w)
 	rw.Header().Set("Content-Type", "text/html; charset=utf-8")
 	rw.WriteHeader(status)
@@ -454,13 +439,12 @@ func (w workspacePage) render() gosx.Node {
 	if w.project == nil {
 		main = append(main, cls("section", "paper welcome", cls("p", "eyebrow", txt("FROM AN IDEA TO A SEQUENCE")), el("h1", txt("A place for your next story.")), el("p", txt("Plan the shots, collect takes and shape the sequence."))))
 	} else {
-		shots, _ := documentShots(w.project)
 		seconds := 0.0
-		for _, s := range shots {
+		for _, s := range w.shots {
 			seconds += number(s, "duration")
 		}
 		heading := cls("section", "project-heading", cls("p", "eyebrow", txt("FROM AN IDEA TO A SEQUENCE")), el("h1", txt(shotText(w.project, "title"))), el("p", txt(shotText(w.project, "brief"))))
-		stats := fmt.Sprintf("%d shots · %.1f seconds · %s · revision %d", len(shots), seconds, shotText(w.project, "aspect"), documentRevision(w.project))
+		stats := fmt.Sprintf("%d shots · %.1f seconds · %s · revision %d", len(w.shots), seconds, shotText(w.project, "aspect"), documentRevision(w.project))
 		main = append(main, heading, cls("div", "project-bar", txt(stats)))
 		export := w.controls("/export")
 		export = append(export, button("Export review package ↓"))
@@ -550,10 +534,9 @@ func (w workspacePage) handoffs() gosx.Node {
 }
 
 func (w workspacePage) episode() gosx.Node {
-	shots, _ := documentShots(w.project)
 	rows := []any{}
 	elapsed := 0.0
-	for i, s := range shots {
+	for i, s := range w.shots {
 		rows = append(rows, cls("article", "episode-row", cls("span", "shot-number", txt(fmt.Sprintf("%02d", i+1))), el("div", cls("p", "eyebrow", txt(fmt.Sprintf("%s · %.1f–%.1fs", shotText(s, "scene"), elapsed, elapsed+number(s, "duration")))), el("h2", txt(shotText(s, "title"))), el("p", txt(shotText(s, "purpose"))), el("p", txt(shotText(s, "dialogue")))), link("Open shot ↗", w.href("board", shotText(s, "id")), "button secondary")))
 		elapsed += number(s, "duration")
 	}
@@ -563,11 +546,10 @@ func (w workspacePage) episode() gosx.Node {
 var fieldLabels = map[string]string{"scene": "Scene / sequence", "story_status": "Story source", "title": "Shot title", "purpose": "Story purpose", "composition": "Composition & starting pose", "action": "Subject action & timing", "camera": "Camera behavior", "sound": "Sound", "continuity": "Continuity", "feedback": "Feedback for the next take", "transition": "Ending / cut", "dialogue": "Dialogue", "narration": "Narration / voiceover", "audience": "What the audience notices", "jorge": "Character’s interpretation", "anomaly": "Intentional anomaly", "start_state": "Start state", "end_state": "End state", "screen_direction": "Screen direction / eye line", "assets_needed": "Required assets / missing inputs", "reference_notes": "Reference application & source status", "blocking": "Blocking diagram", "local_prompt": "Local drawing prompt", "local_negative_prompt": "Drawing exclusions"}
 
 func (w workspacePage) board() gosx.Node {
-	shots, _ := documentShots(w.project)
 	cards := []any{}
 	scenes := []string{""}
 	seen := map[string]bool{}
-	for i, s := range shots {
+	for i, s := range w.shots {
 		scene := shotText(s, "scene")
 		if scene != "" && !seen[scene] {
 			scenes = append(scenes, scene)

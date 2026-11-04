@@ -220,10 +220,14 @@ func musicTiming(p ProjectDocument) ProjectDocument {
 	}
 	return ProjectDocument{"track_seconds": rawValue(seconds), "planned_seconds": rawValue(roundSeconds(elapsed)), "covered_seconds": rawValue(roundSeconds(covered)), "gap_seconds": rawValue(roundSeconds(max(0, seconds-covered))), "unallocated_seconds": rawValue(roundSeconds(max(0, seconds-elapsed))), "overrun_seconds": rawValue(roundSeconds(max(0, elapsed-seconds))), "unmeasured_clips": rawValue(unmeasured), "slots": rawValue(slots)}
 }
-func selectedAsset(s ProjectDocument, kind string) ProjectDocument {
-	for _, a := range list(s, "assets") {
-		if shotText(a, "id") == shotText(s, "selected_"+kind) && shotText(a, "binned_at") == "" {
-			return a
+func selectedAsset(s ProjectDocument, kinds ...string) ProjectDocument {
+	assets := list(s, "assets")
+	for _, kind := range kinds {
+		id := shotText(s, "selected_"+kind)
+		for _, a := range assets {
+			if shotText(a, "id") == id && shotText(a, "binned_at") == "" {
+				return a
+			}
 		}
 	}
 	return nil

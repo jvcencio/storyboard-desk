@@ -2,11 +2,65 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
 )
+
+func BenchmarkWorkspaceBoard(b *testing.B) {
+	store, err := OpenProjectStore(b.TempDir(), false)
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.Cleanup(func() { store.Close() })
+	shots := make([]ProjectDocument, 240)
+	for i := range shots {
+		shots[i] = ProjectDocument{"title": rawValue(fmt.Sprintf("Storyboard shot %03d", i+1)),
+			"purpose": rawValue("Establish action and continuity before the next cut."),
+			"scene":   rawValue(fmt.Sprintf("Scene %02d", i/20+1))}
+	}
+	p, err := store.CreateTemplate(ProjectDocument{"title": rawValue("Board benchmark"), "shots": rawValue(shots)})
+	if err != nil {
+		b.Fatal(err)
+	}
+	id := shotText(p, "id")
+	shots = list(p, "shots")
+	for i, shot := range shots {
+		assets := make([]ProjectDocument, 12)
+		for j := range assets {
+			aid := fmt.Sprintf("%012x", j+1)
+			stem := "media/" + shotText(shot, "id") + "/" + aid
+			assets[j] = ProjectDocument{"id": rawValue(aid), "kind": rawValue("clip"),
+				"path": rawValue(stem + ".mp4"), "poster_path": rawValue(stem + ".png"),
+				"duration_seconds": rawValue(8), "take": rawValue(j + 1)}
+		}
+		shot["assets"] = rawValue(assets)
+		if i%2 == 0 {
+			shot["selected_clip"] = assets[len(assets)-1]["id"]
+		}
+	}
+	p["shots"] = rawValue(shots)
+	dir, err := projectDirectory(store.root, id)
+	if err != nil {
+		b.Fatal(err)
+	}
+	err = writeProjectDocument(dir, p)
+	dir.Close()
+	if err != nil {
+		b.Fatal(err)
+	}
+	h := &workspaceHandler{store: store, csrf: "benchmark"}
+	r := httptest.NewRequest(http.MethodGet, "http://127.0.0.1:4444"+pageURL(id, "board", "", ""), nil)
+	w := benchmarkResponseWriter{header: make(http.Header)}
+	b.ReportAllocs()
+	for b.Loop() {
+		clear(w.header)
+		h.ServeHTTP(w, r)
+	}
+}
 
 func workspacePost(h *workspaceHandler, path string, form url.Values) *httptest.ResponseRecorder {
 	r := httptest.NewRequest("POST", "http://127.0.0.1:4444"+path, strings.NewReader(form.Encode()))

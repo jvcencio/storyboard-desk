@@ -4,6 +4,7 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/fs"
 	"net/http"
 	"path"
@@ -84,11 +85,12 @@ func (h *workspaceHandler) clientAsset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	file := "clientassets/generated/assets/" + name
-	data, err := clientAssets.ReadFile(file)
+	asset, err := clientAssets.Open(file)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
+	defer asset.Close()
 	contentType := "text/javascript; charset=utf-8"
 	if path.Ext(name) == ".wasm" {
 		contentType = "application/wasm"
@@ -98,7 +100,7 @@ func (h *workspaceHandler) clientAsset(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Vary", "Accept-Encoding")
 	for _, encoding := range []string{"br", "gzip"} {
 		accepted := false
-		for _, value := range strings.Split(r.Header.Get("Accept-Encoding"), ",") {
+		for value := range strings.SplitSeq(r.Header.Get("Accept-Encoding"), ",") {
 			if strings.TrimSpace(value) == encoding {
 				accepted = true
 			}
@@ -108,14 +110,18 @@ func (h *workspaceHandler) clientAsset(w http.ResponseWriter, r *http.Request) {
 			if encoding == "br" {
 				suffix = ".br"
 			}
-			if compressed, e := clientAssets.ReadFile(file + suffix); e == nil {
-				data = compressed
+			if compressed, e := clientAssets.Open(file + suffix); e == nil {
+				defer compressed.Close()
+				asset = compressed
 				w.Header().Set("Content-Encoding", encoding)
 				break
 			}
 		}
 	}
+	if info, err := asset.Stat(); err == nil {
+		w.Header().Set("Content-Length", strconv.FormatInt(info.Size(), 10))
+	}
 	if r.Method != http.MethodHead {
-		_, _ = w.Write(data)
+		_, _ = io.Copy(w, asset)
 	}
 }
