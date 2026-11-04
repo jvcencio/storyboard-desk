@@ -26,6 +26,11 @@ var errNoProjectChange = errors.New("project already contains this operation")
 // ProjectDocument retains all fields, including data owned by unported workflows.
 type ProjectDocument map[string]json.RawMessage
 
+type projectSnapshot struct {
+	document ProjectDocument
+	shots    []ProjectDocument
+}
+
 // ProjectStore is the sole writer for a data directory. Every command reads the
 // latest document under mu and patches only fields it owns. The OS lock is also
 // honored by the Python Store and is released automatically after a crash.
@@ -262,57 +267,75 @@ func projectDirectory(root *os.Root, id string) (*os.Root, error) {
 }
 
 func readProjectDocument(dir *os.Root, id string) (ProjectDocument, error) {
+	snapshot, err := readProjectSnapshot(dir, id)
+	return snapshot.document, err
+}
+
+func readProjectSnapshot(dir *os.Root, id string) (projectSnapshot, error) {
 	info, err := dir.Lstat("project.json")
 	if err != nil {
-		return nil, err
+		return projectSnapshot{}, err
 	}
 	if !info.Mode().IsRegular() {
-		return nil, fmt.Errorf("project file must be a regular file")
+		return projectSnapshot{}, fmt.Errorf("project file must be a regular file")
 	}
 	f, err := dir.Open("project.json")
 	if err != nil {
-		return nil, err
+		return projectSnapshot{}, err
 	}
 	defer f.Close()
 	data, err := io.ReadAll(io.LimitReader(f, maxProjectBytes+1))
 	if err != nil {
-		return nil, err
+		return projectSnapshot{}, err
 	}
 	if len(data) > maxProjectBytes {
-		return nil, fmt.Errorf("project document is too large")
+		return projectSnapshot{}, fmt.Errorf("project document is too large")
 	}
 	var p ProjectDocument
 	if !utf8.Valid(data) {
-		return nil, fmt.Errorf("project JSON must be UTF-8")
+		return projectSnapshot{}, fmt.Errorf("project JSON must be UTF-8")
 	}
 	if err = json.Unmarshal(data, &p); err != nil || p == nil {
-		return nil, fmt.Errorf("invalid project JSON")
+		return projectSnapshot{}, fmt.Errorf("invalid project JSON")
 	}
-	if err = validateDocument(p, id); err != nil {
-		return nil, err
-	}
-	return p, nil
+	return validateProject(p, id)
 }
 
 func (s *ProjectStore) load(id string) (ProjectDocument, error) {
+	snapshot, err := s.loadSnapshot(id)
+	return snapshot.document, err
+}
+
+func (s *ProjectStore) loadSnapshot(id string) (projectSnapshot, error) {
 	if err := s.check(); err != nil {
-		return nil, err
+		return projectSnapshot{}, err
 	}
 	dir, err := projectDirectory(s.root, id)
 	if err != nil {
-		return nil, err
+		return projectSnapshot{}, err
 	}
 	defer dir.Close()
-	return readProjectDocument(dir, id)
+	return readProjectSnapshot(dir, id)
 }
 
 func (s *ProjectStore) Load(id string) (ProjectDocument, error) {
+	snapshot, err := s.snapshot(id)
+	return snapshot.document, err
+}
+
+func (s *ProjectStore) snapshot(id string) (projectSnapshot, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.load(id)
+	return s.loadSnapshot(id)
 }
 
 func (s *ProjectStore) List() ([]ProjectDocument, error) {
+	return s.listProjects(nil)
+}
+
+// visit can retain the active project's decoded shots as each project is
+// validated. It runs under the store lock and must avoid calling the store.
+func (s *ProjectStore) listProjects(visit func(projectSnapshot)) ([]ProjectDocument, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if err := s.check(); err != nil {
@@ -344,20 +367,27 @@ func (s *ProjectStore) List() ([]ProjectDocument, error) {
 		} else if e != nil {
 			return nil, e
 		}
-		p, e := s.load(entry.Name())
+		p, e := s.loadSnapshot(entry.Name())
 		if e != nil {
 			return nil, fmt.Errorf("project %s: %w", entry.Name(), e)
 		}
-		projects = append(projects, p)
+		if visit != nil {
+			visit(p)
+		}
+		projects = append(projects, p.document)
 	}
 	sort.Slice(projects, func(i, j int) bool {
-		a, b := shotText(projects[i], "created_at"), shotText(projects[j], "created_at")
-		if a == b {
-			return shotText(projects[i], "id") < shotText(projects[j], "id")
-		}
-		return a < b
+		return projectBefore(projects[i], projects[j])
 	})
 	return projects, nil
+}
+
+func projectBefore(a, b ProjectDocument) bool {
+	left, right := shotText(a, "created_at"), shotText(b, "created_at")
+	if left == right {
+		return shotText(a, "id") < shotText(b, "id")
+	}
+	return left < right
 }
 
 // A temp file and rename in the same directory make readers see the complete

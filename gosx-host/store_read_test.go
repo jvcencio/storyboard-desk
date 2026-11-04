@@ -55,7 +55,14 @@ func TestReadProjectRejectsBadInputWithoutCreatingFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 	path := filepath.Join(dir, "project.json")
-	for _, content := range []string{`not json`, `null`, `{"id":"other","revision":1,"shots":[]}`, `{"id":"p","revision":"1","shots":[]}`, `{"id":"p","revision":1,"shots":null}`, `{"id":"p","revision":1,"shots":[]} {}`} {
+	for _, content := range []string{
+		`not json`, `null`, `{"id":"other","revision":1,"shots":[]}`,
+		`{"id":"p","revision":"1","shots":[]}`, `{"id":"p","revision":1,"shots":null}`,
+		`{"id":"p","revision":1,"shots":[]} {}`,
+		`{"id":"p","revision":1,"shots":[{"id":"s","assets":null}]}`,
+		`{"id":"p","revision":1,"shots":[{"id":"s","assets":{}}]}`,
+		`{"id":"p","revision":1,"shots":[{"id":"s","assets":[1,]}]}`,
+	} {
 		if err := os.WriteFile(path, []byte(content), 0600); err != nil {
 			t.Fatal(err)
 		}

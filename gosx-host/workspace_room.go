@@ -205,7 +205,7 @@ func (room *storyboardRoom) joinPage(w http.ResponseWriter, status int, message 
 }
 
 func (room *storyboardRoom) render(w http.ResponseWriter, r *http.Request, status int, submission action.View) {
-	p, err := room.workspace.store.Load(room.projectID)
+	project, err := room.workspace.store.snapshot(room.projectID)
 	if err != nil {
 		http.Error(w, "Shared project unavailable", http.StatusServiceUnavailable)
 		return
@@ -219,7 +219,8 @@ func (room *storyboardRoom) render(w http.ResponseWriter, r *http.Request, statu
 		http.Error(w, "Editor unavailable", http.StatusServiceUnavailable)
 		return
 	}
-	page := workspacePage{project: p, csrf: room.sessionToken(r), view: "board", scene: r.URL.Query().Get("scene"), submission: submission, shared: true}
+	p := project.document
+	page := workspacePage{project: p, shots: project.shots, csrf: room.sessionToken(r), view: "board", scene: r.URL.Query().Get("scene"), submission: submission, shared: true}
 	page.selectShot(r.URL.Query().Get("shot"))
 	saveStatus := "Saved to project"
 	if submission.Submitted() {
@@ -248,9 +249,9 @@ func (room *storyboardRoom) preview(w http.ResponseWriter, r *http.Request) {
 	prefix := "/media/" + room.projectID + "/"
 	rel, ok := strings.CutPrefix(r.URL.Path, prefix)
 	if ok && shareablePreview(rel) {
-		p, err := room.workspace.store.Load(room.projectID)
+		project, err := room.workspace.store.snapshot(room.projectID)
 		if err == nil {
-			for _, shot := range list(p, "shots") {
+			for _, shot := range project.shots {
 				if _, selected := boardPreview(shot); rel == selected {
 					room.workspace.media(w, r)
 					return

@@ -2,8 +2,23 @@ package main
 
 import "fmt"
 
+func (h *workspaceHandler) workspaceProjects(id string) ([]ProjectDocument, projectSnapshot, error) {
+	var selected projectSnapshot
+	projects, err := h.store.listProjects(func(p projectSnapshot) {
+		if id != "" {
+			if shotText(p.document, "id") == id {
+				selected = p
+			}
+			return
+		}
+		if selected.document == nil || projectBefore(p.document, selected.document) {
+			selected = p
+		}
+	})
+	return projects, selected, err
+}
+
 func (w *workspacePage) selectShot(id string) {
-	w.shots = list(w.project, "shots")
 	if id != "" {
 		for _, shot := range w.shots {
 			if shotText(shot, "id") == id {

@@ -205,3 +205,35 @@ func TestSceneFilterChoosesShotFromThatScene(t *testing.T) {
 		t.Fatal("filtered scene opened another scene's shot editor")
 	}
 }
+
+func TestWorkspaceSelectsTheValidatedProject(t *testing.T) {
+	s := testStore(t)
+	first := createTestProject(t, s)
+	second := createTestProject(t, s)
+	secondID := shotText(second, "id")
+	shotID := shotText(list(second, "shots")[0], "id")
+	if _, err := s.UpdateShot(secondID, shotID, 1, ProjectDocument{"title": rawValue("Current second project shot")}); err != nil {
+		t.Fatal(err)
+	}
+	h := &workspaceHandler{store: s, csrf: "token"}
+	open := func(project string) *httptest.ResponseRecorder {
+		t.Helper()
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "http://127.0.0.1:4444"+pageURL(project, "board", "", ""), nil))
+		return w
+	}
+	if w := open(secondID); w.Code != 200 || !strings.Contains(w.Body.String(), `name="title" value="Current second project shot"`) {
+		t.Fatalf("explicit project did not open with the saved shot: %d", w.Code)
+	}
+	if w := open("missing"); w.Code != 404 {
+		t.Fatalf("unknown project opened another board: %d", w.Code)
+	}
+	// The default project follows the same creation order as the sidebar.
+	defaultProject := first
+	if projectBefore(second, first) {
+		defaultProject = second
+	}
+	if w := open(""); w.Code != 200 || !strings.Contains(w.Body.String(), `name="project" value="`+shotText(defaultProject, "id")+`"`) {
+		t.Fatalf("default project did not follow sidebar order: %d", w.Code)
+	}
+}

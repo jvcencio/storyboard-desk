@@ -60,70 +60,77 @@ func documentShots(p ProjectDocument) ([]ProjectDocument, error) {
 }
 
 func validateDocument(p ProjectDocument, id string) error {
+	_, err := validateProject(p, id)
+	return err
+}
+
+func validateProject(p ProjectDocument, id string) (projectSnapshot, error) {
 	if !projectIDPattern.MatchString(id) || shotText(p, "id") != id {
-		return fmt.Errorf("project ID does not match directory")
+		return projectSnapshot{}, fmt.Errorf("project ID does not match directory")
 	}
 	var revision int
 	if len(p["revision"]) == 0 || nullJSON(p["revision"]) || json.Unmarshal(p["revision"], &revision) != nil || revision < 0 {
-		return fmt.Errorf("invalid project revision")
+		return projectSnapshot{}, fmt.Errorf("invalid project revision")
 	}
 	for _, name := range projectTextFields {
 		if raw, ok := p[name]; ok {
 			if err := validateText(raw); err != nil {
-				return fmt.Errorf("%s: %w", name, err)
+				return projectSnapshot{}, fmt.Errorf("%s: %w", name, err)
 			}
 		}
 	}
 	if raw, ok := p["aspect"]; ok {
 		if err := validateAspect(raw); err != nil {
-			return err
+			return projectSnapshot{}, err
 		}
 	}
 	if raw, ok := p["runtime_limit_seconds"]; ok {
 		if err := validateNumber(raw, 0, 3600); err != nil {
-			return err
+			return projectSnapshot{}, err
 		}
 	}
 	if raw, ok := p["music_video"]; ok {
 		var value bool
 		if nullJSON(raw) || json.Unmarshal(raw, &value) != nil {
-			return fmt.Errorf("music video must be on or off")
+			return projectSnapshot{}, fmt.Errorf("music video must be on or off")
 		}
 	}
 	shots, err := documentShots(p)
 	if err != nil {
-		return err
+		return projectSnapshot{}, err
 	}
 	if len(shots) < 1 || len(shots) > maxShots {
-		return fmt.Errorf("a storyboard needs 1–%d shots", maxShots)
+		return projectSnapshot{}, fmt.Errorf("a storyboard needs 1–%d shots", maxShots)
 	}
 	ids := map[string]bool{}
 	for _, shot := range shots {
 		sid := shotText(shot, "id")
 		if !projectIDPattern.MatchString(sid) || ids[sid] {
-			return fmt.Errorf("shot IDs must be valid and unique")
+			return projectSnapshot{}, fmt.Errorf("shot IDs must be valid and unique")
 		}
 		ids[sid] = true
 		for _, name := range shotFields {
 			if raw, ok := shot[name]; ok {
 				if err := validateText(raw); err != nil {
-					return fmt.Errorf("shot %s %s: %w", sid, name, err)
+					return projectSnapshot{}, fmt.Errorf("shot %s %s: %w", sid, name, err)
 				}
 			}
 		}
 		if raw, ok := shot["duration"]; ok {
 			if err := validateNumber(raw, 1, 60); err != nil {
-				return err
+				return projectSnapshot{}, err
 			}
 		}
 		if raw, ok := shot["assets"]; ok {
-			var assets []json.RawMessage
-			if json.Unmarshal(raw, &assets) != nil || assets == nil {
-				return fmt.Errorf("invalid shot assets")
+			// documentShots already checked the JSON syntax of every nested
+			// value. Only the array type needs checking here.
+			raw = bytes.TrimSpace(raw)
+			if len(raw) == 0 || raw[0] != '[' {
+				return projectSnapshot{}, fmt.Errorf("invalid shot assets")
 			}
 		}
 	}
-	return nil
+	return projectSnapshot{document: p, shots: shots}, nil
 }
 
 func newDraftShot(title, scene string, music bool) (ProjectDocument, error) {

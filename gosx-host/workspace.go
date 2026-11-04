@@ -384,34 +384,28 @@ func (h *workspaceHandler) render(rw http.ResponseWriter, r *http.Request, statu
 		http.Error(rw, err.Error(), 503)
 		return
 	}
-	projects, err := h.store.List()
+	query := r.URL.Query()
+	id := query.Get("project")
+	projects, project, err := h.workspaceProjects(id)
 	if err != nil {
 		http.Error(rw, err.Error(), 500)
 		return
 	}
-	w := workspacePage{store: h.store, nativeSave: h.saveFile != nil, quoteID: r.URL.Query().Get("quote"), projects: projects, csrf: h.csrf, view: r.URL.Query().Get("view"), scene: r.URL.Query().Get("scene"), message: submission.Message(), submission: submission}
-	w.promptProvider = r.URL.Query().Get("provider")
+	if project.document == nil && id != "" && len(projects) > 0 {
+		http.Error(rw, "Project not found", 404)
+		return
+	}
+	w := workspacePage{store: h.store, nativeSave: h.saveFile != nil, quoteID: query.Get("quote"),
+		projects: projects, project: project.document, shots: project.shots, csrf: h.csrf,
+		view: query.Get("view"), scene: query.Get("scene"), message: submission.Message(), submission: submission}
+	w.promptProvider = query.Get("provider")
 	if !containsField([]string{"grok", "flow", "gemini", "other"}, w.promptProvider) {
 		w.promptProvider = "grok"
 	}
 	if w.view == "" {
 		w.view = "board"
 	}
-	id := r.URL.Query().Get("project")
-	for _, p := range projects {
-		if shotText(p, "id") == id {
-			w.project = p
-			break
-		}
-	}
-	if w.project == nil && len(projects) > 0 {
-		if id != "" {
-			http.Error(rw, "Project not found", 404)
-			return
-		}
-		w.project = projects[0]
-	}
-	w.selectShot(r.URL.Query().Get("shot"))
+	w.selectShot(query.Get("shot"))
 	h.loadPageFeatures(&w)
 	rw.Header().Set("Content-Type", "text/html; charset=utf-8")
 	rw.WriteHeader(status)
