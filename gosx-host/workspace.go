@@ -26,6 +26,7 @@ type workspaceHandler struct {
 	csrf     string
 	saveFile func(desktop.SaveFileOptions) (string, error)
 	saveMu   sync.Mutex
+	onSave   func(int)
 }
 type workspacePage struct {
 	exportFiles                                         []string
@@ -40,6 +41,7 @@ type workspacePage struct {
 	promptProvider                                      string
 	submission                                          action.View
 	nativeSave                                          bool
+	shared                                              bool
 }
 
 func el(tag string, children ...any) gosx.Node { return gosx.El(tag, children...) }
@@ -122,9 +124,7 @@ func (h *workspaceHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		http.Error(rw, "Use the local workspace address", 403)
 		return
 	}
-	rw.Header().Set("X-Content-Type-Options", "nosniff")
-	rw.Header().Set("Cache-Control", "no-store")
-	rw.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'self'; script-src 'self' 'wasm-unsafe-eval'; img-src 'self' data:; media-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'")
+	workspaceHeaders(rw, "'self'")
 	if (r.Method == "GET" || r.Method == "HEAD") && strings.HasPrefix(r.URL.Path, "/client/assets/") {
 		h.clientAsset(rw, r)
 		return
@@ -372,6 +372,12 @@ func (h *workspaceHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		target = pageURL(id, view, sid, values.Get("scene_filter"))
 	}
 	http.Redirect(rw, r, target, 303)
+}
+
+func workspaceHeaders(w http.ResponseWriter, connectSources string) {
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'self'; script-src 'self' 'wasm-unsafe-eval'; img-src 'self' data:; media-src 'self'; connect-src "+connectSources+"; form-action 'self'; base-uri 'none'; frame-ancestors 'none'")
 }
 
 func (h *workspaceHandler) render(rw http.ResponseWriter, r *http.Request, status int, submission action.View) {

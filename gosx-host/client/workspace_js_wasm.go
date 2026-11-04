@@ -22,6 +22,9 @@ func (ui *workspaceClient) mount() {
 	ctx, cancel := context.WithCancel(context.Background())
 	ui.cancel = cancel
 	ui.controllers = append(ui.controllers, mountFormState(ctx, ui.doc), mountCapabilities(ctx, ui.doc))
+	if room := query(ui.doc, "[data-room-events]"); room.Truthy() {
+		ui.controllers = append(ui.controllers, mountRoom(ctx, room))
+	}
 	each(ui.doc, "[data-cloud-form]", func(form js.Value) {
 		ui.controllers = append(ui.controllers, mountCloudControls(ctx, form))
 	})

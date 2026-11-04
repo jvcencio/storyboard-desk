@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"strconv"
 
 	"m31labs.dev/gosx/action"
@@ -44,7 +45,7 @@ func decodeShotEdit(values map[string]string) (ShotEditCommand, map[string]strin
 	return command, fields
 }
 
-func (command ShotEditCommand) apply(store *ProjectStore) (ProjectDocument, error) {
+func (command ShotEditCommand) patch() ProjectDocument {
 	patch := make(ProjectDocument, len(command.Text)+1)
 	for name, value := range command.Text {
 		patch[name] = rawValue(value)
@@ -52,18 +53,33 @@ func (command ShotEditCommand) apply(store *ProjectStore) (ProjectDocument, erro
 	if command.Duration != nil {
 		patch["duration"] = rawValue(*command.Duration)
 	}
-	return store.UpdateShot(command.ProjectID, command.ShotID, command.Revision, patch)
+	return patch
 }
 
 func (h *workspaceHandler) saveShotAction(ctx *action.Context) error {
+	return h.saveShot(ctx, false)
+}
+
+func (h *workspaceHandler) saveShot(ctx *action.Context, shared bool) error {
 	command, fields := decodeShotEdit(ctx.FormData)
 	if len(fields) > 0 {
 		return validationFailure(ctx.FormData, fields, "Check the shot brief fields")
 	}
-	project, err := command.apply(h.store)
+	var project ProjectDocument
+	var err error
+	if shared {
+		project, err = h.store.updateSharedShot(command.ProjectID, command.ShotID, command.Revision, ctx.FormData["shot_base"], command.patch())
+		if errors.Is(err, ErrRevision) {
+			failure := mutationFailure("/save", ctx.FormData, err)
+			failure.Result.Message = "This shot changed since you opened it. Copy your draft and open the latest board before applying it"
+			return failure
+		}
+	} else {
+		project, err = h.store.UpdateShot(command.ProjectID, command.ShotID, command.Revision, command.patch())
+	}
 	if err != nil {
 		return mutationFailure("/save", ctx.FormData, err)
 	}
-	actionSaved(ctx, project, "Shot brief saved")
+	h.actionSaved(ctx, project, "Shot brief saved")
 	return nil
 }

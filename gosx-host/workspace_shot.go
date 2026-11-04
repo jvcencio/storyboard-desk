@@ -9,6 +9,7 @@ import (
 type ShotEditorProps struct {
 	Save, Insert FormView
 	Values       map[string]string
+	Base         string
 }
 
 func (w workspacePage) shotForm() gosx.Node {
@@ -20,7 +21,16 @@ func (w workspacePage) shotForm() gosx.Node {
 		values[name] = shotText(w.shot, name)
 	}
 	values["duration"] = fmt.Sprint(number(w.shot, "duration"))
-	return ShotEditor(ShotEditorProps{Save: w.form("/save"), Insert: w.form("/insert"), Values: values})
+	save := w.form("/save")
+	base := ""
+	if w.shared {
+		if save.Rejected != nil {
+			base = save.Rejected.Values["shot_base"]
+		} else {
+			base = shotBriefVersion(w.shot)
+		}
+	}
+	return ShotEditor(ShotEditorProps{Save: save, Insert: w.form("/insert"), Values: values, Base: base})
 }
 
 // ShotEditor renders a shot brief using explicit values and action state. It
@@ -28,6 +38,9 @@ func (w workspacePage) shotForm() gosx.Node {
 func ShotEditor(props ShotEditorProps) gosx.Node {
 	form := props.Save
 	children := form.controls()
+	if props.Base != "" {
+		children = append(children, hidden("shot_base", props.Base))
+	}
 	children = append(children, cls("p", "eyebrow", txt("THE SHOT BRIEF")), el("h2", txt(props.Values["title"])), button("Save shot brief"))
 	for _, name := range shotFields {
 		kind := "textarea"

@@ -398,6 +398,15 @@ func writeProjectDocument(dir *os.Root, p ProjectDocument) error {
 }
 
 func (s *ProjectStore) mutate(id string, revision int, edit func(ProjectDocument) error) (ProjectDocument, error) {
+	return s.mutateChecked(id, func(p ProjectDocument) error {
+		if revision < 0 || documentRevision(p) != revision {
+			return ErrRevision
+		}
+		return nil
+	}, edit)
+}
+
+func (s *ProjectStore) mutateChecked(id string, check, edit func(ProjectDocument) error) (ProjectDocument, error) {
 	s.workflowMu.RLock()
 	defer s.workflowMu.RUnlock()
 	s.mu.Lock()
@@ -406,9 +415,10 @@ func (s *ProjectStore) mutate(id string, revision int, edit func(ProjectDocument
 	if err != nil {
 		return nil, err
 	}
-	if revision < 0 || documentRevision(p) != revision {
-		return nil, ErrRevision
+	if err = check(p); err != nil {
+		return nil, err
 	}
+	revision := documentRevision(p)
 	if err = edit(p); errors.Is(err, errNoProjectChange) {
 		return s.load(id)
 	} else if err != nil {

@@ -65,7 +65,10 @@ func mutationFailure(endpoint string, values map[string]string, err error) *acti
 	return &action.ResultError{Status: failure.Status, Result: failure.Result}
 }
 
-func actionSaved(ctx *action.Context, project ProjectDocument, message string) {
+func (h *workspaceHandler) actionSaved(ctx *action.Context, project ProjectDocument, message string) {
+	if h.onSave != nil {
+		h.onSave(documentRevision(project))
+	}
 	ctx.SetResult(action.Result{OK: true, Message: message, Redirect: formTarget(ctx.FormData), Values: map[string]string{},
 		Data: rawValue(struct {
 			ProjectID string `json:"project_id"`
@@ -79,6 +82,10 @@ func actionSaved(ctx *action.Context, project ProjectDocument, message string) {
 // serveFormAction runs behind the existing loopback Host, Origin, body-cap and
 // per-run CSRF checks. Both transports use POST values, never query overrides.
 func (h *workspaceHandler) serveFormAction(rw http.ResponseWriter, r *http.Request, handler action.Handler) {
+	serveFormAction(rw, r, handler, h.render)
+}
+
+func serveFormAction(rw http.ResponseWriter, r *http.Request, handler action.Handler, render func(http.ResponseWriter, *http.Request, int, action.View)) {
 	values := formValues(r.PostForm)
 	if action.WantsJSON(r) {
 		action.ServeHandlerWithOptions(rw, r, func(ctx *action.Context) error {
@@ -96,7 +103,7 @@ func (h *workspaceHandler) serveFormAction(rw http.ResponseWriter, r *http.Reque
 		}
 		q := url.Values{"project": {values["project"]}, "shot": {values["shot"]}, "view": {values["view"]}, "scene": {values["scene_filter"]}}
 		r.URL.RawQuery = q.Encode()
-		h.render(rw, r, failure.StatusCode(), action.View{Name: r.URL.Path, Status: failure.StatusCode(), Result: failure.ActionResult()})
+		render(rw, r, failure.StatusCode(), action.View{Name: r.URL.Path, Status: failure.StatusCode(), Result: failure.ActionResult()})
 		return
 	}
 	http.Redirect(rw, r, formTarget(values), http.StatusSeeOther)

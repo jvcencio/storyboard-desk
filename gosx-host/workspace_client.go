@@ -59,6 +59,10 @@ func editorRuntime() (*island.Renderer, error) {
 }
 
 func editorDocument(renderer *island.Renderer, w workspacePage, r *http.Request, status int) gosx.Node {
+	return workspaceDocument(renderer, r, status, w.render(), attrs("data-native-save", strconv.FormatBool(w.nativeSave)))
+}
+
+func workspaceDocument(renderer *island.Renderer, r *http.Request, status int, body gosx.Node, bodyAttrs gosx.AttrList) gosx.Node {
 	summary := renderer.Summary()
 	return server.HTMLDocument(&server.DocumentContext{
 		Request: r, Pattern: "/", Path: r.URL.RequestURI(), PageID: "storyboard-workspace", Status: status, Title: "Storyboard Desk",
@@ -69,7 +73,7 @@ func editorDocument(renderer *island.Renderer, w workspacePage, r *http.Request,
 			BootstrapFeatureEnginesPath: summary.BootstrapFeatureEnginesPath, Engines: summary.Engines,
 		},
 		Head: gosx.Fragment(el("link", attrs("rel", "stylesheet", "href", "/workspace.css")), renderer.PreloadHints(), renderer.PageHead()),
-		Body: w.render(), BodyAttrs: attrs("data-native-save", strconv.FormatBool(w.nativeSave)),
+		Body: body, BodyAttrs: bodyAttrs,
 	})
 }
 

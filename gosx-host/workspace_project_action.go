@@ -77,7 +77,7 @@ func (h *workspaceHandler) saveProjectAction(ctx *action.Context) error {
 	if err != nil {
 		return mutationFailure("/project", ctx.FormData, err)
 	}
-	actionSaved(ctx, project, "Project saved")
+	h.actionSaved(ctx, project, "Project saved")
 	return nil
 }
 
@@ -97,7 +97,7 @@ func (h *workspaceHandler) insertShotAction(ctx *action.Context) error {
 	if err != nil {
 		return mutationFailure("/insert", values, err)
 	}
-	actionSaved(ctx, project, "Shot inserted")
+	h.actionSaved(ctx, project, "Shot inserted")
 	return nil
 }
 
@@ -154,6 +154,6 @@ func (h *workspaceHandler) moveShotAction(ctx *action.Context) error {
 	if err != nil {
 		return mutationFailure("/move", values, err)
 	}
-	actionSaved(ctx, project, "Shot moved")
+	h.actionSaved(ctx, project, "Shot moved")
 	return nil
 }

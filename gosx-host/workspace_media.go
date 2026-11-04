@@ -129,20 +129,34 @@ func (w workspacePage) assetPreview(a ProjectDocument) gosx.Node {
 	}
 	return el("img", attrs("src", src, "alt", shotText(a, "original_name"), "loading", "lazy"))
 }
-func (w workspacePage) cardArt(s ProjectDocument) gosx.Node {
+func boardPreview(s ProjectDocument) (ProjectDocument, string) {
 	var a ProjectDocument
 	for _, kind := range []string{"keyframe", "sketch", "clip"} {
 		if a = selectedAsset(s, kind); a != nil {
 			break
 		}
 	}
-	href := w.href("library", shotText(s, "id"))
 	if a == nil {
-		return el("a", attrs("href", href, "class", "card-art"), blockingDiagram(s, shotText(w.project, "aspect")))
+		return nil, ""
 	}
 	path := shotText(a, "path")
 	if shotText(a, "kind") == "clip" {
 		path = shotText(a, "poster_path")
+	}
+	return a, path
+}
+
+func (w workspacePage) cardArt(s ProjectDocument) gosx.Node {
+	href := w.href("library", shotText(s, "id"))
+	a, path := boardPreview(s)
+	if w.shared {
+		href = w.href("board", shotText(s, "id"))
+		if !shareablePreview(path) {
+			a = nil
+		}
+	}
+	if a == nil {
+		return el("a", attrs("href", href, "class", "card-art"), blockingDiagram(s, shotText(w.project, "aspect")))
 	}
 	if path == "" {
 		return link("▶", href, "card-art")

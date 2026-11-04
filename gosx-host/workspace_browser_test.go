@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"os/exec"
@@ -28,7 +29,14 @@ import (
 
 // These tests run the actual Go-WASM editor in an isolated headless browser.
 // Native Save dialog results are injected here; OS dialog proof is separate.
-func editorBrowser(t *testing.T, h *workspaceHandler) (context.Context, string) {
+func editorBrowser(t *testing.T, h http.Handler) (context.Context, string) {
+	t.Helper()
+	server := httptest.NewServer(h)
+	t.Cleanup(server.Close)
+	return editorBrowserContext(t), server.URL
+}
+
+func editorBrowserContext(t *testing.T, extra ...chromedp.ExecAllocatorOption) context.Context {
 	t.Helper()
 	name := os.Getenv("STORYBOARD_BROWSER_EXECUTABLE")
 	if name == "" {
@@ -44,11 +52,10 @@ func editorBrowser(t *testing.T, h *workspaceHandler) (context.Context, string) 
 		}
 		t.Skip("headless Chrome is not installed")
 	}
-	server := httptest.NewServer(h)
-	t.Cleanup(server.Close)
 	parent, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	t.Cleanup(cancel)
 	options := append(chromedp.DefaultExecAllocatorOptions[:], chromedp.ExecPath(binary), chromedp.WindowSize(1440, 960), chromedp.Flag("headless", "new"), chromedp.NoSandbox)
+	options = append(options, extra...)
 	allocator, stop := chromedp.NewExecAllocator(parent, options...)
 	t.Cleanup(stop)
 	ctx, closeBrowser := chromedp.NewContext(allocator)
@@ -73,7 +80,7 @@ func editorBrowser(t *testing.T, h *workspaceHandler) (context.Context, string) 
 			t.Logf("browser exceptions: %v", errors)
 		}
 	})
-	return ctx, server.URL
+	return ctx
 }
 
 func browserText(selector, want string) chromedp.Action {

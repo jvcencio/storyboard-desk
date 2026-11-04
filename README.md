@@ -48,6 +48,26 @@ The footage reel may be longer than its song section. That extra material is del
 
 See [the first-session walkthrough](docs/GETTING_STARTED.md) for image/video generation and common questions.
 
+## Multiplayer storyboarding
+
+Open an existing project in the local editor and copy the `project` ID from its address. Close the editor to release the data directory, then start a room for that project.
+
+```sh
+./build/gosx/storyboard-desk-go -data-dir /absolute/path/to/projects -share-project PROJECT_ID -port 4493
+```
+
+Open the printed room address in a browser and enter the printed room code. Collaborators can edit shot briefs, insert shots and reorder the board. The room shows the number of connected browser sessions and announces new saves. **Open latest board** loads the saved board and asks before discarding a draft. Changes to different shots can save in parallel. If two people change the same shot, the later save keeps its draft on screen for manual reconciliation.
+
+For remote collaborators with SSH access, forward the room port and open the same loopback address on each machine.
+
+```sh
+ssh -N -L 127.0.0.1:4493:127.0.0.1:4493 user@host
+```
+
+For browser access through an existing private HTTPS proxy, add `-share-origin https://board.example.com` and route that origin to `127.0.0.1:4493` on the host. Preserve the public `Host` header and forward the WebSocket upgrade at `/room/events`. Share the printed address and room code with collaborators who should have edit access. Stop the room with Ctrl+C to end the session. Restarting creates a new code and invalidates the previous browser sessions.
+
+The room shares one board and its selected preview images. Media management, generation, downloads and project settings are available in the local editor. The saved board uses the existing project format.
+
 ## Optional Google image and Veo generation
 
 The **Generate** workspace calls supported Google image models and silent Veo video through **OpenRouter**. Your own OpenRouter API credits and account access are required; a Google/ChatGPT/Claude consumer subscription does not configure this route.

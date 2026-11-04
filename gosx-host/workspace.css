@@ -9,6 +9,7 @@
 @media(max-width:460px){.shot-grid{grid-template-columns:1fr}.card-art{aspect-ratio:2/1}.card-body{padding:16px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 .field-error{color:var(--danger);font-size:12px;overflow-wrap:anywhere}[aria-invalid=true]{border-color:var(--danger)}
+.workspace.room-workspace{margin-inline:auto;padding-top:24px}.room-status{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-block:16px;color:var(--muted)}
 .media-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.take-card{margin:0;min-width:0}.take-card>img,.take-card>video{width:100%;height:260px;object-fit:contain;background:#202b25}.take-card details{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}.take-card details form{padding-top:15px}.take-card form{margin-block:15px}.take-card form+form{border-top:1px solid var(--line);padding-top:14px}.take-card .status{color:var(--accent);font-size:12px}
 @media(max-width:760px){.media-grid{grid-template-columns:1fr}.take-card>img,.take-card>video{height:220px}}
 

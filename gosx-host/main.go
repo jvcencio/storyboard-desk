@@ -71,11 +71,31 @@ func run() error {
 	port := flag.Int("port", -1, "workspace port (0 chooses an available loopback port)")
 	settingsFile := flag.String("settings", "", "optional settings JSON file")
 	askKey := flag.Bool("ask-openrouter-key", false, "read a hidden OpenRouter key for this process only")
+	shareProject := flag.String("share-project", "", "host an invite-only browser room for an existing project ID")
+	shareOrigin := flag.String("share-origin", "", "room HTTPS origin when using a loopback reverse proxy")
 	flag.Parse()
 	explicit := map[string]bool{}
 	flag.Visit(func(f *flag.Flag) { explicit[f.Name] = true })
 	if flag.NArg() != 0 {
 		return fmt.Errorf("unexpected argument %q", flag.Arg(0))
+	}
+	var roomOrigin *url.URL
+	if explicit["share-project"] {
+		if !projectIDPattern.MatchString(*shareProject) {
+			return fmt.Errorf("choose an existing project ID for -share-project")
+		}
+		if *check || *board || *editor || *background || *askKey || *initData || (explicit["native"] && *native) {
+			return fmt.Errorf("-share-project starts a foreground browser room for an existing project")
+		}
+	}
+	if explicit["share-origin"] {
+		if *shareProject == "" {
+			return fmt.Errorf("-share-origin requires -share-project")
+		}
+		var err error
+		if roomOrigin, err = parseShareOrigin(*shareOrigin); err != nil {
+			return err
+		}
 	}
 	if *check {
 		if *board || *editor || *background || *askKey || *dataDir != "" {
@@ -129,6 +149,9 @@ func run() error {
 	}
 	if selectedPort < 0 || selectedPort > 65535 {
 		return fmt.Errorf("choose a loopback port from 0 to 65535")
+	}
+	if *shareProject != "" {
+		return startStoryboardRoom(data, *shareProject, selectedPort, roomOrigin)
 	}
 	if *board {
 		store, err := OpenProjectStore(data, initialize)

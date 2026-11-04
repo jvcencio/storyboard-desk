@@ -287,7 +287,11 @@ func (s *ProjectStore) UpdateProject(id string, revision int, patch ProjectDocum
 }
 
 func (s *ProjectStore) UpdateShot(id, shotID string, revision int, patch ProjectDocument) (ProjectDocument, error) {
-	return s.mutate(id, revision, func(p ProjectDocument) error {
+	return s.mutate(id, revision, editShot(shotID, patch))
+}
+
+func editShot(shotID string, patch ProjectDocument) func(ProjectDocument) error {
+	return func(p ProjectDocument) error {
 		shots, err := documentShots(p)
 		if err != nil {
 			return err
@@ -322,7 +326,7 @@ func (s *ProjectStore) UpdateShot(id, shotID string, revision int, patch Project
 			return validateCoverageReservations(p)
 		}
 		return nil
-	})
+	}
 }
 
 func (s *ProjectStore) Insert(id, anchor, position string, revision int) (ProjectDocument, error) {
