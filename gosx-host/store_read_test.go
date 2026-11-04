@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -14,7 +15,9 @@ func TestReadProjectPreservesExistingData(t *testing.T) {
 	if err := os.Mkdir(dir, 0700); err != nil {
 		t.Fatal(err)
 	}
-	original := []byte(`{"id":"project_1","revision":7,"title":"Test","shots":[{"id":"s","assets":[{"path":"media/take.mp4"}],"future":{"v":1}}],"future":{"enabled":true}}`)
+	original := []byte(`{"id":"superseded","id":"project_1","revision":7,"title":"Legacy \ud800 雪",
+		"shots":[{"id":"old","id":"s","assets":[{"path":"media/take.mp4"}],"future":{"v":1}}],
+		"future":{"enabled":true, "large":900719925474099312345, "nullable":null}}`)
 	path := filepath.Join(dir, "project.json")
 	if err := os.WriteFile(path, original, 0600); err != nil {
 		t.Fatal(err)
@@ -23,12 +26,20 @@ func TestReadProjectPreservesExistingData(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(project["future"]) != `{"enabled":true}` {
-		t.Fatalf("unknown fields lost: %s", project["future"])
+	var want ProjectDocument
+	if err := json.Unmarshal(original, &want); err != nil {
+		t.Fatal(err)
 	}
-	var shots []map[string]json.RawMessage
-	if err := json.Unmarshal(project["shots"], &shots); err != nil || string(shots[0]["future"]) != `{"v":1}` {
-		t.Fatalf("shots lost: %s: %v", project["shots"], err)
+	if !reflect.DeepEqual(ProjectDocument(project), want) {
+		t.Fatal("project reader changed legacy keys or raw values")
+	}
+	var wantShots []ProjectDocument
+	if err := json.Unmarshal(want["shots"], &wantShots); err != nil {
+		t.Fatal(err)
+	}
+	shots, err := documentShots(project)
+	if err != nil || !reflect.DeepEqual(shots, wantShots) {
+		t.Fatalf("shot reader changed legacy keys or raw values: %v", err)
 	}
 	after, err := os.ReadFile(path)
 	if err != nil || string(after) != string(original) {

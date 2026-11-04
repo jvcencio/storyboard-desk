@@ -28,6 +28,9 @@ func containsField(fields []string, name string) bool {
 }
 
 func validateText(raw json.RawMessage) error {
+	if bytes.Equal(raw, []byte(`""`)) {
+		return nil
+	}
 	var value string
 	if nullJSON(raw) || json.Unmarshal(raw, &value) != nil || !utf8.ValidString(value) || utf8.RuneCountInString(value) > 12000 {
 		return fmt.Errorf("text is missing or too long")
@@ -52,8 +55,8 @@ func validateAspect(raw json.RawMessage) error {
 }
 
 func documentShots(p ProjectDocument) ([]ProjectDocument, error) {
-	var shots []ProjectDocument
-	if json.Unmarshal(p["shots"], &shots) != nil || shots == nil {
+	shots, err := decodeProjectJSON[[]ProjectDocument](p["shots"])
+	if err != nil || shots == nil {
 		return nil, fmt.Errorf("invalid project shots")
 	}
 	return shots, nil

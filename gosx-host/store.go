@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -284,18 +285,22 @@ func readProjectSnapshot(dir *os.Root, id string) (projectSnapshot, error) {
 		return projectSnapshot{}, err
 	}
 	defer f.Close()
-	data, err := io.ReadAll(io.LimitReader(f, maxProjectBytes+1))
-	if err != nil {
+	// Size the buffer for the usual case, but keep the read bound if the file
+	// size changes after Lstat. MinRead leaves space for the final EOF read.
+	capacity := int(min(info.Size(), maxProjectBytes+1)) + bytes.MinRead
+	buffer := bytes.NewBuffer(make([]byte, 0, capacity))
+	if _, err := buffer.ReadFrom(io.LimitReader(f, maxProjectBytes+1)); err != nil {
 		return projectSnapshot{}, err
 	}
+	data := buffer.Bytes()
 	if len(data) > maxProjectBytes {
 		return projectSnapshot{}, fmt.Errorf("project document is too large")
 	}
-	var p ProjectDocument
 	if !utf8.Valid(data) {
 		return projectSnapshot{}, fmt.Errorf("project JSON must be UTF-8")
 	}
-	if err = json.Unmarshal(data, &p); err != nil || p == nil {
+	p, err := decodeProjectJSON[ProjectDocument](data)
+	if err != nil || p == nil {
 		return projectSnapshot{}, fmt.Errorf("invalid project JSON")
 	}
 	return validateProject(p, id)
