@@ -18,6 +18,8 @@ func (h *workspaceHandler) coreAction(endpoint string) action.Handler {
 		return h.insertShotAction
 	case "/move":
 		return h.moveShotAction
+	case "/reference-note":
+		return h.referenceNoteAction
 	}
 	return nil
 }

@@ -92,7 +92,7 @@ func (w workspacePage) generation() gosx.Node {
 		f = append(f, hidden("hash", hash), el("pre", txt(jsonText(object(brief, "content")))), button("Approve this production brief"))
 		content = append(content, el("details", attrs("class", "paper"), el("summary", txt("Review production brief")), el("form", f...)))
 	}
-	selector := []any{attrs("method", "get"), hidden("project", shotText(w.project, "id")), hidden("view", "generate"), w.shotSelector("shot", shotText(w.shot, "id")), button("Choose shot")}
+	selector := []any{attrs("method", "get", "action", "/"), hidden("project", shotText(w.project, "id")), hidden("view", "generate"), w.shotSelector("shot", shotText(w.shot, "id")), button("Choose shot")}
 	content = append(content, el("form", selector...))
 	f = w.controls("/cloud-prepare")
 	f = append(f, attrs("data-cloud-form", "true"))

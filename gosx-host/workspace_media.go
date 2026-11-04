@@ -165,7 +165,7 @@ func (w workspacePage) cardArt(s ProjectDocument) gosx.Node {
 }
 func (w workspacePage) mediaLibrary() gosx.Node {
 	panels := []any{cls("div", "paper", el("h2", txt("Import images & footage")), el("p", txt("Choose the destination shot, then copy an image or clip into the project. Originals stay in place; new takes arrive unselected.")))}
-	selector := []any{attrs("method", "get"), hidden("project", shotText(w.project, "id")), hidden("view", "library"), w.shotSelector("shot", shotText(w.shot, "id")), w.selectField("", "Prompt destination", "provider", w.promptProvider, []string{"grok", "flow", "gemini", "other"}), button("Choose shot")}
+	selector := []any{attrs("method", "get", "action", "/"), hidden("project", shotText(w.project, "id")), hidden("view", "library"), w.shotSelector("shot", shotText(w.shot, "id")), w.selectField("", "Prompt destination", "provider", w.promptProvider, []string{"grok", "flow", "gemini", "other"}), button("Choose shot")}
 	panels = append(panels, el("form", selector...), cls("div", "paper", el("h3", txt("Import to "+shotText(w.shot, "title"))), w.uploadForm("")))
 	cards := []any{}
 	for _, s := range list(w.project, "shots") {

@@ -14,7 +14,7 @@ go -C gosx-host run ./cmd/package
 
 Double-click **Start Storyboard Desk.bat** on Windows or **Start Storyboard Desk.command** on Mac. Linux can run `./build/gosx/storyboard-desk-go` or `sh 'Start Storyboard Desk.command'`. The launchers prefer the packaged executable, then a module-local binary, then `go run`. `STORYBOARD_GO_EXECUTABLE` selects an explicit built workspace. The older **Start Storyboard Desk Go** names are aliases.
 
-Windows needs the installed Evergreen WebView2 Runtime and the packaged **WebView2Loader.dll** beside the executable. `-browser` selects browser mode on Windows. Mac native hosting remains available with `-native` or the built app bundle, but still needs real Mac verification; its standard source launcher uses the browser.
+Windows needs the installed Evergreen WebView2 Runtime and the packaged **WebView2Loader.dll** beside the executable. `-browser` selects browser mode on Windows. The standard Mac source launcher uses the browser. Use `-native` or the built app bundle for the Mac window. See the [Apple Silicon verification](docs/gosx-mac-verification.json) for tested builds.
 
 To open existing work explicitly:
 
@@ -118,7 +118,8 @@ go -C gosx-host vet ./...
 go -C gosx-host run ./cmd/package -target linux-amd64
 # Optional browser checks: installed headless Chrome, driven entirely from Go.
 go -C gosx-host test -tags browser -run '^TestWorkspaceGoClient' .
-\n+# Optional macOS AVFoundation helpers (Apple Command Line Tools required):
+
+# Optional macOS AVFoundation helpers (Apple Command Line Tools required):
 go -C gosx-host run ./cmd/native
 
 # Use a separate data folder and port for development:

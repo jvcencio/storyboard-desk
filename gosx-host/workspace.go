@@ -227,9 +227,6 @@ func (h *workspaceHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 				if err == nil {
 					return
 				}
-			case "/reference-note":
-				index, _ := strconv.Atoi(values.Get("index"))
-				updated, err = h.store.ReferenceNote(id, rev, index, values.Get("operation"), values.Get("title"), values.Get("url"), values.Get("notes"))
 			case "/references":
 				var refs []ProjectDocument
 				if json.Unmarshal([]byte(values.Get("references")), &refs) != nil || refs == nil {
@@ -515,12 +512,14 @@ func (w workspacePage) references() gosx.Node {
 	refs := list(w.project, "references")
 	cards := []any{}
 	for i, r := range refs {
-		c := w
-		c = c.scoped("index", strconv.Itoa(i))
-		f := c.controls("/reference-note")
-		f = append(f, hidden("index", strconv.Itoa(i)), hidden("operation", "update"), c.field("/reference-note", "Title", "title", shotText(r, "title"), "text"), c.field("/reference-note", "Source URL", "url", shotText(r, "url"), "url"), c.field("/reference-note", "Notes", "notes", shotText(r, "notes"), "textarea"), button("Save reference note"))
-		remove := c.controls("/reference-note")
-		remove = append(remove, hidden("index", strconv.Itoa(i)), hidden("operation", "remove"), button("Remove note"))
+		index := strconv.Itoa(i)
+		c := w.scoped("index", index)
+		edit := c.scoped("operation", "update").form("/reference-note")
+		f := append(edit.controls(), hidden("index", index), hidden("operation", "update"),
+			edit.field("Title", "title", shotText(r, "title"), "text"), edit.field("Source URL", "url", shotText(r, "url"), "url"),
+			edit.field("Notes", "notes", shotText(r, "notes"), "textarea"), button("Save reference note"))
+		remove := c.scoped("operation", "remove").controls("/reference-note")
+		remove = append(remove, hidden("index", index), hidden("operation", "remove"), button("Remove note"))
 		cards = append(cards, cls("article", "paper", link("Open reference ↗", shotText(r, "url"), "button secondary"), el("form", f...), el("form", remove...)))
 	}
 	raw := w.project["references"]
@@ -532,9 +531,14 @@ func (w workspacePage) references() gosx.Node {
 	for _, ref := range list(w.project, "visual_references") {
 		cards = append(cards, cls("article", "paper", el("img", attrs("src", mediaURL(shotText(w.project, "id"), shotText(ref, "path")), "alt", shotText(ref, "title"), "class", "reference-image")), el("h3", txt(shotText(ref, "title"))), el("p", txt(shotText(ref, "notes")))))
 	}
-	add := w.controls("/reference-note")
-	add = append(add, hidden("operation", "add"), w.field("/reference-note", "Title", "title", "", "text"), w.field("/reference-note", "Source URL", "url", "", "url"), w.field("/reference-note", "Notes", "notes", "", "textarea"), button("Add reference note"))
-	return el("section", cls("div", "paper", el("h2", txt("Appearance images")), w.uploadForm("reference")), cls("div", "reference-grid", fragment(cards...)), cls("details", "paper", el("summary", txt("Add a reference note")), el("form", add...)), cls("details", "paper", el("summary", txt("Advanced reference JSON")), el("form", children...)))
+	add := w.scoped("operation", "add").form("/reference-note")
+	addFields := append(add.controls(), hidden("operation", "add"), add.field("Title", "title", "", "text"),
+		add.field("Source URL", "url", "", "url"), add.field("Notes", "notes", "", "textarea"), button("Add reference note"))
+	addDetails := []any{el("summary", txt("Add a reference note")), el("form", addFields...)}
+	if add.Rejected != nil {
+		addDetails = append(addDetails, attrs("open", "open"))
+	}
+	return el("section", cls("div", "paper", el("h2", txt("Appearance images")), w.uploadForm("reference")), cls("div", "reference-grid", fragment(cards...)), cls("details", "paper", addDetails...), cls("details", "paper", el("summary", txt("Advanced reference JSON")), el("form", children...)))
 }
 
 func (w workspacePage) handoffs() gosx.Node {
@@ -585,6 +589,6 @@ func (w workspacePage) board() gosx.Node {
 		card = append(card, cls("div", "card-footer", el("form", f...)))
 		cards = append(cards, cls("article", class, card...))
 	}
-	filters := []any{attrs("method", "get", "class", "scene-filter"), hidden("project", shotText(w.project, "id")), hidden("view", "board"), w.selectField("", "Scene / sequence", "scene", w.scene, scenes), button("Filter")}
+	filters := []any{attrs("method", "get", "action", "/", "class", "scene-filter"), hidden("project", shotText(w.project, "id")), hidden("view", "board"), w.selectField("", "Scene / sequence", "scene", w.scene, scenes), button("Filter")}
 	return el("section", el("form", filters...), cls("div", "board-layout", cls("div", "shot-grid", fragment(cards...)), w.shotForm()))
 }

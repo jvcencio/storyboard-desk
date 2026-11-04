@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -123,21 +124,26 @@ func TestWorkspaceGoClientSharedStoryboard(t *testing.T) {
 	if draft != "Keep this conflicting draft" || revision != strconv.Itoa(base+1) {
 		t.Fatalf("conflict changed draft %q or revision %q", draft, revision)
 	}
-	cancelled := make(chan error, 1)
+	navigation := make(chan error, 1)
+	var acceptNavigation atomic.Bool
 	chromedp.ListenTarget(a, func(event any) {
 		if _, ok := event.(*page.EventJavascriptDialogOpening); ok {
-			go func() { cancelled <- chromedp.Run(a, page.HandleJavaScriptDialog(false)) }()
+			go func() { navigation <- chromedp.Run(a, page.HandleJavaScriptDialog(acceptNavigation.Load())) }()
 		}
 	})
-	run(a, chromedp.Click(".room-status a", chromedp.ByQuery))
-	select {
-	case err := <-cancelled:
-		if err != nil {
-			t.Fatal(err)
+	waitForDraftPrompt := func() {
+		t.Helper()
+		select {
+		case err := <-navigation:
+			if err != nil {
+				t.Fatal(err)
+			}
+		case <-time.After(3 * time.Second):
+			t.Fatal("navigation skipped the draft guard")
 		}
-	case <-time.After(3 * time.Second):
-		t.Fatal("opening the latest board discarded the conflicting draft")
 	}
+	run(a, chromedp.Click(".room-status a", chromedp.ByQuery))
+	waitForDraftPrompt()
 	submit(a, 409)
 	run(a, presence(base+3, false))
 	previous := map[string]bool{}
@@ -160,6 +166,13 @@ func TestWorkspaceGoClientSharedStoryboard(t *testing.T) {
 	if draft != "Keep this conflicting draft" {
 		t.Fatal("reconnect lost the draft")
 	}
+	acceptNavigation.Store(true)
+	response, err := chromedp.RunResponse(a, chromedp.Click(".scene-filter button", chromedp.ByQuery))
+	if err != nil || response == nil || response.Status != 200 {
+		t.Fatalf("filter after rejected save: %+v %v", response, err)
+	}
+	waitForDraftPrompt()
+	run(a, browserReady(), presence(base+3, false))
 	project, err = store.Load(id)
 	if err != nil {
 		t.Fatal(err)
@@ -169,5 +182,5 @@ func TestWorkspaceGoClientSharedStoryboard(t *testing.T) {
 		shotText(shots[1], "title") != "Second collaborator · 雪" {
 		t.Fatal("saved shots or revision did not survive concurrent editing")
 	}
-	t.Log("Independent sessions used HTTPS and WSS through a loopback proxy, saved different shots from the same revision, retained a conflicting draft on rejection and reconnect, and left the committed revision at three successful changes.")
+	t.Log("Independent sessions used HTTPS and WSS, saved different shots, retained a conflicting draft across rejection and reconnect, and could filter the board after confirming draft discard. The revision advanced only for three successful saves.")
 }
