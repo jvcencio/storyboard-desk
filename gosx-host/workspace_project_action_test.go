@@ -140,8 +140,10 @@ func TestWorkspaceRejectedMoveScopesEachShotCard(t *testing.T) {
 	}
 	defer s.Close()
 	p, _ := s.Load(id)
-	h := &workspaceHandler{store: s, csrf: "token"}
-	form := url.Values{"csrf": {"token"}, "project": {id}, "shot": {"second"}, "revision": {strconv.Itoa(documentRevision(p))}, "view": {"board"}, "delta": {"0"}}
+	const token = `token<&"`
+	h := &workspaceHandler{store: s, csrf: token}
+	current, rejected := strconv.Itoa(documentRevision(p)), strconv.Itoa(documentRevision(p)-1)
+	form := url.Values{"csrf": {token}, "project": {id}, "shot": {"second"}, "revision": {rejected}, "view": {"board"}, "delta": {"0"}}
 	r := workspacePost(h, "/move", form)
 	if r.Code != 400 {
 		t.Fatal("invalid movement was accepted")
@@ -149,6 +151,14 @@ func TestWorkspaceRejectedMoveScopesEachShotCard(t *testing.T) {
 	forms := renderedInputs(t, r.Body.String(), "/move")
 	if len(forms) != 2 || forms[0]["shot"] != "first" || forms[0]["rejected"] != "" || forms[1]["shot"] != "second" || forms[1]["rejected"] != "true" {
 		t.Fatalf("rejected movement leaked into another shot's form: %+v", forms)
+	}
+	if forms[0]["revision"] != current || forms[1]["revision"] != rejected {
+		t.Fatalf("move forms lost their current or rejected revision: %+v", forms)
+	}
+	for _, fields := range forms {
+		if fields["csrf"] != token || fields["project"] != id || fields["view"] != "board" {
+			t.Fatalf("incorrect shared move controls: %+v", fields)
+		}
 	}
 }
 

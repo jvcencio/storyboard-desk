@@ -55,11 +55,14 @@ func fragment(children ...any) gosx.Node {
 }
 func txt(s string) gosx.Node { return gosx.Text(s) }
 func attrs(pairs ...string) gosx.AttrList {
-	nodes := []any{}
+	if len(pairs) < 2 {
+		return nil
+	}
+	nodes := make(gosx.AttrList, 0, len(pairs)/2)
 	for i := 0; i+1 < len(pairs); i += 2 {
 		nodes = append(nodes, gosx.Attr(pairs[i], pairs[i+1]))
 	}
-	return gosx.Attrs(nodes...)
+	return nodes
 }
 func cls(tag, class string, children ...any) gosx.Node {
 	return el(tag, append([]any{attrs("class", class)}, children...)...)
@@ -540,9 +543,19 @@ func (w workspacePage) episode() gosx.Node {
 var fieldLabels = map[string]string{"scene": "Scene / sequence", "story_status": "Story source", "title": "Shot title", "purpose": "Story purpose", "composition": "Composition & starting pose", "action": "Subject action & timing", "camera": "Camera behavior", "sound": "Sound", "continuity": "Continuity", "feedback": "Feedback for the next take", "transition": "Ending / cut", "dialogue": "Dialogue", "narration": "Narration / voiceover", "audience": "What the audience notices", "jorge": "Character’s interpretation", "anomaly": "Intentional anomaly", "start_state": "Start state", "end_state": "End state", "screen_direction": "Screen direction / eye line", "assets_needed": "Required assets / missing inputs", "reference_notes": "Reference application & source status", "blocking": "Blocking diagram", "local_prompt": "Local drawing prompt", "local_negative_prompt": "Drawing exclusions"}
 
 func (w workspacePage) board() gosx.Node {
-	cards := []any{}
+	cards := make([]gosx.Node, 0, len(w.shots))
 	scenes := []string{""}
 	seen := map[string]bool{}
+	scope := w.formScope()
+	moveControls := (FormView{Scope: scope, Action: "/move"}).sharedControls()
+	rejectedMove := w.submission.Submitted() && w.submission.Name == "/move"
+	moveButtons := [2]any{
+		el("button", attrs("name", "delta", "value", "-1", "title", "Move earlier"), txt("←")),
+		el("button", attrs("name", "delta", "value", "1", "title", "Move later"), txt("→")),
+	}
+	cardClass, selectedClass := attrs("class", "shot-card"), attrs("class", "shot-card selected")
+	cardTop, cardBody, cardFooter := attrs("class", "card-top"), attrs("class", "card-body"), attrs("class", "card-footer")
+	eyebrow := attrs("class", "eyebrow")
 	for i, s := range w.shots {
 		scene := shotText(s, "scene")
 		if scene != "" && !seen[scene] {
@@ -552,19 +565,32 @@ func (w workspacePage) board() gosx.Node {
 		if w.scene != "" && scene != w.scene {
 			continue
 		}
-		class := "shot-card"
-		if shotText(s, "id") == shotText(w.shot, "id") {
-			class += " selected"
+		shotID := shotText(s, "id")
+		class := cardClass
+		if shotID == scope.ShotID {
+			class = selectedClass
 		}
-		card := []any{cls("div", "card-top", el("span", txt(fmt.Sprintf("SHOT %03d", (i+1)*10))), el("span", txt(fmt.Sprintf("%.1fs", number(s, "duration"))))), w.cardArt(s), cls("div", "card-body", cls("p", "eyebrow", txt(scene)), el("h2", txt(shotText(s, "title"))), el("p", txt(shotText(s, "purpose"))))}
-		c := w
-		c.shot = s
-		c = c.scoped("shot", shotText(s, "id"))
-		f := c.controls("/move")
-		f = append(f, el("button", attrs("name", "delta", "value", "-1", "title", "Move earlier"), txt("←")), el("button", attrs("name", "delta", "value", "1", "title", "Move later"), txt("→")), link("Edit shot ↗", w.href("board", shotText(s, "id")), "button secondary"))
-		card = append(card, cls("div", "card-footer", el("form", f...)))
-		cards = append(cards, cls("article", class, card...))
+		controls := moveControls
+		if rejectedMove {
+			card := w.scoped("shot", shotID)
+			if card.submission.Submitted() {
+				card.shot = s
+				controls = card.form("/move").sharedControls()
+			}
+		}
+		editHref := pageURL(scope.ProjectID, "board", shotID, w.scene)
+		artHref := editHref
+		if !w.shared {
+			artHref = pageURL(scope.ProjectID, "library", shotID, w.scene)
+		}
+		title := shotText(s, "title")
+		f := controls.forShot(shotID, moveButtons[0], moveButtons[1], link("Edit shot ↗", editHref, "button secondary"))
+		cards = append(cards, el("article", class,
+			el("div", cardTop, el("span", txt(fmt.Sprintf("SHOT %03d", (i+1)*10))), el("span", txt(fmt.Sprintf("%.1fs", number(s, "duration"))))),
+			w.cardArt(s, scope.ProjectID, artHref, title),
+			el("div", cardBody, el("p", eyebrow, txt(scene)), el("h2", txt(title)), el("p", txt(shotText(s, "purpose")))),
+			el("div", cardFooter, el("form", f...))))
 	}
 	filters := []any{attrs("method", "get", "action", "/", "class", "scene-filter"), hidden("project", shotText(w.project, "id")), hidden("view", "board"), w.selectField("", "Scene / sequence", "scene", w.scene, scenes), button("Filter")}
-	return el("section", el("form", filters...), cls("div", "board-layout", cls("div", "shot-grid", fragment(cards...)), w.shotForm()))
+	return el("section", el("form", filters...), cls("div", "board-layout", cls("div", "shot-grid", gosx.Fragment(cards...)), w.shotForm()))
 }

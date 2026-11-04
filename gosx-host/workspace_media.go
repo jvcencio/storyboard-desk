@@ -179,11 +179,9 @@ func boardPreview(s ProjectDocument) (string, bool) {
 	return "", false
 }
 
-func (w workspacePage) cardArt(s ProjectDocument) gosx.Node {
-	href := w.href("library", shotText(s, "id"))
+func (w workspacePage) cardArt(s ProjectDocument, projectID, href, title string) gosx.Node {
 	path, hasPreview := boardPreview(s)
 	if w.shared {
-		href = w.href("board", shotText(s, "id"))
 		hasPreview = hasPreview && shareablePreview(path)
 	}
 	if !hasPreview {
@@ -192,7 +190,7 @@ func (w workspacePage) cardArt(s ProjectDocument) gosx.Node {
 	if path == "" {
 		return link("▶", href, "card-art")
 	}
-	return el("a", attrs("href", href, "class", "card-art"), el("img", attrs("src", mediaURL(shotText(w.project, "id"), path), "alt", shotText(s, "title"), "loading", "lazy")))
+	return el("a", attrs("href", href, "class", "card-art"), el("img", attrs("src", mediaURL(projectID, path), "alt", title, "loading", "lazy")))
 }
 func (w workspacePage) mediaLibrary() gosx.Node {
 	panels := []any{cls("div", "paper", el("h2", txt("Import images & footage")), el("p", txt("Choose the destination shot, then copy an image or clip into the project. Originals stay in place; new takes arrive unselected.")))}

@@ -32,11 +32,15 @@ func formValues(values url.Values) map[string]string {
 	return result
 }
 
-func (w workspacePage) form(endpoint string) FormView {
-	f := FormView{Action: endpoint, Scope: FormScope{
+func (w workspacePage) formScope() FormScope {
+	return FormScope{
 		CSRF: w.csrf, ProjectID: shotText(w.project, "id"), ShotID: shotText(w.shot, "id"),
 		Revision: strconv.Itoa(documentRevision(w.project)), View: w.view, Scene: w.scene,
-	}}
+	}
+}
+
+func (w workspacePage) form(endpoint string) FormView {
+	f := FormView{Action: endpoint, Scope: w.formScope()}
 	if w.submission.Submitted() && w.submission.Name == endpoint {
 		f.Rejected = &w.submission.Result
 		// A deleted or unavailable entity must never turn a rejected draft into
@@ -70,9 +74,29 @@ func (f FormView) attributes() gosx.AttrList {
 }
 
 func (f FormView) controls() []any {
-	return []any{f.attributes(), hidden("csrf", f.Scope.CSRF), hidden("project", f.Scope.ProjectID),
-		hidden("shot", f.Scope.ShotID), hidden("revision", f.value("revision", f.Scope.Revision)),
-		hidden("view", f.value("view", f.Scope.View)), hidden("scene_filter", f.value("scene_filter", f.Scope.Scene))}
+	return f.sharedControls().forShot(f.Scope.ShotID)
+}
+
+// The board can reuse the common nodes and insert each card's shot control.
+type formControls struct {
+	beforeShot [3]any
+	afterShot  [3]any
+}
+
+func (f FormView) sharedControls() formControls {
+	return formControls{
+		beforeShot: [3]any{f.attributes(), hidden("csrf", f.Scope.CSRF), hidden("project", f.Scope.ProjectID)},
+		afterShot: [3]any{hidden("revision", f.value("revision", f.Scope.Revision)),
+			hidden("view", f.value("view", f.Scope.View)), hidden("scene_filter", f.value("scene_filter", f.Scope.Scene))},
+	}
+}
+
+func (c formControls) forShot(shotID string, children ...any) []any {
+	nodes := make([]any, 0, len(c.beforeShot)+1+len(c.afterShot)+len(children))
+	nodes = append(nodes, c.beforeShot[:]...)
+	nodes = append(nodes, hidden("shot", shotID))
+	nodes = append(nodes, c.afterShot[:]...)
+	return append(nodes, children...)
 }
 
 func (f FormView) errorID(name string) string {
