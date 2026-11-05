@@ -4,12 +4,12 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"syscall/js"
 	"time"
 
+	"github.com/jvcencio/storyboard-desk/gosx-host/internal/clientwire"
 	"m31labs.dev/gosx/hub/socket"
 )
 
@@ -46,19 +46,16 @@ func mountRoom(parent context.Context, root js.Value) func() {
 		var err error
 		current, err = socket.Dial(address, socket.Callbacks{
 			Message: func(message socket.Message) {
-				var update struct {
-					Event string `json:"event"`
-					Data  struct {
-						Revision  int `json:"revision"`
-						Connected int `json:"connected"`
-					} `json:"data"`
+				if message.IsBinary {
+					return
 				}
-				if message.IsBinary || json.Unmarshal([]byte(message.Text), &update) != nil || update.Event != "board" {
+				update, ok := clientwire.DecodeRoom(message.Text)
+				if !ok || update.Event != "board" {
 					return
 				}
 				delay = time.Second
-				text := fmt.Sprintf("%d connected · revision %d", update.Data.Connected, update.Data.Revision)
-				if update.Data.Revision > shown {
+				text := fmt.Sprintf("%d connected · revision %d", update.Connected, update.Revision)
+				if update.Revision > shown {
 					text += " · new changes available"
 				}
 				setText(status, text)

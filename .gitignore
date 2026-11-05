@@ -28,6 +28,9 @@
 !/gosx-host/internal/clientbuild/
 /gosx-host/internal/clientbuild/*
 !/gosx-host/internal/clientbuild/*.go
+!/gosx-host/internal/clientwire/
+/gosx-host/internal/clientwire/*
+!/gosx-host/internal/clientwire/*.go
 !/gosx-host/cloud_catalog.json
 !/gosx-host/cmd/
 /gosx-host/cmd/*

@@ -4,12 +4,12 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"strings"
 	"syscall/js"
 
+	"github.com/jvcencio/storyboard-desk/gosx-host/internal/clientwire"
 	"m31labs.dev/gosx/client/browser"
 	"m31labs.dev/gosx/client/jsutil"
 )
@@ -151,11 +151,8 @@ func (ui *capabilities) saveNative(action string, values url.Values) {
 			setText(status, "Saving could not finish. Check Exports before trying again.")
 			return
 		}
-		var result struct {
-			Saved       bool
-			Name, Error string
-		}
-		if json.Unmarshal(response.Body, &result) != nil {
+		result, ok := clientwire.DecodeSave(response.Body)
+		if !ok {
 			setText(status, "Saving could not finish. Check Exports before trying again.")
 			return
 		}
@@ -196,7 +193,7 @@ func (ui *capabilities) loadJSON(input js.Value) {
 			return
 		}
 		value := text.String()
-		if !json.Valid([]byte(value)) {
+		if !clientwire.Valid([]byte(value)) {
 			setText(status, "Choose a valid JSON file.")
 			return
 		}
