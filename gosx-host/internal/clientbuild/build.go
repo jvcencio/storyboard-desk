@@ -32,7 +32,7 @@ func Build(module string) error {
 	}
 	root := filepath.Join(module, "clientassets", "generated")
 	old, _ := buildmanifest.Load(filepath.Join(root, "build.json"))
-	command := exec.Command("go", "run", "m31labs.dev/gosx/cmd/gosx@"+sdk.Version, "build", "--go-wasm-only", "--output", root, ".")
+	command := exec.Command("go", "run", "m31labs.dev/gosx/cmd/gosx@"+sdk.Version, "build", "--go-wasm-only", "--prod", "--output", root, ".")
 	command.Dir, command.Stdout, command.Stderr = module, os.Stdout, os.Stderr
 	if err = command.Run(); err != nil {
 		return fmt.Errorf("build Go editor runtime: %w", err)
