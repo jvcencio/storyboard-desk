@@ -51,6 +51,7 @@ func TestStoryboardRoomAccessScope(t *testing.T) {
 		t.Fatal("anonymous board request exposed project data")
 	}
 	send(request("GET", roomEvents, nil, nil, origin.String()), 401)
+	send(request("GET", "/room/board", nil, nil, ""), 401)
 	cookies := send(request("POST", "/join", invite, nil, origin.String()), 303).Result().Cookies()
 	if len(cookies) != 1 || !cookies[0].Secure || !cookies[0].HttpOnly || cookies[0].SameSite != http.SameSiteStrictMode {
 		t.Fatal("HTTPS room did not issue a protected session cookie")
@@ -61,8 +62,13 @@ func TestStoryboardRoomAccessScope(t *testing.T) {
 	send(request("GET", roomEvents, nil, &tampered, origin.String()), 401)
 	send(request("GET", roomEvents, nil, cookie, ""), 403)
 	send(request("GET", roomEvents, nil, cookie, "https://other.example.test"), 403)
-	for _, path := range []string{"/?project=" + shotText(other, "id"), "/api/health", "/download/plan", "/media/" + id + "/exports/private.png", "/media/" + id + "/media/unselected.png"} {
+	for _, path := range []string{"/?project=" + shotText(other, "id"), "/room/board?project=" + shotText(other, "id"), "/api/health", "/download/plan", "/media/" + id + "/exports/private.png", "/media/" + id + "/media/unselected.png"} {
 		send(request("GET", path, nil, cookie, ""), 404)
+	}
+	fragment := send(request("GET", "/room/board", nil, cookie, ""), 200).Body.String()
+	if !strings.Contains(fragment, `data-room-board="true"`) || !strings.Contains(fragment, `data-shot-id="first"`) ||
+		strings.Contains(fragment, "gosx-manifest") || strings.Contains(fragment, "<head") {
+		t.Fatal("room updates must return the authorized board without bootstrapping another runtime")
 	}
 	foreignHost := request("GET", "/", nil, cookie, "")
 	foreignHost.Host = "other.example.test"

@@ -56,7 +56,9 @@ Open an existing project in the local editor and copy the `project` ID from its 
 ./build/gosx/storyboard-desk-go -data-dir /absolute/path/to/projects -share-project PROJECT_ID -port 4493
 ```
 
-Open the printed room address in a browser and enter the printed room code. Collaborators can edit shot briefs, insert shots and reorder the board. The room shows the number of connected browser sessions and announces new saves. **Open latest board** loads the saved board and asks before discarding a draft. Changes to different shots can save in parallel. If two people change the same shot, the later save keeps its draft on screen for manual reconciliation.
+Open the printed room address in a browser and enter the printed room code. Collaborators can edit shot briefs, insert shots and reorder the board. Saved changes appear on the board automatically, with keyboard focus and active shot briefs preserved. If a teammate updates the shot you are working on, **Review latest shot** opens the saved version and asks before discarding unsaved edits. **Reload board** is also available.
+
+Changes to different shots can save in parallel. If two people change the same shot, the later save keeps its draft on screen for manual reconciliation. The desktop shot inspector stays beside the board; **Shot brief** jumps to it on a narrow screen.
 
 For remote collaborators with SSH access, forward the room port and open the same loopback address on each machine.
 

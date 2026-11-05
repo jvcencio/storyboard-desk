@@ -148,6 +148,10 @@ func (room *storyboardRoom) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Join the storyboard room first", http.StatusUnauthorized)
 		return
 	}
+	if r.Method == http.MethodGet && r.URL.Path == "/room/board" {
+		room.render(w, r, http.StatusOK, action.View{})
+		return
+	}
 	if r.Method == http.MethodGet && r.URL.Path == roomEvents {
 		room.hub.ServeHTTP(w, r)
 		return
@@ -214,28 +218,41 @@ func (room *storyboardRoom) render(w http.ResponseWriter, r *http.Request, statu
 		http.NotFound(w, r)
 		return
 	}
+	p := project.document
+	page := workspacePage{project: p, shots: project.shots, csrf: room.sessionToken(r), view: "board", scene: r.URL.Query().Get("scene"), submission: submission, shared: true}
+	page.selectShot(r.URL.Query().Get("shot"))
+	board := cls("div", "room-board", attrs("data-room-board", "true",
+		"data-revision", strconv.Itoa(documentRevision(p)), "data-scene", page.scene,
+		"data-selected-shot", shotText(page.shot, "id"), "data-shot-count", strconv.Itoa(len(project.shots))), page.board())
+	if r.URL.Path == "/room/board" {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(status)
+		fmt.Fprint(w, gosx.RenderHTML(board))
+		return
+	}
 	renderer, err := editorRuntime()
 	if err != nil {
 		http.Error(w, "Editor unavailable", http.StatusServiceUnavailable)
 		return
 	}
-	p := project.document
-	page := workspacePage{project: p, shots: project.shots, csrf: room.sessionToken(r), view: "board", scene: r.URL.Query().Get("scene"), submission: submission, shared: true}
-	page.selectShot(r.URL.Query().Get("shot"))
 	saveStatus := "Saved to project"
 	if submission.Submitted() {
 		saveStatus = "Unsaved changes"
 	}
-	children := []any{cls("p", "eyebrow", txt("SHARED STORYBOARD")),
-		el("h1", txt(shotText(p, "title"))), el("p", txt(shotText(p, "brief"))),
+	children := []any{cls("header", "room-heading",
+		cls("div", "room-heading-copy", cls("p", "eyebrow", txt("PRODUCTION BOARD")),
+			el("h1", txt(shotText(p, "title"))), cls("p", "room-brief", txt(shotText(p, "brief")))),
+		cls("p", "room-shot-count", attrs("id", "room-shot-count"), txt(fmt.Sprintf("%d shots", len(project.shots))))),
 		cls("div", "room-status", attrs("data-room-events", roomEvents, "data-revision", strconv.Itoa(documentRevision(p))),
 			el("span", attrs("id", "room-presence", "role", "status"), txt("Connecting to room…")),
 			el("span", attrs("id", "save-status", "role", "status"), txt(saveStatus)),
-			link("Open latest board", page.href("board", shotText(page.shot, "id")), "button secondary"))}
+			el("span", attrs("id", "room-sync-error", "role", "status", "hidden", "hidden"), txt("Board updates paused. Reload to try again.")),
+			link("Shot brief", "#shot-editor", "button secondary"),
+			link("Reload board", page.href("board", shotText(page.shot, "id")), "button secondary"))}
 	if submission.Submitted() {
 		children = append(children, cls("p", "error", attrs("role", "alert"), txt(submission.Message()+". Your submitted values remain below.")))
 	}
-	children = append(children, page.board())
+	children = append(children, board)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(status)
 	fmt.Fprint(w, gosx.RenderHTML(workspaceDocument(renderer, r, status, cls("main", "workspace room-workspace", children...), attrs())))

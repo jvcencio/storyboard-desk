@@ -173,6 +173,47 @@ func TestColdWorkspaceStartup(t *testing.T) {
 	}
 }
 
+func TestWorkspaceGoClientDocumentSnapshot(t *testing.T) {
+	store, id := workspaceBoardFixture(t)
+	ctx, origin := editorBrowser(t, &workspaceHandler{store: store, csrf: "snapshot-fixture"})
+	const instrument = `(() => {
+		window.enhancementScans = 0;
+		const select = Element.prototype.querySelectorAll;
+		Element.prototype.querySelectorAll = function(selector) {
+			if (selector === "[data-gosx-enhance]") window.enhancementScans++;
+			return select.call(this, selector);
+		};
+	})()`
+	const verify = `(() => {
+		const documentState = window.__gosx.document;
+		const initial = window.enhancementScans;
+		documentState.refresh("first unchanged read");
+		documentState.refresh("second unchanged read");
+		const unchanged = window.enhancementScans;
+		const node = document.createElement("div");
+		node.dataset.gosxEnhance = "fixture";
+		document.body.append(node);
+		const appended = documentState.refresh("same task append").enhancements.count;
+		node.remove();
+		const removed = documentState.refresh("same task removal").enhancements.count;
+		return { initial, unchanged, appended, removed, scans: window.enhancementScans,
+			cards: document.querySelectorAll(".shot-card").length };
+	})()`
+	var got struct {
+		Initial, Unchanged, Appended, Removed, Scans, Cards int
+	}
+	if err := chromedp.Run(ctx, chromedp.ActionFunc(func(ctx context.Context) error {
+		_, err := page.AddScriptToEvaluateOnNewDocument(instrument).Do(ctx)
+		return err
+	}), chromedp.Navigate(origin+pageURL(id, "board", "", "")), browserReady(), chromedp.Evaluate(verify, &got)); err != nil {
+		t.Fatal(err)
+	}
+	if got.Initial != 1 || got.Unchanged != 1 || got.Appended != 1 || got.Removed != 0 || got.Scans != 3 || got.Cards != 240 {
+		t.Fatalf("document index was repeated or stale on the 240-shot board: %+v", got)
+	}
+	t.Log("The 240-shot document required one initial enhancement scan; unchanged reads reused it, and synchronous append/removal each rebuilt a fresh index.")
+}
+
 func TestWorkspaceGoClientOffscreenCard(t *testing.T) {
 	store, id := workspaceBoardFixture(t)
 	before, err := store.snapshot(id)

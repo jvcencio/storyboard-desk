@@ -1,0 +1,474 @@
+{
+  "bootstrap_evaluation": {
+    "capture": "Chromium --trace-startup=devtools.timeline,blink.user_timing --trace-startup-format=json --trace-startup-file=ABSOLUTE_PATH",
+    "method": "Four alternating trace pairs. EvaluateScript duration for the content-hashed bootstrap-runtime script.",
+    "results": {
+      "baseline": {
+        "evaluation_ms": [
+          33.368,
+          26.706,
+          29.133,
+          27.243
+        ],
+        "median_evaluation_ms": 28.188
+      },
+      "optimized": {
+        "evaluation_ms": [
+          19.428,
+          40.879,
+          22.67,
+          21.633
+        ],
+        "median_evaluation_ms": 22.1515
+      }
+    }
+  },
+  "cold_start": {
+    "limits": "Browser process startup is excluded. The 20 Mbps cap applies only to WASM at 2500000 bytes per second. Tracing and scan counters are excluded from these runs.",
+    "method": "12 alternating pairs per condition, fresh Chromium profile per run, navigation to data-editor-ready",
+    "networks": {
+      "20mbps": {
+        "candidate_faster_pairs": 7,
+        "median_baseline_dcl_ms": 152.94999999552965,
+        "median_baseline_ready_ms": 420.3500000089407,
+        "median_candidate_dcl_ms": 152.10000000149012,
+        "median_candidate_ready_ms": 420.04999999701977,
+        "pairs": [
+          {
+            "run": 1,
+            "baseline": {
+              "ready_ms": 448.5,
+              "dom_content_loaded_ms": 160.40000000596046,
+              "ttfb_ms": 75.79999999701977
+            },
+            "candidate": {
+              "ready_ms": 421,
+              "dom_content_loaded_ms": 156.09999999403954,
+              "ttfb_ms": 59.70000000298023
+            }
+          },
+          {
+            "run": 2,
+            "baseline": {
+              "ready_ms": 428.19999998807907,
+              "dom_content_loaded_ms": 157.29999999701977,
+              "ttfb_ms": 59.19999998807907
+            },
+            "candidate": {
+              "ready_ms": 422.79999999701977,
+              "dom_content_loaded_ms": 157.59999999403954,
+              "ttfb_ms": 68.59999999403954
+            }
+          },
+          {
+            "run": 3,
+            "baseline": {
+              "ready_ms": 401.3999999910593,
+              "dom_content_loaded_ms": 129.5,
+              "ttfb_ms": 56.70000000298023
+            },
+            "candidate": {
+              "ready_ms": 429,
+              "dom_content_loaded_ms": 151.70000000298023,
+              "ttfb_ms": 62.70000000298023
+            }
+          },
+          {
+            "run": 4,
+            "baseline": {
+              "ready_ms": 417.79999999701977,
+              "dom_content_loaded_ms": 156.3999999910593,
+              "ttfb_ms": 63
+            },
+            "candidate": {
+              "ready_ms": 427.1000000089407,
+              "dom_content_loaded_ms": 154.6000000089407,
+              "ttfb_ms": 63.6000000089407
+            }
+          },
+          {
+            "run": 5,
+            "baseline": {
+              "ready_ms": 426.29999999701977,
+              "dom_content_loaded_ms": 165.29999999701977,
+              "ttfb_ms": 78.40000000596046
+            },
+            "candidate": {
+              "ready_ms": 407.8999999910593,
+              "dom_content_loaded_ms": 142.09999999403954,
+              "ttfb_ms": 60.29999999701977
+            }
+          },
+          {
+            "run": 6,
+            "baseline": {
+              "ready_ms": 419.90000000596046,
+              "dom_content_loaded_ms": 156.90000000596046,
+              "ttfb_ms": 62.900000005960464
+            },
+            "candidate": {
+              "ready_ms": 406.79999999701977,
+              "dom_content_loaded_ms": 141.59999999403954,
+              "ttfb_ms": 59.099999994039536
+            }
+          },
+          {
+            "run": 7,
+            "baseline": {
+              "ready_ms": 427.59999999403954,
+              "dom_content_loaded_ms": 149.5,
+              "ttfb_ms": 69.5
+            },
+            "candidate": {
+              "ready_ms": 417.80000001192093,
+              "dom_content_loaded_ms": 145,
+              "ttfb_ms": 60.80000001192093
+            }
+          },
+          {
+            "run": 8,
+            "baseline": {
+              "ready_ms": 405,
+              "dom_content_loaded_ms": 147.79999999701977,
+              "ttfb_ms": 60
+            },
+            "candidate": {
+              "ready_ms": 416.70000000298023,
+              "dom_content_loaded_ms": 150.20000000298023,
+              "ttfb_ms": 70.20000000298023
+            }
+          },
+          {
+            "run": 9,
+            "baseline": {
+              "ready_ms": 418.69999998807907,
+              "dom_content_loaded_ms": 157.79999999701977,
+              "ttfb_ms": 58.5
+            },
+            "candidate": {
+              "ready_ms": 413.79999999701977,
+              "dom_content_loaded_ms": 146.5,
+              "ttfb_ms": 55.20000000298023
+            }
+          },
+          {
+            "run": 10,
+            "baseline": {
+              "ready_ms": 422.59999999403954,
+              "dom_content_loaded_ms": 149.40000000596046,
+              "ttfb_ms": 68.79999999701977
+            },
+            "candidate": {
+              "ready_ms": 424.5,
+              "dom_content_loaded_ms": 156.1000000089407,
+              "ttfb_ms": 66.79999999701977
+            }
+          },
+          {
+            "run": 11,
+            "baseline": {
+              "ready_ms": 398.5,
+              "dom_content_loaded_ms": 136.59999999403954,
+              "ttfb_ms": 55.79999999701977
+            },
+            "candidate": {
+              "ready_ms": 422.09999999403954,
+              "dom_content_loaded_ms": 152.5,
+              "ttfb_ms": 73
+            }
+          },
+          {
+            "run": 12,
+            "baseline": {
+              "ready_ms": 420.80000001192093,
+              "dom_content_loaded_ms": 145,
+              "ttfb_ms": 63.6000000089407
+            },
+            "candidate": {
+              "ready_ms": 419.09999999403954,
+              "dom_content_loaded_ms": 154.59999999403954,
+              "ttfb_ms": 73.3999999910593
+            }
+          }
+        ],
+        "payload": {
+          "baseline_wasm_decoded_bytes": 3541931,
+          "baseline_wasm_encoded_bytes": 746186,
+          "candidate_wasm_decoded_bytes": 3585629,
+          "candidate_wasm_encoded_bytes": 752044,
+          "html_bytes": 183788
+        }
+      },
+      "loopback": {
+        "candidate_faster_pairs": 7,
+        "median_baseline_dcl_ms": 160.20000000298023,
+        "median_baseline_ready_ms": 211.95000000298023,
+        "median_candidate_dcl_ms": 155.70000000298023,
+        "median_candidate_ready_ms": 209.8500000089407,
+        "pairs": [
+          {
+            "run": 1,
+            "baseline": {
+              "ready_ms": 213.59999999403954,
+              "dom_content_loaded_ms": 162.29999999701977,
+              "ttfb_ms": 70.40000000596046
+            },
+            "candidate": {
+              "ready_ms": 216.3999999910593,
+              "dom_content_loaded_ms": 169,
+              "ttfb_ms": 69.70000000298023
+            }
+          },
+          {
+            "run": 2,
+            "baseline": {
+              "ready_ms": 200,
+              "dom_content_loaded_ms": 146.79999999701977,
+              "ttfb_ms": 61.900000005960464
+            },
+            "candidate": {
+              "ready_ms": 187.19999998807907,
+              "dom_content_loaded_ms": 141.79999999701977,
+              "ttfb_ms": 61.3999999910593
+            }
+          },
+          {
+            "run": 3,
+            "baseline": {
+              "ready_ms": 211.90000000596046,
+              "dom_content_loaded_ms": 161.40000000596046,
+              "ttfb_ms": 71.29999999701977
+            },
+            "candidate": {
+              "ready_ms": 183.5,
+              "dom_content_loaded_ms": 131.59999999403954,
+              "ttfb_ms": 48.599999994039536
+            }
+          },
+          {
+            "run": 4,
+            "baseline": {
+              "ready_ms": 223.69999998807907,
+              "dom_content_loaded_ms": 173.19999998807907,
+              "ttfb_ms": 65.19999998807907
+            },
+            "candidate": {
+              "ready_ms": 225,
+              "dom_content_loaded_ms": 174.09999999403954,
+              "ttfb_ms": 77
+            }
+          },
+          {
+            "run": 5,
+            "baseline": {
+              "ready_ms": 220.69999998807907,
+              "dom_content_loaded_ms": 170.79999999701977,
+              "ttfb_ms": 75.19999998807907
+            },
+            "candidate": {
+              "ready_ms": 210.6000000089407,
+              "dom_content_loaded_ms": 171.20000000298023,
+              "ttfb_ms": 83.29999999701977
+            }
+          },
+          {
+            "run": 6,
+            "baseline": {
+              "ready_ms": 201.5,
+              "dom_content_loaded_ms": 146.20000000298023,
+              "ttfb_ms": 56.599999994039536
+            },
+            "candidate": {
+              "ready_ms": 204.70000000298023,
+              "dom_content_loaded_ms": 151.20000000298023,
+              "ttfb_ms": 66.5
+            }
+          },
+          {
+            "run": 7,
+            "baseline": {
+              "ready_ms": 212,
+              "dom_content_loaded_ms": 161.70000000298023,
+              "ttfb_ms": 65.8999999910593
+            },
+            "candidate": {
+              "ready_ms": 209.1000000089407,
+              "dom_content_loaded_ms": 150.70000000298023,
+              "ttfb_ms": 62.30000001192093
+            }
+          },
+          {
+            "run": 8,
+            "baseline": {
+              "ready_ms": 218.59999999403954,
+              "dom_content_loaded_ms": 154,
+              "ttfb_ms": 69.69999998807907
+            },
+            "candidate": {
+              "ready_ms": 193.40000000596046,
+              "dom_content_loaded_ms": 143.30000001192093,
+              "ttfb_ms": 57
+            }
+          },
+          {
+            "run": 9,
+            "baseline": {
+              "ready_ms": 206,
+              "dom_content_loaded_ms": 145.20000000298023,
+              "ttfb_ms": 55.1000000089407
+            },
+            "candidate": {
+              "ready_ms": 214.5,
+              "dom_content_loaded_ms": 160.20000000298023,
+              "ttfb_ms": 66.80000001192093
+            }
+          },
+          {
+            "run": 10,
+            "baseline": {
+              "ready_ms": 202,
+              "dom_content_loaded_ms": 159,
+              "ttfb_ms": 76.5
+            },
+            "candidate": {
+              "ready_ms": 222.5,
+              "dom_content_loaded_ms": 165.29999999701977,
+              "ttfb_ms": 72.79999999701977
+            }
+          },
+          {
+            "run": 11,
+            "baseline": {
+              "ready_ms": 191.40000000596046,
+              "dom_content_loaded_ms": 137.79999999701977,
+              "ttfb_ms": 65.20000000298023
+            },
+            "candidate": {
+              "ready_ms": 188.29999999701977,
+              "dom_content_loaded_ms": 143.5,
+              "ttfb_ms": 65
+            }
+          },
+          {
+            "run": 12,
+            "baseline": {
+              "ready_ms": 215.09999999403954,
+              "dom_content_loaded_ms": 163.19999998807907,
+              "ttfb_ms": 74.59999999403954
+            },
+            "candidate": {
+              "ready_ms": 212.5,
+              "dom_content_loaded_ms": 166.70000000298023,
+              "ttfb_ms": 65.3999999910593
+            }
+          }
+        ],
+        "payload": {
+          "baseline_wasm_decoded_bytes": 3541931,
+          "baseline_wasm_encoded_bytes": 746186,
+          "candidate_wasm_decoded_bytes": 3585629,
+          "candidate_wasm_encoded_bytes": 752044,
+          "html_bytes": 183788
+        }
+      }
+    }
+  },
+  "collaboration": {
+    "scope": "Synthetic projects. The focus/structural regression publishes peer changes through the actual store and hub; the two-profile test submits real room HTTP forms.",
+    "screenshots": [
+      "gosx-room-live-desktop.png",
+      "gosx-room-draft-desktop.png",
+      "gosx-room-live-mobile.png",
+      "gosx-room-brief-mobile.png"
+    ],
+    "tests": [
+      "TestWorkspaceGoClientSharedStoryboard",
+      "TestWorkspaceGoClientRoomLiveBoard"
+    ],
+    "verified": [
+      "two authenticated browser profiles through synthetic HTTPS/WSS",
+      "independent shot saves and same-shot conflict retention",
+      "live card replacement without document navigation",
+      "keyboard focus across replacement, insertion and reorder",
+      "snapshot convergence after skipped revisions",
+      "active brief, caret and concurrency token preservation",
+      "interrupted update recovery after reconnect",
+      "no narrow-viewport horizontal overflow"
+    ]
+  },
+  "document_snapshot": {
+    "actual_240_shot_page": {
+      "initial_scans": 1,
+      "scans_after_append_and_removal": 3,
+      "scans_after_two_unchanged_refreshes": 1
+    },
+    "upstream_real_dom_fixture": {
+      "articles": 240,
+      "observer_enabled_after_unchanged_reads": 1,
+      "observer_enabled_initial": 1,
+      "observer_unavailable_after_unchanged_reads": 7,
+      "observer_unavailable_initial": 5,
+      "public_snapshot_clone_isolated": true,
+      "synchronous_mutations": [
+        "append",
+        "attributes",
+        "reorder",
+        "remove",
+        "body replacement"
+      ]
+    }
+  },
+  "environment": {
+    "chromium": "156.0.8078.4",
+    "cpu": "Intel Core Ultra 9 285",
+    "go": "1.26.0",
+    "gomaxprocs": 4,
+    "platform": "Linux amd64 under WSL"
+  },
+  "fixture": {
+    "poster_height": 180,
+    "poster_width": 320,
+    "shots": 240,
+    "synthetic_png_posters": 120,
+    "takes_per_shot": 12
+  },
+  "limits": [
+    "Bootstrap evaluation improved in these short traces; end-to-end cold readiness showed little change.",
+    "The main client now carries live-room code and its WASM transfer grew slightly.",
+    "Native desktop interaction was not rerun for this SDK revision. Existing native evidence remains source-scoped.",
+    "Selena blocking was a read-only feasibility study and is outside this implementation."
+  ],
+  "local_checks": {
+    "browser_workflows": 9,
+    "go_vet": "passed",
+    "legacy_project_and_media_round_trip": "passed",
+    "main_wasm_scene_or_shader_compiler_dependencies": false,
+    "matching_gosx_compiler": "passed",
+    "race_test_cases": 91
+  },
+  "observed_at": "2026-11-04T21:49:14-08:00",
+  "reproduction": {
+    "browser": "STORYBOARD_BROWSER_EXECUTABLE=/path/to/chrome",
+    "code_hash": "git ls-files -co --exclude-standard -z -- gosx-host .github/workflows/ci.yml | sort -z | xargs -0 sha256sum | sha256sum",
+    "cold_start": "STORYBOARD_COLD_START_REPORT=/absolute/report.json go -C gosx-host test -tags browser -run '^TestColdWorkspaceStartup$' -count=1 .",
+    "live_room": "STORYBOARD_ROOM_PROOF_DIR=/absolute/proof go -C gosx-host test -tags browser -run '^TestWorkspaceGoClientRoomLiveBoard$' -count=1 -v .",
+    "network_cap": "STORYBOARD_COLD_START_WASM_BYTES_PER_SECOND=2500000"
+  },
+  "source": {
+    "baseline_commit": "f6f66778fc8b82e4bb00cbbe16817d1c03f2a28a",
+    "candidate_code_sha256": "1f86ad647d0e7b350c434b4aafab397958e09936c50de478122ed9f2b6d9e6b4",
+    "gosx_pr": "https://github.com/odvcencio/gosx/pull/791",
+    "gosx_runtime_commit": "581707ff65014453325e425eae4a5feba2856706",
+    "gosx_validation_commit": "ee14eef312c2be7b1df904a4e508c62797effb0c",
+    "gosx_version": "v0.59.2-0.20261105052909-ee14eef312c2",
+    "runtime_bytes_identical_after_size_target_followup": true
+  },
+  "upstream_size_audit": {
+    "affected_reviewed_targets": 22,
+    "core_brotli_delta": 199,
+    "core_gzip_delta": 190,
+    "core_raw_delta": 667,
+    "metrics_checked": 121,
+    "target_strategy": "Exact minimum passing values under the existing 5 percent error fraction, per-metric floors and caps"
+  }
+}

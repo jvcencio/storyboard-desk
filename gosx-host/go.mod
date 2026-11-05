@@ -8,7 +8,7 @@ require (
 	github.com/chromedp/chromedp v0.15.1
 	github.com/go-json-experiment/json v0.0.0-20260214004413-d219187c3433
 	golang.org/x/sys v0.43.0
-	m31labs.dev/gosx v0.57.24
+	m31labs.dev/gosx v0.59.2-0.20261105052909-ee14eef312c2
 )
 
 require (

@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	// Match the pinned GoSX v0.57.24 loader's registration ABI. Importing
+	// Match the pinned GoSX loader's registration ABI. Importing
 	// engine/wasm for this factory would initialize Scene3D and its parser.
 	// The review browser test exercises the loader's mount and dispose contract.
 	register := js.Global().Get("__gosx_register_go_wasm_engine_factory")
