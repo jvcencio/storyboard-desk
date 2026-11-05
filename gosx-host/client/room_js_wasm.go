@@ -13,10 +13,11 @@ import (
 	"m31labs.dev/gosx/hub/socket"
 )
 
-func mountRoom(parent context.Context, root js.Value) func() {
+func mountRoom(parent context.Context, root js.Value, forms *formState) func() {
 	scope := newEventScope(parent)
 	status := query(root, "#room-presence")
 	shown, _ := strconv.Atoi(attr(root, "data-revision"))
+	board := &roomBoard{eventScope: scope, doc: forms.doc, root: root, forms: forms, shown: shown, latest: shown}
 	location := js.Global().Get("location")
 	scheme := "ws://"
 	if location.Get("protocol").String() == "https:" {
@@ -29,6 +30,7 @@ func mountRoom(parent context.Context, root js.Value) func() {
 	delay := time.Second
 	retry := func() {
 		setText(status, "Reconnecting to room…")
+		root.Call("setAttribute", "data-room-state", "reconnecting")
 		var pending *time.Timer
 		pending = time.AfterFunc(delay, func() {
 			if timer == pending {
@@ -54,11 +56,14 @@ func mountRoom(parent context.Context, root js.Value) func() {
 					return
 				}
 				delay = time.Second
-				text := fmt.Sprintf("%d connected · revision %d", update.Connected, update.Revision)
-				if update.Revision > shown {
-					text += " · new changes available"
+				text := fmt.Sprintf("%d collaborators online", update.Connected)
+				if update.Connected == 1 {
+					text = "1 collaborator online"
 				}
 				setText(status, text)
+				root.Call("setAttribute", "data-room-state", "online")
+				board.latest = max(board.latest, update.Revision)
+				board.refresh()
 			},
 			Closed: func(socket.CloseEvent) {
 				current = nil

@@ -44,6 +44,15 @@ func (forms *formState) markDirty(form js.Value) {
 	setText(forms.doc.Call("getElementById", "save-status"), "Unsaved changes")
 }
 
+func (forms *formState) protects(root js.Value) bool {
+	for _, form := range forms.dirty {
+		if root.Call("contains", form).Bool() {
+			return true
+		}
+	}
+	return false
+}
+
 func (forms *formState) submit(e js.Value) {
 	form := e.Get("target")
 	if form.Call("hasAttribute", "data-download-form").Bool() {

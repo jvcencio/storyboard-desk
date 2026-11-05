@@ -593,7 +593,11 @@ func (w workspacePage) board() gosx.Node {
 				el("button", attrs("form", moveFormID, "name", "move", "value", "-1:"+shotID, "title", "Move earlier"), txt("←")),
 				el("button", attrs("form", moveFormID, "name", "move", "value", "1:"+shotID, "title", "Move later"), txt("→")), edit)
 		}
-		cards = append(cards, el("article", class,
+		var identity gosx.AttrList
+		if w.shared {
+			identity = attrs("data-shot-id", shotID)
+		}
+		cards = append(cards, el("article", class, identity,
 			el("div", cardTop, txt(fmt.Sprintf("SHOT %03d", (i+1)*10)), el("span", txt(fmt.Sprintf("%.1fs", number(s, "duration"))))),
 			w.cardArt(s, scope.ProjectID, artHref, title),
 			el("div", cardBody, el("p", eyebrow, txt(scene)), el("h2", txt(title)), el("p", txt(shotText(s, "purpose")))),

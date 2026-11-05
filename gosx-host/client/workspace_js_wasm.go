@@ -19,9 +19,10 @@ type workspaceClient struct {
 func (ui *workspaceClient) mount() {
 	ctx, cancel := context.WithCancel(context.Background())
 	ui.cancel = cancel
-	ui.disposers = append(ui.disposers, mountFormState(ctx, ui.doc).Dispose, mountCapabilities(ctx, ui.doc).Dispose)
+	forms := mountFormState(ctx, ui.doc)
+	ui.disposers = append(ui.disposers, forms.Dispose, mountCapabilities(ctx, ui.doc).Dispose)
 	if room := query(ui.doc, "[data-room-events]"); room.Truthy() {
-		ui.disposers = append(ui.disposers, mountRoom(ctx, room))
+		ui.disposers = append(ui.disposers, mountRoom(ctx, room, forms))
 	}
 	each(ui.doc, "[data-cloud-form]", func(form js.Value) {
 		ui.disposers = append(ui.disposers, mountCloudControls(ctx, form).Dispose)

@@ -32,7 +32,9 @@ func Build(module string) error {
 	}
 	root := filepath.Join(module, "clientassets", "generated")
 	old, _ := buildmanifest.Load(filepath.Join(root, "build.json"))
-	command := exec.Command("go", "run", "m31labs.dev/gosx/cmd/gosx@"+sdk.Version, "build", "--go-wasm-only", "--prod", "--output", root, ".")
+	// The Go tool directive shares the pinned SDK and verified go.sum with the
+	// runtime assets, including when the SDK uses an untagged revision.
+	command := exec.Command("go", "tool", "gosx", "build", "--go-wasm-only", "--prod", "--output", root, ".")
 	command.Dir, command.Stdout, command.Stderr = module, os.Stdout, os.Stderr
 	if err = command.Run(); err != nil {
 		return fmt.Errorf("build Go editor runtime: %w", err)

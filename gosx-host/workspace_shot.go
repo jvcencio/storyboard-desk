@@ -64,5 +64,11 @@ func ShotEditor(props ShotEditorProps) gosx.Node {
 	children = append(children, button("Save shot brief"))
 	insert := props.Insert.controls()
 	insert = append(insert, el("button", attrs("name", "position", "value", "before"), txt("＋ Insert before")), el("button", attrs("name", "position", "value", "after"), txt("＋ Insert after")))
-	return cls("aside", "paper shot-editor", attrs("id", "shot-editor"), el("form", children...), el("form", insert...))
+	var update gosx.Node
+	if props.Base != "" {
+		update = cls("div", "room-shot-update", attrs("id", "room-shot-update", "hidden", "hidden", "role", "status"),
+			el("p", txt("A teammate updated this shot. Your open brief is kept here.")),
+			link("Review latest shot", pageURL(form.Scope.ProjectID, form.Scope.View, form.Scope.ShotID, form.Scope.Scene)+"#shot-editor", "button secondary"))
+	}
+	return cls("aside", "paper shot-editor", attrs("id", "shot-editor"), update, el("form", children...), el("form", insert...))
 }

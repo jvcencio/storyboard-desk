@@ -70,15 +70,14 @@ func TestWorkspaceGoClientSharedStoryboard(t *testing.T) {
 	}
 	join(a, first)
 	join(b, second)
-	presence := func(revision int, newer bool) chromedp.Action {
-		message := fmt.Sprintf("2 connected · revision %d", revision)
-		if newer {
-			message += " · new changes available"
+	presence := func(revision int) chromedp.Action {
+		return chromedp.Tasks{
+			browserText("#room-presence", "2 collaborators online"),
+			chromedp.Poll(fmt.Sprintf(`document.querySelector("[data-room-events]").getAttribute("data-revision") === "%d"`, revision), nil),
 		}
-		return browserText("#room-presence", message)
 	}
-	run(a, presence(base, false))
-	run(b, presence(base, false))
+	run(a, presence(base))
+	run(b, presence(base))
 	const title = `form[action="/save"] input[name="title"]`
 	const save = `form[action="/save"] button`
 	edit := func(ctx context.Context, text string) {
@@ -97,7 +96,7 @@ func TestWorkspaceGoClientSharedStoryboard(t *testing.T) {
 	edit(b, "Second collaborator · 雪")
 	edit(a, "Opening by the first collaborator")
 	submit(a, 200)
-	run(b, presence(base+1, true))
+	run(b, presence(base+1), browserText(`.shot-card[data-shot-id="`+first+`"] h2`, "Opening by the first collaborator"))
 	var draft, revision string
 	run(b, chromedp.Value(title, &draft, chromedp.ByQuery), chromedp.Value(`form[action="/save"] input[name="revision"]`, &revision, chromedp.ByQuery))
 	if draft != "Second collaborator · 雪" || revision != strconv.Itoa(base) {
@@ -111,17 +110,17 @@ func TestWorkspaceGoClientSharedStoryboard(t *testing.T) {
 		}
 	}
 	submit(b, 200)
-	run(a, presence(base+2, true))
+	run(a, presence(base+2), browserText(`.shot-card[data-shot-id="`+second+`"] h2`, "Second collaborator · 雪"))
 
 	run(b, chromedp.Navigate(server.URL+pageURL(id, "board", first, "")), browserReady())
 	edit(b, "Shared opening, latest save")
-	submit(b, 200)
-	run(a, presence(base+3, true))
 	edit(a, "Keep this conflicting draft")
+	submit(b, 200)
+	run(a, presence(base+3), chromedp.WaitVisible("#room-shot-update", chromedp.ByQuery))
 	submit(a, 409)
 	run(a, browserText("#save-status", "Unsaved changes"), chromedp.Value(title, &draft, chromedp.ByQuery),
 		chromedp.Value(`form[action="/save"] input[name="revision"]`, &revision, chromedp.ByQuery))
-	if draft != "Keep this conflicting draft" || revision != strconv.Itoa(base+1) {
+	if draft != "Keep this conflicting draft" || revision != strconv.Itoa(base+2) {
 		t.Fatalf("conflict changed draft %q or revision %q", draft, revision)
 	}
 	navigation := make(chan error, 1)
@@ -142,10 +141,10 @@ func TestWorkspaceGoClientSharedStoryboard(t *testing.T) {
 			t.Fatal("navigation skipped the draft guard")
 		}
 	}
-	run(a, chromedp.Click(".room-status a", chromedp.ByQuery))
+	run(a, chromedp.Click(`.room-status a[href^="/?"]`, chromedp.ByQuery))
 	waitForDraftPrompt()
 	submit(a, 409)
-	run(a, presence(base+3, false))
+	run(a, presence(base+3))
 	previous := map[string]bool{}
 	for _, client := range room.hub.Presence().List() {
 		previous[client.ID] = true
@@ -162,7 +161,7 @@ func TestWorkspaceGoClientSharedStoryboard(t *testing.T) {
 		}
 		time.Sleep(30 * time.Millisecond)
 	}
-	run(a, presence(base+3, false), chromedp.Value(title, &draft, chromedp.ByQuery))
+	run(a, presence(base+3), chromedp.Value(title, &draft, chromedp.ByQuery))
 	if draft != "Keep this conflicting draft" {
 		t.Fatal("reconnect lost the draft")
 	}
@@ -172,7 +171,7 @@ func TestWorkspaceGoClientSharedStoryboard(t *testing.T) {
 		t.Fatalf("filter after rejected save: %+v %v", response, err)
 	}
 	waitForDraftPrompt()
-	run(a, browserReady(), presence(base+3, false))
+	run(a, browserReady(), presence(base+3))
 	project, err = store.Load(id)
 	if err != nil {
 		t.Fatal(err)
