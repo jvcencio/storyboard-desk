@@ -1,0 +1,611 @@
+package main
+
+import (
+	"crypto/subtle"
+	"embed"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net"
+	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
+	"sync"
+
+	"m31labs.dev/gosx"
+	"m31labs.dev/gosx/action"
+	"m31labs.dev/gosx/desktop"
+)
+
+//go:embed workspace.css
+var workspaceAssets embed.FS
+
+type workspaceHandler struct {
+	store    *ProjectStore
+	csrf     string
+	saveFile func(desktop.SaveFileOptions) (string, error)
+	saveMu   sync.Mutex
+	onSave   func(int)
+}
+type workspacePage struct {
+	shots                                               []ProjectDocument
+	exportFiles                                         []string
+	store                                               *ProjectStore
+	cloudState, quote                                   ProjectDocument
+	cloudError, drawError, handoffClaude, handoffIntake string
+	drawJobs                                            []ProjectDocument
+	quoteID                                             string
+	projects                                            []ProjectDocument
+	project, shot                                       ProjectDocument
+	csrf, view, scene, message                          string
+	promptProvider                                      string
+	submission                                          action.View
+	nativeSave                                          bool
+	shared                                              bool
+}
+
+func el(tag string, children ...any) gosx.Node { return gosx.El(tag, children...) }
+func fragment(children ...any) gosx.Node {
+	nodes := []gosx.Node{}
+	for _, child := range children {
+		nodes = append(nodes, child.(gosx.Node))
+	}
+	return gosx.Fragment(nodes...)
+}
+func txt(s string) gosx.Node { return gosx.Text(s) }
+func attrs(pairs ...string) gosx.AttrList {
+	if len(pairs) < 2 {
+		return nil
+	}
+	nodes := make(gosx.AttrList, 0, len(pairs)/2)
+	for i := 0; i+1 < len(pairs); i += 2 {
+		nodes = append(nodes, gosx.Attr(pairs[i], pairs[i+1]))
+	}
+	return nodes
+}
+func cls(tag, class string, children ...any) gosx.Node {
+	return el(tag, append([]any{attrs("class", class)}, children...)...)
+}
+func link(label, href, class string) gosx.Node {
+	if parsed, err := url.Parse(strings.TrimSpace(href)); err != nil || (parsed.Scheme != "" && parsed.Scheme != "http" && parsed.Scheme != "https") || strings.HasPrefix(href, "//") {
+		href = "#"
+	}
+	a := attrs("href", href, "class", class)
+	if strings.HasPrefix(href, "/download/") || (strings.HasPrefix(href, "/media/") && strings.Contains(href, "/exports/")) {
+		return el("a", a, attrs("download", "download"), txt(label))
+	}
+	return el("a", a, txt(label))
+}
+func hidden(name, value string) gosx.Node {
+	return el("input", attrs("type", "hidden", "name", name, "value", value))
+}
+func jsonFileField(target string) gosx.Node {
+	return el("label", txt("Read a JSON file into the form"), el("input", attrs("type", "file", "accept", ".json,application/json", "data-json-file", target)), el("span", attrs("role", "status", "class", "fine")))
+}
+func button(label string) gosx.Node {
+	return el("button", attrs("type", "submit", "class", "button primary"), txt(label))
+}
+func jsonText(v any) string { b, _ := json.MarshalIndent(v, "", "  "); return string(b) }
+func number(p ProjectDocument, k string) float64 {
+	var n float64
+	_ = json.Unmarshal(p[k], &n)
+	return n
+}
+func boolean(p ProjectDocument, k string) bool { var b bool; _ = json.Unmarshal(p[k], &b); return b }
+func list(p ProjectDocument, k string) []ProjectDocument {
+	var rows []ProjectDocument
+	_ = json.Unmarshal(p[k], &rows)
+	return rows
+}
+func object(p ProjectDocument, k string) ProjectDocument {
+	var doc ProjectDocument
+	_ = json.Unmarshal(p[k], &doc)
+	return doc
+}
+func pageURL(id, view, shot, scene string) string {
+	q := url.Values{}
+	if id != "" {
+		q.Set("project", id)
+	}
+	if view != "" {
+		q.Set("view", view)
+	}
+	if shot != "" {
+		q.Set("shot", shot)
+	}
+	if scene != "" {
+		q.Set("scene", scene)
+	}
+	return "/?" + q.Encode()
+}
+func (w workspacePage) href(view, shot string) string {
+	return pageURL(shotText(w.project, "id"), view, shot, w.scene)
+}
+func (h *workspaceHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+	host, port, err := net.SplitHostPort(r.Host)
+	if err != nil || host != "127.0.0.1" || port == "" {
+		http.Error(rw, "Use the local workspace address", 403)
+		return
+	}
+	workspaceHeaders(rw, "'self'")
+	if (r.Method == "GET" || r.Method == "HEAD") && strings.HasPrefix(r.URL.Path, "/client/assets/") {
+		h.clientAsset(rw, r)
+		return
+	}
+	if r.Method == "GET" && r.URL.Path == "/workspace.css" {
+		data, err := workspaceAssets.ReadFile(strings.TrimPrefix(r.URL.Path, "/"))
+		if err != nil {
+			http.NotFound(rw, r)
+			return
+		}
+		rw.Header().Set("Content-Type", "text/css; charset=utf-8")
+		rw.Write(data)
+		return
+	}
+	if r.Method == "GET" && r.URL.Path == "/api/health" {
+		rw.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(rw).Encode(map[string]string{"app": "Storyboard Desk", "backend": "go", "version": "0.12.0", "storage": storageIdentity(h.store.path)})
+		return
+	}
+	if r.Method == "GET" && r.URL.Path == "/download/script" {
+		p, err := h.store.Load(r.URL.Query().Get("project"))
+		if err != nil {
+			http.Error(rw, err.Error(), 400)
+			return
+		}
+		rw.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		rw.Header().Set("Content-Disposition", `attachment; filename="storyboard.txt"`)
+		fmt.Fprint(rw, scriptText(p))
+		return
+	}
+	if r.Method == "GET" && r.URL.Path == "/" {
+		h.render(rw, r, 200, action.View{})
+		return
+	}
+	if r.Method == "GET" && r.URL.Path == "/download/plan" {
+		p, err := h.store.Load(r.URL.Query().Get("project"))
+		if err != nil {
+			http.Error(rw, err.Error(), 400)
+			return
+		}
+		rw.Header().Set("Content-Type", "application/json")
+		rw.Header().Set("Content-Disposition", `attachment; filename="storyboard-plan.json"`)
+		fmt.Fprint(rw, jsonText(projectPlan(p)))
+		return
+	}
+	if r.Method == "GET" && strings.HasPrefix(r.URL.Path, "/media/") {
+		h.media(rw, r)
+		return
+	}
+	if r.Method != "POST" {
+		http.NotFound(rw, r)
+		return
+	}
+	if origin := r.Header.Get("Origin"); origin != "" && origin != "http://"+r.Host {
+		http.Error(rw, "Invalid origin", 403)
+		return
+	}
+	if r.URL.Path == "/upload" {
+		h.upload(rw, r)
+		return
+	}
+	r.Body = http.MaxBytesReader(rw, r.Body, 2<<20)
+	if err := r.ParseForm(); err != nil {
+		http.Error(rw, "Invalid form", 400)
+		return
+	}
+	if subtle.ConstantTimeCompare([]byte(r.PostForm.Get("csrf")), []byte(h.csrf)) != 1 {
+		http.Error(rw, "Invalid token", 403)
+		return
+	}
+	if handler := h.coreAction(r.URL.Path); handler != nil {
+		h.serveFormAction(rw, r, handler)
+		return
+	}
+	values := r.PostForm
+	id, sid := values.Get("project"), values.Get("shot")
+	view := values.Get("view")
+	if view == "" {
+		view = "board"
+	}
+	var updated ProjectDocument
+	if r.URL.Path == "/create" {
+		raw := ProjectDocument{"title": rawValue(values.Get("title")), "brief": rawValue(values.Get("brief")), "aspect": rawValue(values.Get("aspect")), "music_video": rawValue(values.Get("music_video") == "true"), "shots": rawValue([]ProjectDocument{{"title": rawValue("The opening"), "purpose": rawValue("Establish the story.")}})}
+		if values.Get("template") != "" {
+			raw, err = decodeDocument(values.Get("template"))
+			if err == nil && shotText(raw, "template_kind") != "storyboard-project-v1" {
+				err = fmt.Errorf("choose a storyboard-project-v1 template")
+			}
+		}
+		if err == nil {
+			updated, err = h.store.CreateTemplate(raw)
+		}
+	} else {
+		var rev int
+		rev, err = strconv.Atoi(values.Get("revision"))
+		if err == nil {
+			switch r.URL.Path {
+			case "/download":
+				err = h.downloadSaved(rw, r, id, values)
+				if err == nil {
+					return
+				}
+			case "/references":
+				var refs []ProjectDocument
+				if json.Unmarshal([]byte(values.Get("references")), &refs) != nil || refs == nil {
+					err = fmt.Errorf("references must be a JSON array")
+				} else {
+					updated, err = h.store.UpdateProject(id, rev, ProjectDocument{"references": rawValue(refs)})
+				}
+			case "/draw", "/draw-cancel", "/draw-recover":
+				err = h.drawingCommand(r.URL.Path, id, sid, rev, values)
+			case "/claude":
+				scene, shot := "", ""
+				scope := values.Get("scope")
+				if !containsField([]string{"shot", "scene", "episode"}, scope) {
+					err = fmt.Errorf("choose a review scope")
+				} else {
+					if scope == "shot" {
+						shot = sid
+					}
+					if scope == "scene" {
+						scene = values.Get("scene_filter")
+						if scene == "" {
+							p, e := h.store.Load(id)
+							if e != nil {
+								err = e
+							} else {
+								target, e := findShot(p, sid)
+								if e != nil {
+									err = e
+								} else {
+									scene = shotText(target, "scene")
+								}
+							}
+						}
+						if scene == "" && err == nil {
+							err = fmt.Errorf("choose a scene before exporting a scene review")
+						}
+					}
+					if err == nil {
+						var rel string
+						rel, err = h.store.ExportClaude(id, scene, shot)
+						if err == nil {
+							err = h.finishExport(rw, r, id, rel)
+							if err == nil {
+								return
+							}
+						}
+					}
+				}
+
+			case "/cloud-prepare":
+				_, err = h.cloudCommand(rw, r, id, rev, values)
+				if err == nil {
+					return
+				}
+			case "/cloud-connect", "/cloud-allowance", "/cloud-brief", "/cloud-approve-brief", "/cloud-submit", "/cloud-resume":
+				updated, err = h.cloudCommand(rw, r, id, rev, values)
+			case "/music-cue", "/section-save", "/section-split", "/coverage-add", "/coverage-edit", "/section-edit", "/section-undo", "/section-reel", "/section-export":
+				var rel string
+				updated, rel, err = h.musicCommand(r.URL.Path, id, rev, values)
+				if err == nil && rel != "" {
+					err = h.finishExport(rw, r, id, rel)
+					if err == nil {
+						return
+					}
+				}
+			case "/export":
+				var rel string
+				rel, err = h.store.ExportReview(id)
+				if err == nil {
+					err = h.finishExport(rw, r, id, rel)
+					if err == nil {
+						return
+					}
+				}
+			case "/select":
+				updated, err = h.store.Choose(id, sid, values.Get("kind"), values.Get("asset"), values.Get("approve") == "true", rev)
+			case "/bin":
+				updated, err = h.store.Bin(id, sid, values.Get("asset"), values.Get("reason"), values.Get("restore") == "true", rev)
+			case "/clip-range", "/place":
+				var start, end, measured float64
+				start, err = strconv.ParseFloat(values.Get("start"), 64)
+				if err == nil {
+					end, err = strconv.ParseFloat(values.Get("end"), 64)
+				}
+				if err == nil {
+					measured, err = strconv.ParseFloat(values.Get("measured"), 64)
+				}
+				if err == nil {
+					if r.URL.Path == "/place" {
+						updated, err = h.store.PlaceClip(id, sid, values.Get("asset"), values.Get("target"), rev, start, end, measured)
+					} else {
+						updated, err = h.store.TrimClip(id, sid, values.Get("asset"), rev, start, end, measured)
+					}
+				}
+			case "/undo-placement":
+				updated, err = h.store.UndoPlacement(id, rev)
+			case "/review-clip":
+				updated, err = h.store.ReviewClip(id, sid, values.Get("asset"), rev, values.Get("status"), values.Get("setup"), values.Get("phase"), values.Get("note"))
+			case "/plan":
+				var plan ProjectDocument
+				plan, err = decodeDocument(values.Get("plan"))
+				if err == nil {
+					updated, err = h.store.ApplyPlan(id, rev, plan)
+				}
+			default:
+				http.NotFound(rw, r)
+				return
+			}
+		}
+	}
+	if err != nil {
+		status := 400
+		if errors.Is(err, ErrRevision) {
+			status = 409
+		}
+		if h.saveFile != nil && r.Header.Get("Accept") == "application/json" {
+			rw.Header().Set("Content-Type", "application/json")
+			rw.WriteHeader(status)
+			json.NewEncoder(rw).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+		q := r.URL.Query()
+		q.Set("project", id)
+		q.Set("shot", sid)
+		q.Set("view", view)
+		r.URL.RawQuery = q.Encode()
+		h.render(rw, r, status, formFailure(r.URL.Path, formValues(values), err))
+		return
+	}
+	if updated != nil {
+		id = shotText(updated, "id")
+	}
+	if r.URL.Path == "/create" {
+		view = "board"
+		sid = ""
+	}
+	// Keep a root redirect for original form clients; richer navigation supplies view.
+	target := "/"
+	if values.Has("view") {
+		target = pageURL(id, view, sid, values.Get("scene_filter"))
+	}
+	http.Redirect(rw, r, target, 303)
+}
+
+func workspaceHeaders(w http.ResponseWriter, connectSources string) {
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'self'; script-src 'self' 'wasm-unsafe-eval'; img-src 'self' data:; media-src 'self'; connect-src "+connectSources+"; form-action 'self'; base-uri 'none'; frame-ancestors 'none'")
+}
+
+func (h *workspaceHandler) render(rw http.ResponseWriter, r *http.Request, status int, submission action.View) {
+	runtime, err := editorRuntime()
+	if err != nil {
+		http.Error(rw, err.Error(), 503)
+		return
+	}
+	query := r.URL.Query()
+	id := query.Get("project")
+	projects, project, err := h.workspaceProjects(id)
+	if err != nil {
+		http.Error(rw, err.Error(), 500)
+		return
+	}
+	if project.document == nil && id != "" && len(projects) > 0 {
+		http.Error(rw, "Project not found", 404)
+		return
+	}
+	w := workspacePage{store: h.store, nativeSave: h.saveFile != nil, quoteID: query.Get("quote"),
+		projects: projects, project: project.document, shots: project.shots, csrf: h.csrf,
+		view: query.Get("view"), scene: query.Get("scene"), message: submission.Message(), submission: submission}
+	w.promptProvider = query.Get("provider")
+	if !containsField([]string{"grok", "flow", "gemini", "other"}, w.promptProvider) {
+		w.promptProvider = "grok"
+	}
+	if w.view == "" {
+		w.view = "board"
+	}
+	w.selectShot(query.Get("shot"))
+	h.loadPageFeatures(&w)
+	rw.Header().Set("Content-Type", "text/html; charset=utf-8")
+	rw.WriteHeader(status)
+	fmt.Fprint(rw, gosx.RenderHTML(editorDocument(runtime, w, r, status)))
+}
+
+func (w workspacePage) render() gosx.Node {
+	nav := []any{}
+	for _, p := range w.projects {
+		class := "project-link"
+		if shotText(p, "id") == shotText(w.project, "id") {
+			class += " active"
+		}
+		nav = append(nav, link(shotText(p, "title"), pageURL(shotText(p, "id"), "board", "", ""), class))
+	}
+	sidebar := cls("aside", "sidebar", link("▤  STORYBOARD DESK", "/", "brand"), cls("p", "eyebrow", txt("YOUR PROJECTS")), el("nav", attrs("aria-label", "Projects"), fragment(nav...)), link("＋ New project", "#new-project", "button secondary"), cls("p", "local-status", txt("● Saved on your computer")))
+	saveStatus := "Saved locally"
+	if w.submission.Submitted() && !downloadForm(w.submission.Name) {
+		saveStatus = "Unsaved changes"
+	}
+	main := []any{cls("header", "topbar", txt("WORKBENCH / "+shotText(w.project, "title")), cls("span", "fine", attrs("id", "download-status", "role", "status")), cls("span", "status", attrs("id", "save-status"), txt(saveStatus)))}
+	if w.message != "" {
+		main = append(main, cls("div", "error", attrs("role", "alert"), txt(w.message+". Your submitted values remain below.")))
+	}
+	if w.project == nil {
+		main = append(main, cls("section", "paper welcome", cls("p", "eyebrow", txt("FROM AN IDEA TO A SEQUENCE")), el("h1", txt("A place for your next story.")), el("p", txt("Plan the shots, collect takes and shape the sequence."))))
+	} else {
+		seconds := 0.0
+		for _, s := range w.shots {
+			seconds += number(s, "duration")
+		}
+		heading := cls("section", "project-heading", cls("p", "eyebrow", txt("FROM AN IDEA TO A SEQUENCE")), el("h1", txt(shotText(w.project, "title"))), el("p", txt(shotText(w.project, "brief"))))
+		stats := fmt.Sprintf("%d shots · %.1f seconds · %s · revision %d", len(w.shots), seconds, shotText(w.project, "aspect"), documentRevision(w.project))
+		main = append(main, heading, cls("div", "project-bar", txt(stats)))
+		export := w.controls("/export")
+		export = append(export, button("Export review package ↓"))
+		main = append(main, el("form", export...))
+		tabs := []any{}
+		for _, tab := range [][2]string{{"episode", "Episode map"}, {"board", "Storyboard"}, {"review", "Review sequence"}, {"library", "Media Library"}, {"generate", "Generate"}, {"music", "Music & lyrics"}, {"sections", "Song sections"}, {"direction", "Brief & appearance"}, {"references", "References"}, {"handoff", "Plans & handoffs"}, {"exports", "Exports"}} {
+			class := "tab"
+			if w.view == tab[0] {
+				class += " active"
+			}
+			tabs = append(tabs, link(tab[1], w.href(tab[0], ""), class))
+		}
+		main = append(main, cls("nav", "tabs", attrs("aria-label", "Workspace views"), fragment(tabs...)))
+		switch w.view {
+		case "exports":
+			main = append(main, w.exports())
+		case "review":
+			main = append(main, w.review())
+		case "generate":
+			main = append(main, w.generation())
+		case "music":
+			main = append(main, w.music())
+		case "sections":
+			main = append(main, w.sections())
+		case "library":
+			main = append(main, w.mediaLibrary())
+		case "direction":
+			main = append(main, w.direction())
+		case "references":
+			main = append(main, w.references())
+		case "handoff":
+			main = append(main, w.handoffs())
+		case "episode":
+			main = append(main, w.episode())
+		default:
+			main = append(main, w.board())
+		}
+	}
+	main = append(main, w.createForm(), cls("footer", "fine", txt("Local project files · "), txt("Storyboard Desk")))
+	return gosx.Fragment(sidebar, cls("main", "workspace", fragment(main...)))
+}
+
+func (w workspacePage) createForm() gosx.Node {
+	children := []any{w.formAttrs("/create"), hidden("csrf", w.csrf), hidden("view", "board"), w.field("/create", "Project title", "title", "", "text"), w.field("/create", "Your idea", "brief", "", "textarea"), w.selectField("/create", "Format", "aspect", "9:16", []string{"9:16", "16:9", "1:1"}), w.field("/create", "Music video", "music_video", "false", "checkbox"), button("Create storyboard"), el("details", el("summary", txt("Start from a template")), jsonFileField("template"), w.field("/create", "Project template JSON", "template", "", "textarea"), el("p", attrs("class", "fine"), txt("A template creates a new project with fresh shot identities and no media or approvals.")))}
+	return cls("details", "paper new-project", attrs("id", "new-project"), el("summary", txt("＋ A new story")), el("form", children...))
+}
+
+func (w workspacePage) references() gosx.Node {
+	refs := list(w.project, "references")
+	cards := []any{}
+	for i, r := range refs {
+		index := strconv.Itoa(i)
+		c := w.scoped("index", index)
+		edit := c.scoped("operation", "update").form("/reference-note")
+		f := append(edit.controls(), hidden("index", index), hidden("operation", "update"),
+			edit.field("Title", "title", shotText(r, "title"), "text"), edit.field("Source URL", "url", shotText(r, "url"), "url"),
+			edit.field("Notes", "notes", shotText(r, "notes"), "textarea"), button("Save reference note"))
+		remove := c.scoped("operation", "remove").controls("/reference-note")
+		remove = append(remove, hidden("index", index), hidden("operation", "remove"), button("Remove note"))
+		cards = append(cards, cls("article", "paper", link("Open reference ↗", shotText(r, "url"), "button secondary"), el("form", f...), el("form", remove...)))
+	}
+	raw := w.project["references"]
+	if len(raw) == 0 {
+		raw = rawValue([]any{})
+	}
+	children := w.controls("/references")
+	children = append(children, el("h2", txt("Reference notes")), el("p", txt("Keep source links, titles and notes together. Attach actual image references above for visual conditioning.")), w.field("/references", "References · JSON array of title, url and notes", "references", string(raw), "textarea"), button("Save reference notes"))
+	for _, ref := range list(w.project, "visual_references") {
+		cards = append(cards, cls("article", "paper", el("img", attrs("src", mediaURL(shotText(w.project, "id"), shotText(ref, "path")), "alt", shotText(ref, "title"), "class", "reference-image")), el("h3", txt(shotText(ref, "title"))), el("p", txt(shotText(ref, "notes")))))
+	}
+	add := w.scoped("operation", "add").form("/reference-note")
+	addFields := append(add.controls(), hidden("operation", "add"), add.field("Title", "title", "", "text"),
+		add.field("Source URL", "url", "", "url"), add.field("Notes", "notes", "", "textarea"), button("Add reference note"))
+	addDetails := []any{el("summary", txt("Add a reference note")), el("form", addFields...)}
+	if add.Rejected != nil {
+		addDetails = append(addDetails, attrs("open", "open"))
+	}
+	return el("section", cls("div", "paper", el("h2", txt("Appearance images")), w.uploadForm("reference")), cls("div", "reference-grid", fragment(cards...)), cls("details", "paper", addDetails...), cls("details", "paper", el("summary", txt("Advanced reference JSON")), el("form", children...)))
+}
+
+func (w workspacePage) handoffs() gosx.Node {
+	children := w.controls("/plan")
+	children = append(children, el("h2", txt("Refine the plan")), el("p", txt("Import revisions to existing shots. Shot identities, saved media and selected takes stay with the project.")), link("Download plan JSON ↓", "/download/plan?project="+url.QueryEscape(shotText(w.project, "id")), "button secondary"), jsonFileField("plan"), w.field("/plan", "Revised plan JSON", "plan", "", "textarea"), button("Apply reviewed plan"))
+	pack := w.controls("/claude")
+	pack = append(pack, w.selectField("/claude", "Review scope", "scope", "shot", []string{"shot", "scene", "episode"}), button("Download images & review brief ZIP"))
+	return cls("section", "paper", el("h2", txt("Manual direction review")), copyArea("claude-brief", "Current-shot review brief", w.handoffClaude), copyArea("planning-intake", "Planning intake", w.handoffIntake), el("form", pack...), el("form", children...))
+}
+
+func (w workspacePage) episode() gosx.Node {
+	rows := []any{}
+	elapsed := 0.0
+	for i, s := range w.shots {
+		rows = append(rows, cls("article", "episode-row", cls("span", "shot-number", txt(fmt.Sprintf("%02d", i+1))), el("div", cls("p", "eyebrow", txt(fmt.Sprintf("%s · %.1f–%.1fs", shotText(s, "scene"), elapsed, elapsed+number(s, "duration")))), el("h2", txt(shotText(s, "title"))), el("p", txt(shotText(s, "purpose"))), el("p", txt(shotText(s, "dialogue")))), link("Open shot ↗", w.href("board", shotText(s, "id")), "button secondary")))
+		elapsed += number(s, "duration")
+	}
+	return cls("section", "paper", el("h2", txt("The whole episode")), el("p", txt(shotText(w.project, "episode_notes"))), fragment(rows...))
+}
+
+var fieldLabels = map[string]string{"scene": "Scene / sequence", "story_status": "Story source", "title": "Shot title", "purpose": "Story purpose", "composition": "Composition & starting pose", "action": "Subject action & timing", "camera": "Camera behavior", "sound": "Sound", "continuity": "Continuity", "feedback": "Feedback for the next take", "transition": "Ending / cut", "dialogue": "Dialogue", "narration": "Narration / voiceover", "audience": "What the audience notices", "jorge": "Character’s interpretation", "anomaly": "Intentional anomaly", "start_state": "Start state", "end_state": "End state", "screen_direction": "Screen direction / eye line", "assets_needed": "Required assets / missing inputs", "reference_notes": "Reference application & source status", "blocking": "Blocking diagram", "local_prompt": "Local drawing prompt", "local_negative_prompt": "Drawing exclusions"}
+
+func (w workspacePage) board() gosx.Node {
+	cards := make([]gosx.Node, 0, len(w.shots))
+	scenes := []string{""}
+	seen := map[string]bool{}
+	scope := w.formScope()
+	moveControls := (FormView{Scope: scope, Action: "/move"}).sharedControls()
+	rejectedMove := w.submission.Submitted() && w.submission.Name == "/move"
+	moveButtons := [2]any{
+		el("button", attrs("name", "delta", "value", "-1", "title", "Move earlier"), txt("←")),
+		el("button", attrs("name", "delta", "value", "1", "title", "Move later"), txt("→")),
+	}
+	cardClass, selectedClass := attrs("class", "shot-card"), attrs("class", "shot-card selected")
+	cardTop, cardBody, cardFooter := attrs("class", "card-top"), attrs("class", "card-body"), attrs("class", "card-footer")
+	eyebrow := attrs("class", "eyebrow")
+	const moveFormID = "board-move"
+	for i, s := range w.shots {
+		scene := shotText(s, "scene")
+		if scene != "" && !seen[scene] {
+			scenes = append(scenes, scene)
+			seen[scene] = true
+		}
+		if w.scene != "" && scene != w.scene {
+			continue
+		}
+		shotID := shotText(s, "id")
+		class := cardClass
+		if shotID == scope.ShotID {
+			class = selectedClass
+		}
+		editHref := pageURL(scope.ProjectID, "board", shotID, w.scene)
+		artHref := editHref
+		if !w.shared {
+			artHref = pageURL(scope.ProjectID, "library", shotID, w.scene)
+		}
+		title := shotText(s, "title")
+		edit := link("Edit shot ↗", editHref, "button secondary")
+		var footer gosx.Node
+		if rejectedMove {
+			// Only the rejected shot's controls carry its submitted revision.
+			controls := moveControls
+			card := w.scoped("shot", shotID)
+			if card.submission.Submitted() {
+				card.shot = s
+				controls = card.form("/move").sharedControls()
+			}
+			footer = el("form", controls.forShot(shotID, cardFooter, moveButtons[0], moveButtons[1], edit)...)
+		} else {
+			footer = el("div", cardFooter,
+				el("button", attrs("form", moveFormID, "name", "move", "value", "-1:"+shotID, "title", "Move earlier"), txt("←")),
+				el("button", attrs("form", moveFormID, "name", "move", "value", "1:"+shotID, "title", "Move later"), txt("→")), edit)
+		}
+		cards = append(cards, el("article", class,
+			el("div", cardTop, txt(fmt.Sprintf("SHOT %03d", (i+1)*10)), el("span", txt(fmt.Sprintf("%.1fs", number(s, "duration"))))),
+			w.cardArt(s, scope.ProjectID, artHref, title),
+			el("div", cardBody, el("p", eyebrow, txt(scene)), el("h2", txt(title)), el("p", txt(shotText(s, "purpose")))),
+			footer))
+	}
+	filters := []any{attrs("method", "get", "action", "/", "class", "scene-filter"), hidden("project", shotText(w.project, "id")), hidden("view", "board"), w.selectField("", "Scene / sequence", "scene", w.scene, scenes), button("Filter")}
+	var moveForm gosx.Node
+	if !rejectedMove && len(cards) != 0 {
+		fields := []any{attrs("id", moveFormID, "hidden", "hidden")}
+		fields = append(fields, moveControls.beforeShot[:]...)
+		fields = append(fields, moveControls.afterShot[:]...)
+		moveForm = el("form", fields...)
+	}
+	return el("section", el("form", filters...), moveForm, cls("div", "board-layout", cls("div", "shot-grid", gosx.Fragment(cards...)), w.shotForm()))
+}

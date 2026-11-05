@@ -1,0 +1,562 @@
+{
+  "purpose": "Physical Apple Silicon Mac build, storage/compatibility, native host startup and installed-app backend/export verification",
+  "verified_at_utc": "2026-11-02T18:43:02.249503+00:00",
+  "tested_source": {
+    "git_commit": "2a084404a103baaa59cb0cc0401bb93334f329d5",
+    "branch": "codex/gosx-python-retirement",
+    "remote_checkout_clean_before_and_after_build": true,
+    "retained_checkout": "~/work/storyboard-desk",
+    "tracked_python_source_files": 0,
+    "binary_git_stamping": {
+      "revision": "2a084404a103baaa59cb0cc0401bb93334f329d5",
+      "modified": false
+    }
+  },
+  "environment": {
+    "target": "User-designated Mac reached through its configured tailnet SSH alias; identity verified before mutation",
+    "hardware": "Apple M1 Max",
+    "architecture": "arm64",
+    "memory_gib": 64,
+    "macos": "26.6.2",
+    "kernel": "Darwin 25.6.0",
+    "filesystem": "APFS",
+    "go": "go1.26.5 darwin/arm64",
+    "swift": "Apple Swift 6.3.2",
+    "ffmpeg": "9.0.2",
+    "temporary_build_storage": "~/work/.runtime/tmp and ~/work/.runtime/go-tmp",
+    "go_caches": "Existing shared user Go caches reused",
+    "test_projects": "Synthetic fixtures only; existing creator data not opened or edited"
+  },
+  "commands": [
+    "go -C gosx-host run ./cmd/native",
+    "cd gosx-host && STORYBOARD_REQUIRE_FFMPEG=1 STORYBOARD_REQUIRE_NATIVE=1 go test -race -json -timeout 8m ./...",
+    "go -C gosx-host vet ./...",
+    "go -C gosx-host run ./cmd/package",
+    "open -n -W -a \"$HOME/Applications/Storyboard Desk.app\" --stdout <native.stdout> --stderr <native.stderr> --env PATH=/usr/bin:/bin:/usr/sbin:/sbin --env OPENROUTER_API_KEY --env STORYBOARD_OPENROUTER_KEYCHAIN_SERVICE --args -settings <synthetic settings> -data-dir <synthetic data> -port 0",
+    "go run build/verification/mac/workflow.go build/verification/mac",
+    "ffprobe -v error -show_entries format=duration:stream=codec_type,width,height -of json <backend-selects.mp4>"
+  ],
+  "go_race_tests": {
+    "counts": {
+      "pass": 65,
+      "skip": 2
+    },
+    "passed": [
+      "TestShotCardRendersAndEscapesProjectContent",
+      "TestRenderBoardListsProjectsAndEscapesShotFields",
+      "TestCloudConfirmationBudgetAndIdempotentImageImport",
+      "TestCloudUnknownRequestKeepsReservationAndIsNeverReplayed",
+      "TestCloudStaleQuotesAndChangedReferencesFailBeforeSubmission",
+      "TestCloudReportedCostAboveEstimateAndBriefApproval",
+      "TestCloudVideoResumesExistingJobAndPreservesStarterBinding",
+      "TestProviderRejectsArbitraryEndpointsBeforeReadingCredentials",
+      "TestCompleteCompatibilityFixture",
+      "TestLocalDrawingSnapshotsOfflineArgumentsAndIdempotentRecovery",
+      "TestLocalDrawingCancellationAndCriticalMemoryPreserveMedia/false",
+      "TestLocalDrawingCancellationAndCriticalMemoryPreserveMedia/true",
+      "TestLocalDrawingCancellationAndCriticalMemoryPreserveMedia",
+      "TestReviewedDirectionImportUsesCurrentImageAndBasis",
+      "TestCoverageCollectionPreservesAssemblyAndEditorialNotes",
+      "TestCoverageReservationSurvivesTrackReplacementAndBlocksDuplicateBytes",
+      "TestInvalidSectionInputsAndPortionBatchesNeverWrite",
+      "TestPlacementsFlattenLineageAndUndoProtectsLaterSelection",
+      "TestLargeEpisodeAndDirectionContextCompatibility",
+      "TestLegacyFixtureIntegrityAndUnchangedMedia",
+      "TestOnlyExplicitLoopbackRootIsAccepted",
+      "TestHealthRejectsAnotherAppAndRedirects",
+      "TestMediaImportApprovalBinAndRangeServing",
+      "TestMultipartImportAndTraversalRejection",
+      "TestActualFFmpegImportPlacementAndSilentExport",
+      "TestLegacyDerivedParity",
+      "TestMusicPortionsCuesAndUndo",
+      "TestActualSectionCoverageReservationsAndExports",
+      "TestActualMacNativeMediaHelpers",
+      "TestGoSettingsPreserveOverridesAndRejectCredentials",
+      "TestChildProcessesDoNotInheritGenerationKey",
+      "TestStandaloneLegacyProjectRoundTripWithoutToolRuntimes",
+      "TestStandaloneBackgroundStartupReusesOnlyMatchingGoStorage",
+      "TestReadProjectPreservesExistingData",
+      "TestReadProjectRejectsBadInputWithoutCreatingFiles",
+      "TestReadProjectDoesNotFollowProjectDirectorySymlink",
+      "TestReadProjectDoesNotFollowProjectFileSymlink",
+      "TestReadLegacyProjectFixture",
+      "TestStorePreservesLegacyDataAcrossEditsAndReopen",
+      "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/stale",
+      "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/missing_shot",
+      "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/media_injection",
+      "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/unknown_mutation",
+      "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/bad_duration",
+      "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/invalid_raw_number",
+      "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/padded_null",
+      "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/null_title",
+      "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/long_text",
+      "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/bad_aspect",
+      "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/bad_music_flag",
+      "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/bad_insert",
+      "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/missing_anchor",
+      "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/remove_by_reorder",
+      "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/replace_by_reorder",
+      "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/traversal",
+      "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting",
+      "TestStoreConcurrentCommandsOnlyOneRevisionWins",
+      "TestStoreOwnershipAndUnavailablePaths",
+      "TestStoreRejectsSymlinksAndReplacedRoot",
+      "TestStoreIgnoresCrashTempsAndRejectsMalformedProjects",
+      "TestStoreSceneEditHonorsExistingCoverageReservation",
+      "TestStoreSurvivesWriterProcessCrash",
+      "TestWorkspaceCoreCommandsAndRejectedDrafts",
+      "TestTemplateAndPlanPreserveMediaAndUnknownData",
+      "TestSceneFilterChoosesShotFromThatScene"
+    ],
+    "skips": [
+      "TestGoSXGeneratedShotCard",
+      "TestStorageWriterProcess"
+    ],
+    "required_ffmpeg": true,
+    "required_native_helpers": true,
+    "live_generation": "Provider and Draw Things tests use deterministic fakes; no live provider/model was called"
+  },
+  "vet_exit_code": 0,
+  "package": {
+    "installed_app": "~/Applications/Storyboard Desk.app",
+    "format": "Mach-O 64-bit executable arm64",
+    "native_host": "GoSX WKWebView",
+    "binary_sha256": "839535a392f76d9a354b2b8cc6cd44d5aefea39b96650b65fca1a6f19d654667",
+    "bundled_helpers_sha256": {
+      "media_probe": "82c965b1a6cfb29a89a9d35c5431fe01f6a38fb69878f6917cc05840f430dc0f",
+      "export_range": "687a08c1573d0fe8b4c7b9fadf4be2b90e5d4105bd86f76e29eae6b27bb58008",
+      "export_reel": "e7fef504ce77e56fc0132553cbca294af3f275c4765c0f42d6e474102558f66a"
+    },
+    "normal_project_location": "~/Library/Application Support/Storyboard Desk; verification launch overrides it with an isolated fixture"
+  },
+  "native_window": {
+    "source": "Peekaboo 4.9.6 authorized Bridge, live ScreenCaptureKit capture and fresh Accessibility data; earlier NSWorkspace/WindowServer metadata retained locally.",
+    "application_finished_launching": true,
+    "application_active_at_capture": true,
+    "visible_window_count": 1,
+    "bounds": {
+      "Height": 896,
+      "Width": 1440,
+      "X": 36,
+      "Y": 33
+    },
+    "health": {
+      "app": "Storyboard Desk",
+      "backend": "go",
+      "version": "0.12.0"
+    },
+    "visual_screenshot_review": {
+      "status": "passed for 2a084404a103baaa59cb0cc0401bb93334f329d5",
+      "screenshot": "gosx-mac-native.png",
+      "observed": "Native GoSX Media Library, synthetic project revision 16 after copied import.",
+      "capture_engine": "ScreenCaptureKit",
+      "note": "Legacy CGWindowList captures were stale and were excluded from visual signoff."
+    }
+  },
+  "installed_app_workflow": {
+    "app": "installed GoSX Mac bundle",
+    "backend": "Go + bundled AVFoundation helpers",
+    "exports": [
+      {
+        "action": "/export",
+        "bytes": 258607,
+        "saved_file": "backend-review.zip",
+        "sha256": "add9dc2e529f4b000ac77a0efcf3413a56f9e24a3f2c99857293d43fa8248b30",
+        "zip_crc_valid": true,
+        "zip_entries": [
+          "project.json",
+          "STORYBOARD.txt",
+          "episode-map.json",
+          "plan.json",
+          "buckley-intake.txt",
+          "generation/jobs.json",
+          "prompts/0010_0ea280ddd70e.txt",
+          "selected/0010_0ea280ddd70e_clip_take01.mp4",
+          "sequence.json",
+          "lyrics.txt",
+          "music-timing.json",
+          "music-cues.json",
+          "song-sections.json",
+          "soundtrack/original.wav",
+          "README.txt"
+        ]
+      },
+      {
+        "action": "/section-reel",
+        "bytes": 1626260,
+        "saved_file": "backend-selects.mp4",
+        "sha256": "5b57826438c390bebfb8965bcd1a5418547769cb25191cc3d06de4bb8724c73b"
+      },
+      {
+        "action": "/section-export",
+        "bytes": 609053,
+        "saved_file": "backend-editor.zip",
+        "sha256": "e6d572400e2d46bcea0df8ee43aa3cb99322ab43b14fac34da638e7f5ae154cf",
+        "zip_crc_valid": true,
+        "zip_entries": [
+          "mp4-ranges/001_3db2834c103f.mp4",
+          "coverage-options/001_3db2834c103f.mp4",
+          "soundtrack/section.wav",
+          "soundtrack/original.wav",
+          "sources/0ea280ddd70e-3db2834c103f.mp4",
+          "section.json",
+          "coverage.json",
+          "timing.csv",
+          "lyric-cues.csv",
+          "Final Cut.fcpxml",
+          "README.txt"
+        ]
+      }
+    ],
+    "native_dialogs": "not exercised by HTTP checks",
+    "source_files_unchanged": 2,
+    "workspace_http": 200
+  },
+  "independent_reel_probe": {
+    "video_streams": 1,
+    "audio_streams": 0,
+    "width": 720,
+    "height": 1280,
+    "duration_seconds": 6.0
+  },
+  "native_dialogs": {
+    "automation": {
+      "tool": "Peekaboo 4.9.6",
+      "transport": "SSH over tailnet to the existing signed GUI Bridge",
+      "permissions": {
+        "screen_recording": true,
+        "accessibility": true,
+        "event_synthesizing": true
+      },
+      "permission_changes": false,
+      "capture_engine": "ScreenCaptureKit with fresh Accessibility observations"
+    },
+    "file_picker": {
+      "status": "passed on source 2a084404a103baaa59cb0cc0401bb93334f329d5",
+      "steps": [
+        "Select keyframe import",
+        "Open native picker",
+        "Cancel and verify no file selected",
+        "Reopen native picker",
+        "Navigate to the synthetic input directory",
+        "Select Picker sample.png and confirm Open",
+        "Verify WKWebView file label",
+        "Click Copy into project",
+        "Read project JSON and copied bytes independently"
+      ],
+      "revision_before": 15,
+      "revision_after": 16,
+      "copied_bytes": 629,
+      "source_sha256": "187f2cb6304c06396f82bbd563c5448fa50e5e179f334be05cbdf4a7db1efb85",
+      "copied_sha256": "187f2cb6304c06396f82bbd563c5448fa50e5e179f334be05cbdf4a7db1efb85",
+      "original_assets_unchanged": true,
+      "unknown_integer_preserved": "900719925474099312345"
+    },
+    "save_dialog": {
+      "status": "passed for the displayed default filename and synthetic input directory",
+      "source_commit": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+      "original_failure": {
+        "source_commit": "2a084404a103baaa59cb0cc0401bb93334f329d5",
+        "observed": "Clicking Export review package produced no Save dialog on WKWebView. Backend archive exports succeeded independently."
+      },
+      "fix": "Native downloads call the GoSX SaveFileDialog API with matching extension, overwrite confirmation and atomic external copying. Go client requests preserve dirty forms.",
+      "detailed_result": "updated_native_verification",
+      "observed_steps": [
+        "Native Save panel opened",
+        "Cancel confirmed; Go-WASM displayed Save cancelled",
+        "Save panel reopened",
+        "Go-WASM displayed Saved storyboard-a6a95d42c7be.zip; external ZIP CRCs, export equality and original hashes verified"
+      ],
+      "scope": "The initial default-name case and subsequent custom filename/folder cases pass. Native dirty drafts remain unverified."
+    },
+    "distinction": "HTTP export checks and injected Save dialog adapter tests do not certify the macOS native Save dialog."
+  },
+  "retained_evidence": {
+    "local_directory": "build/verification/jorge-mac",
+    "mac_directory": "~/work/storyboard-desk/build/verification/mac",
+    "file_sha256": {
+      "go-race.jsonl": "fea11200fde68590e0007a394e0378fb88e9e15e90cb1cef2eafea37bd25bd2b",
+      "go-race.stderr": "9bd8ef7f6961024616c73622ea1d25dddd480422b54aa42582a89e91035567c0",
+      "go-vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "native-build.log": "be6815abe2c665299dd8b839ec34877d631c2b0eecda33ff6e25d9bb357f94f3",
+      "native-window.json": "0073e995be4cdd480ed9f9457c384a7c3b6f4597474dfd9fd9e522ee077d6878",
+      "native.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "native.stdout": "232e68551eb3b7d0e5197ca9958c682beac3d321676c3307f5e7be8c30bf3d60",
+      "package.log": "f6e83b5da3abf5abe15f090e3365c2ef3f74c974468daac6d7c9a2c3c0b9ab67",
+      "reel-probe.json": "c236363753897133127d382d5b95fb19cc44f4f0fef404c845fbc705f3ad0a46",
+      "run.state": "bde294368bfed77c2cddf8cec271d398aee9cdbab3b26e1059281bd33adb0120",
+      "workflow-transcript.log": "fe58732a2ee792f0ec536d464c897ae7c3dfdc8861dbd12a48dc4ace1837a0dd",
+      "workflow.go": "de903d5c121109f7d5cbdeda561722fa47adf4b3cac9eea0fd1af93325a0b522",
+      "workflow.json": "fe58732a2ee792f0ec536d464c897ae7c3dfdc8861dbd12a48dc4ace1837a0dd"
+    }
+  },
+  "limits": [
+    "Native Go-WASM rendering, Save cancel/reopen/save and custom filenames/folders containing spaces and Unicode pass on source cc21af1. Native dirty drafts remain unverified.",
+    "GoSX compiler parity was already checked in Linux CI; its optional Mac compiler test skips because the CLI is not installed.",
+    "TestStorageWriterProcess is a child-process test helper; the actual ownership/crash tests pass.",
+    "Actual Draw Things, live paid-provider requests and real iMovie/Final Cut imports were not exercised.",
+    "No distribution signing/notarization is claimed."
+  ],
+  "updated_go_client_verification": {
+    "status": "passed",
+    "source_commit": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+    "source_worktree_clean": true,
+    "environment": {
+      "hardware": "Apple M1 Max, arm64",
+      "macos": "26.6.2",
+      "go": "1.26.5",
+      "browser": "Google Chrome 156.0.8078.76, isolated headless profile"
+    },
+    "package": {
+      "path": "~/work/storyboard-desk/build/gosx/Storyboard Desk.app",
+      "binary_sha256": "b09efba8ba74542d1ab227e22b6352c40f017531e8d6d541754e95b6fc165938",
+      "CGO_ENABLED": "0",
+      "GOARCH": "arm64",
+      "vcs_revision": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+      "vcs_modified": false
+    },
+    "desktop_app_relaunched": false,
+    "foreground_ui_automation": false,
+    "limits": "These background checks alone do not prove native UI behavior; the later updated_native_verification section records the real WKWebView and native Save results.",
+    "race_passes": 69,
+    "race_skips": [
+      "TestGoSXGeneratedShotCard",
+      "TestStorageWriterProcess"
+    ],
+    "browser_passes": 3,
+    "vet_exit_code": 0,
+    "native_helper_build_exit_code": 0,
+    "detailed_report": "gosx-go-client-verification.json",
+    "report_section": "mac_background_checks",
+    "subsequent_native_verification": "updated_native_verification (same production source and binary; foreground checks performed only during idle periods)"
+  },
+  "updated_native_verification": {
+    "status": "passed for the displayed default filename and synthetic input directory",
+    "source_commit": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+    "production_code_unchanged_through": "c87cd92b1edda2de32bc38a7741324348a001146",
+    "binary_sha256": "b09efba8ba74542d1ab227e22b6352c40f017531e8d6d541754e95b6fc165938",
+    "binary_vcs_modified": false,
+    "target": "Physical Apple M1 Max, arm64, macOS 26.6.2; installed GoSX WKWebView bundle",
+    "observed_at_utc": {
+      "save_file_mtime": "2026-11-02T22:36:20Z",
+      "launch_preflight": "2026-11-02T22:13:36Z"
+    },
+    "idle_policy": {
+      "minimum_seconds": 120,
+      "launch_preflight_seconds": 273.79811475,
+      "save_preflight_seconds": 334.383518375,
+      "console_unlocked": true,
+      "stopped_on_resumed_input": true,
+      "previous_app": "Blender",
+      "focus_restored_by_automation": false,
+      "focus_note": "The user resumed Blender activity; no further focus changes were made."
+    },
+    "native_window": {
+      "rendered": true,
+      "window_bounds": {
+        "width": 1440,
+        "height": 988
+      },
+      "screenshot": "gosx-mac-native-go.png",
+      "capture_engine": "ScreenCaptureKit with fresh Accessibility observations",
+      "go_wasm_proof": [
+        "Save cancelled",
+        "Saved storyboard-a6a95d42c7be.zip"
+      ]
+    },
+    "save_dialog": {
+      "cancel": {
+        "title": "Save storyboard-189b9f4035a5.zip",
+        "buttons": [
+          "Cancel",
+          "Save"
+        ],
+        "cancel_action_confirmed": true,
+        "client_status": "Save cancelled",
+        "external_review_zip_absent_after_cancel": true
+      },
+      "reopen": {
+        "title": "Save storyboard-a6a95d42c7be.zip",
+        "buttons": [
+          "Cancel",
+          "Save"
+        ],
+        "screenshot": "gosx-mac-save-dialog.png"
+      },
+      "saved": {
+        "status": "passed",
+        "source_commit": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+        "saved_path": "workspace/input/storyboard-a6a95d42c7be.zip",
+        "archive_bytes": 258822,
+        "archive_sha256": "92ed6a43fd38f129166692514347fa0964530e183ee690572167db3feafeb7d7",
+        "zip_crc_valid": true,
+        "zip_entries": [
+          "plan.json",
+          "buckley-intake.txt",
+          "project.json",
+          "STORYBOARD.txt",
+          "episode-map.json",
+          "generation/jobs.json",
+          "prompts/0010_0ea280ddd70e.txt",
+          "selected/0010_0ea280ddd70e_clip_take01.mp4",
+          "sequence.json",
+          "music-timing.json",
+          "music-cues.json",
+          "song-sections.json",
+          "lyrics.txt",
+          "soundtrack/original.wav",
+          "README.txt"
+        ],
+        "project_id": "d4257d1b8394",
+        "revision": 16,
+        "unknown_integer": "900719925474099312345",
+        "archive_project_matches_source_except_terminal_newline": true,
+        "source_project_sha256": "eb6a5e228e7c33e11a9d29c63434b726a08d86adb074e0567633f071dea0eb23",
+        "selected_clip_sha256": "f8c67d6a1aee16dd0e0e3b5d3a150d7eb878e87622ce6ee52915c2c68761085c",
+        "original_project_and_all_three_media_hashes_unchanged": true,
+        "native_client_status": "Saved storyboard-a6a95d42c7be.zip",
+        "default_filename_and_directory_used": true,
+        "custom_name_and_directory": "The combined Peekaboo file helper did not apply the requested review.zip name or saved directory. Saving was observed and independently verified at the panel's displayed default name and synthetic input directory. No custom-name/location signoff is claimed."
+      },
+      "copy_matches_project_export": true,
+      "scope": "The real Save panel and completed save were observed through Peekaboo and independently verified on disk. The combined path/name helper returned an indeterminate Bridge receipt; it did not apply review.zip or the requested saved folder. No successful helper delivery or custom-name/folder verification is claimed."
+    },
+    "preservation": {
+      "project_sha256": "eb6a5e228e7c33e11a9d29c63434b726a08d86adb074e0567633f071dea0eb23",
+      "project_revision": 16,
+      "original_media_sha256": {
+        "media/0ea280ddd70e/3db2834c103f.mp4": "f8c67d6a1aee16dd0e0e3b5d3a150d7eb878e87622ce6ee52915c2c68761085c",
+        "media/0ea280ddd70e/cf39833aa863.png": "187f2cb6304c06396f82bbd563c5448fa50e5e179f334be05cbdf4a7db1efb85",
+        "media/0ea280ddd70e/d3046566d27a.png": "187f2cb6304c06396f82bbd563c5448fa50e5e179f334be05cbdf4a7db1efb85"
+      },
+      "all_original_hashes_unchanged": true,
+      "opaque_integer": "900719925474099312345"
+    },
+    "limits": [
+      "This initial case used defaults. Later custom_filename_verification and custom_folder_verification pass names and locations containing spaces and Unicode.",
+      "The native AX draft-edit attempt did not change the text field; no native dirty-draft signoff is claimed. Separate browser tests cover dirty forms with injected dialog results.",
+      "Historical native file-picker/import evidence remains attributed to source 2a08440."
+    ],
+    "retained_evidence": {
+      "local_directory": "build/verification/jorge-mac/native-final",
+      "file_sha256": {
+        "idle-preflight.json": "65f0bd922188e6e1ec6c9a4806d4b524fb4cac0a0462dcb5506cc18aee08457e",
+        "idle-save-preflight.json": "3ef515660ec9ada72cf75e59d7c1fe141a3999866ad6e1a06a740b8d59727b31",
+        "native-initial.json": "e9000e853e82802540ebf6ecc74d1ef58d6dc4fb212c3d0088d7b56086d7fb2d",
+        "native-save-first.json": "bfd5bb28bb9a43563364b19112b920d6c1b22f5c8ad7eae089cf8b90cc3efe41",
+        "native-save-cancel.json": "b401a038eddce23800e730b0fb45b25d939384b3beb9627e12684af8c3c254f4",
+        "native-after-cancel.json": "eeef72baebd0e8e9888497bb1fb7e1b2b8a25e631e3481d413764d69d3623966",
+        "native-save-reopened.json": "ae6824824a64efac724cf1710e21c7945e1cd767be9246fddc10072f7daae42b",
+        "native-panel-reopened.json": "0bfe1b5b869341ec6bde9eb325defbeff725b7e04c7680f3b6cdc414efe3a148",
+        "native-save-destination.json": "1f0cad02ada8056d3595aa63f72935b714425851c5b5c6af025f7b71d20c264e",
+        "native-panel-after-file.json": "35ce56865a746f9073b46a910aa31c4e79c22f72e0f707e8728074f2d4f8579a",
+        "native-save-paused.json": "d297f35bf924eb3a3e4c0eee2a335a60b9132b857c7bd23586d8abede5960df9",
+        "native-save-verification.json": "af3c2dfaeb0440deea44b2e0c133514ad99a70323e36f666b87d71a0b51a1950"
+      }
+    },
+    "verification_commands": [
+      "unzip -t build/verification/jorge-mac/native-final/native-saved.zip",
+      "Compare saved ZIP and generated export SHA256, read every ZIP entry, compare archived project bytes (plus terminal newline) with source SHA256, verify selected clip SHA256 and opaque integer",
+      "Read the original project and all three original media SHA256 independently over SSH"
+    ]
+  },
+  "custom_filename_verification": {
+    "status": "passed",
+    "source_commit": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+    "production_code_unchanged_through": "f0ee46562ad46bd6b8c978a5211baad6e466acba",
+    "binary_sha256": "b09efba8ba74542d1ab227e22b6352c40f017531e8d6d541754e95b6fc165938",
+    "filename": "Custom review 雪.zip",
+    "directory": "workspace/input",
+    "source_export": "exports/storyboard-f84863189b6e.zip",
+    "archive_bytes": 258822,
+    "archive_sha256": "747c9e62979b1296a98c9745585d5f862f4df75a6bc68695e47c68543ff15dcb",
+    "matches_generated_export": true,
+    "zip_crc_valid": true,
+    "archive_project_matches_original_except_terminal_newline": true,
+    "project_revision": 16,
+    "unknown_integer": "900719925474099312345",
+    "original_project_and_three_media_hashes_unchanged": true,
+    "native_client_status": "Saved Custom review 雪.zip",
+    "native_filename_observed_before_save": true,
+    "custom_folder_verified": false,
+    "limits": "This earlier filename-only case used workspace/input; custom_folder_verification records the subsequent successful folder case. Native dirty drafts remain unverified.",
+    "screenshot": "gosx-mac-custom-name.png",
+    "verified_at_utc": "2026-11-03T00:07:47Z",
+    "raw_evidence_sha256": {
+      "idle-preflight.json": "b38c7a14f80640bbdc8fbc07b2a699d7b366923c07435a4badb9a35e5993372d",
+      "custom-dialog.json": "c216df7a572c4f49c2f2b48589ba4e87f869acd12932ad3247365b5e203b859d",
+      "custom-name.json": "53083d134c41bcbe0d819b611b9ec7b14c53c04cb1efedd47e95bfee6aeaf984",
+      "custom-panel-name.json": "13450b36d7231e555cdce7e9098fc4a04b0dccc1224e306a299eb468685eafb6",
+      "custom-after-name-save.json": "faf2e08411949455e609df78d5e687622dda207dc240201b28d80aa915b09341"
+    },
+    "subsequent_folder_result": "custom_folder_verification"
+  },
+  "custom_folder_verification": {
+    "status": "passed",
+    "source_commit": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+    "production_code_unchanged_through": "6d14be69fb5dc841d7e26971d6eb54769c6f5d53",
+    "binary_sha256": "b09efba8ba74542d1ab227e22b6352c40f017531e8d6d541754e95b6fc165938",
+    "saved_path": "workspace/saved/Custom folder 雪/Custom review 雪.zip",
+    "filename": "Custom review 雪.zip",
+    "directory": "Custom folder 雪",
+    "source_export": "exports/storyboard-9035c676a0b7.zip",
+    "archive_bytes": 258822,
+    "archive_sha256": "1d851377524c4a6b919bb891d8c73e7fd371fff1f2224ba7c003a68473f929d4",
+    "matches_generated_export": true,
+    "zip_crc_valid": true,
+    "archive_entries": [
+      "buckley-intake.txt",
+      "project.json",
+      "STORYBOARD.txt",
+      "episode-map.json",
+      "plan.json",
+      "generation/jobs.json",
+      "prompts/0010_0ea280ddd70e.txt",
+      "selected/0010_0ea280ddd70e_clip_take01.mp4",
+      "sequence.json",
+      "lyrics.txt",
+      "music-timing.json",
+      "music-cues.json",
+      "song-sections.json",
+      "soundtrack/original.wav",
+      "README.txt"
+    ],
+    "archive_project_matches_original_except_terminal_newline": true,
+    "project_revision": 16,
+    "unknown_integer": "900719925474099312345",
+    "original_project_sha256": "eb6a5e228e7c33e11a9d29c63434b726a08d86adb074e0567633f071dea0eb23",
+    "original_media_sha256": {
+      "media/0ea280ddd70e/3db2834c103f.mp4": "f8c67d6a1aee16dd0e0e3b5d3a150d7eb878e87622ce6ee52915c2c68761085c",
+      "media/0ea280ddd70e/cf39833aa863.png": "187f2cb6304c06396f82bbd563c5448fa50e5e179f334be05cbdf4a7db1efb85",
+      "media/0ea280ddd70e/d3046566d27a.png": "187f2cb6304c06396f82bbd563c5448fa50e5e179f334be05cbdf4a7db1efb85"
+    },
+    "original_project_and_three_media_hashes_unchanged": true,
+    "native_client_status": "Saved Custom review 雪.zip",
+    "both_filename_and_directory_observed_before_save": true,
+    "destination_absent_before_save": true,
+    "save_button_action_confirmed": true,
+    "screenshot": "gosx-mac-custom-folder.png",
+    "verified_at_utc": "2026-11-03T00:25:30Z",
+    "idle_policy": {
+      "initial_resume_hid_seconds": 416.32027075,
+      "initial_resume_combined_session_seconds": 416.149875958,
+      "keyboard_receiver": "com.gosx.storyboarddesk",
+      "own_keyboard_input_resets_idle_counters": true,
+      "paused_on_resumed_activity": true,
+      "no_further_focus_change_after_resuming": true
+    },
+    "scope": "Custom filename and folder each contain spaces and Unicode. Native Save selected the exact existing test directory and created a previously absent ZIP there. No application code changes were needed. Native dirty-draft and overwrite scenarios were not part of this case.",
+    "raw_evidence_sha256": {
+      "folder-resume-active.json": "0a050463018292bc2654ac118ebef5004d44533dc0f6fd7a4930c29c3f60c0df",
+      "folder-resume-panel.json": "81a4d0d2556453f244f438587f3161324195517fd75c0d08bd9441f97be73e88",
+      "folder-type-path.json": "5529201c6c85e4072ad3dfc860ce06232f9882839f34000e6b0b5e98960901dc",
+      "folder-typed-panel.json": "59ea6c4ce8dff15766861d50310732c683837359c1f0fa8f1878c8473d10d46f",
+      "folder-selected-panel.json": "67469b78a6955505a10b7e123bd1e3a84500a92bba2a102caa18b5021dc234a5",
+      "folder-custom-name.json": "5aeeb293d1a2f83ae27804d3cd6b8344c4563670764380383c998d0352ed1189",
+      "folder-final-panel.json": "fbfce17e5977d4229a82869bd8be8f543903280d7c4145c4ef448e8cbb95c9a5",
+      "folder-before-save.json": "c0874e88db9d638f0fe5a93e6178e7294549518477a3fafeb9f82fd65ec863fa",
+      "folder-save.json": "a1ca283aff5db9177e2e680df61122dc67521dc0c450875d582053e72f738f27",
+      "folder-saved-status.json": "8248b05a02aeeeab254827779ff6dea3d7442c0c3b35216abc95ab0a5de8775d"
+    }
+  }
+}

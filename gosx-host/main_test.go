@@ -24,7 +24,8 @@ func TestHealthRejectsAnotherAppAndRedirects(t *testing.T) {
 		status int
 		ok     bool
 	}{
-		{`{"app":"Storyboard Desk"}`, 200, true},
+		{`{"app":"Storyboard Desk","backend":"go"}`, 200, true},
+		{`{"app":"Storyboard Desk"}`, 200, false},
 		{`{"app":"Another app"}`, 200, false},
 		{`{"app":"Storyboard Desk"}`, 302, false},
 		{`no json`, 200, false},

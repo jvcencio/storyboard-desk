@@ -11,12 +11,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
       - uses: actions/setup-go@v5
         with:
           go-version: '1.26.4'
@@ -27,17 +21,38 @@ jobs:
           architecture: x64
           github-token: ${{ github.token }}
       - if: runner.os == 'macOS'
-        run: python build_native.py
-      - run: python -m unittest discover -s . -p 'test_*.py' -v
-        env:
-          STORYBOARD_REQUIRE_FFMPEG: '1'
-      - shell: bash
-        run: for file in static/*.js; do node --check "$file"; done
+        run: go -C gosx-host run ./cmd/native
+      - if: runner.os == 'Linux'
+        run: go install m31labs.dev/gosx/cmd/gosx@v0.57.24
+      - run: go -C gosx-host run ./cmd/client
       - working-directory: gosx-host
-        run: go test ./...
+        shell: bash
+        run: |
+          mkdir -p ../build/verification
+          go test -json ./... | tee ../build/verification/go-tests-${{ runner.os }}.jsonl
         env:
           CGO_ENABLED: '0'
-      - if: runner.os != 'Linux'
-        run: python build_desktop.py
+          STORYBOARD_REQUIRE_FFMPEG: '1'
+          STORYBOARD_REQUIRE_NATIVE: ${{ runner.os == 'macOS' && '1' || '0' }}
+          STORYBOARD_REQUIRE_GOSX: ${{ runner.os == 'Linux' && '1' || '0' }}
+      - working-directory: gosx-host
+        run: go vet ./...
+      - if: runner.os == 'Linux'
+        working-directory: gosx-host
+        run: go test -race ./...
+      - if: runner.os == 'Linux'
+        working-directory: gosx-host
+        run: go test -tags browser -run '^TestWorkspaceGoClient' -timeout 3m -json . > ../build/verification/go-browser-tests.jsonl
+        env:
+          STORYBOARD_REQUIRE_BROWSER: '1'
+          STORYBOARD_REQUIRE_FFMPEG: '1'
+      - working-directory: gosx-host
+        run: go run ./cmd/package
       - if: runner.os == 'Windows'
-        run: python build_desktop.py --target windows-arm64 --output-dir build/windows-arm64
+        working-directory: gosx-host
+        run: go run ./cmd/package -target windows-arm64 -output-dir ../build/windows-arm64
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verification-${{ runner.os }}
+          path: build/verification/*.jsonl

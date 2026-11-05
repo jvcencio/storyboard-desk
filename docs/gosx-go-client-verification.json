@@ -1,0 +1,650 @@
+{
+  "purpose": "Replace application JavaScript with Go-WASM, remove the Node toolchain, and repair native export saving while preserving projects.",
+  "verified_at_utc": "2026-11-02T20:18:11.930072+00:00",
+  "tested_source": {
+    "base_commit": "2a084404a103baaa59cb0cc0401bb93334f329d5",
+    "working_tree_changes": true,
+    "source_sha256": {
+      ".github/workflows/ci.yml": "aba26fbcd4e6cb04cb28835b3aafb2144a73ec37b0af40fc20304c4a83485c49",
+      "Start Storyboard Desk.bat": "ada9f8c204dd907ca63bff0557c37710b1e3b2f0ed913aaab41b68161fd41406",
+      "Start Storyboard Desk.command": "6769b9b416a3232b9947e6507a1b5222f18fce292fb71e0dd823f1f577462ce8",
+      "gosx-host/background.go": "f2392b0eeb9665f25e7b2d32d2f7f6433ab56a02e8f9af330150e6a12a487571",
+      "gosx-host/background_unix.go": "fed4ee8081e1b3b22fb84e3238d58d88a605e94f16a8644d7031e2360536fdcc",
+      "gosx-host/background_windows.go": "e6ac5ef73dd7cbd63c47ec3ef524b7b0e5eeac7b20235e8f88a0b13c35490116",
+      "gosx-host/blocking.go": "fccabb55a42519efd937c651595ba605abe62e9eedc589fa5d778e3c77a6b129",
+      "gosx-host/board.gsx": "9144617187054b69e81273990cfbdb208d70cca51a0e66010fac2e7a3569e245",
+      "gosx-host/board_generated.go": "cba7cfb32abb2c4dd3a7084437ab7b4acfac612e5192c98dc5d6651abadea28c",
+      "gosx-host/board_test.go": "3a5dbbef6e9494a65f8f54f08f47cabd0dc55b8f5279b7b172b14507a0dfca6c",
+      "gosx-host/board_view.go": "174ad5e9c7adebf058ecb6a32334bcfff74b012ff5b949251b000c65ee87682b",
+      "gosx-host/board_view_test.go": "c9e7b2639e80c076f743bc4943cbd8bf951685de1dee45a2eed3d8b7c09d1246",
+      "gosx-host/client/main_js_wasm.go": "4cdccd76d3c644f14c65c8af0b5088c292b0af7f0b4f43af8a4051b8ccc507f9",
+      "gosx-host/client/review_js_wasm.go": "ab781683b835fb5ae003a9e0ef0c80c1f8f9e245cad1d3586c96da85285cc230",
+      "gosx-host/client/workspace_js_wasm.go": "dfb0377e02265a529cc3ba978b9aa9e0099565e742d82a91779f192aacc7e2a1",
+      "gosx-host/cloud.go": "32d962630a35049b7c073ee219d3bd53337972be066c99d7e8e78f29cfc04a4b",
+      "gosx-host/cloud_process.go": "9f8816eb5b9659d573d232c46f776bec81eedf0564abc4b5d9b883e78a3196b8",
+      "gosx-host/cloud_provider.go": "2687bd765c5f1917e4ec19ca8f053aca99d4d2360a10c1cf87c7569ced3ee458",
+      "gosx-host/cloud_test.go": "0b1708566bb6bf0973f675b4c6671ac2051ebf67966c2ccac224885af80538ed",
+      "gosx-host/cmd/client/main.go": "8dde17c3cead09a69d28967044957a233388387c4ec0079a76376f9209e8740a",
+      "gosx-host/cmd/native/main.go": "6636a3254d4621c202f504069b5f6a9ff94d7d97b22ee83b997662f7145928f4",
+      "gosx-host/cmd/package/main.go": "bbe30520b82bf5b38db954b4be61ceebc652ab854feb4e871abf08dadb87b3b4",
+      "gosx-host/commands_unix.go": "888d03996fe5674b086c6f05debbe85f5ff6829974810a9e79667f7c05f9d8db",
+      "gosx-host/commands_windows.go": "4d08ebc4d660e1f74ab416fa79d45443d4511d33ffcf5225d18ef4642c8a63b5",
+      "gosx-host/compatibility_test.go": "f368535c83769ea31316917cb1fdd25d2e8e08c5519d1cc09910cd9a654b0177",
+      "gosx-host/compile_test.go": "ebfc9345d917d69e2255bdabf5e11ad33d08e11ee7cc1e62bce0861e3bee7990",
+      "gosx-host/credentials.go": "6957383c042e2bc8609d9471e174144771959da4edff302e4c15ba3289cdbbb1",
+      "gosx-host/drawing.go": "3eb132c7db4009b61a90103cfdc65f9c9ffa8927a813bf9830f39b6120e60c1c",
+      "gosx-host/drawing_test.go": "d6d90e93fdfce70d22fdd2a2d3d3fd4c2abfd70959c5eae916b244ecc06ca289",
+      "gosx-host/editing_regression_test.go": "9fe299dc39f532c20e1a4bc8a9f299793c870eaa56ef98e427b831be0905906f",
+      "gosx-host/go.mod": "7bbe34e9b50d8939c2f9ee21e01fa07529230841aa0205ee3581ac61f1796635",
+      "gosx-host/go.sum": "90e4430b4c883049d17a8d0b7b707df509eda5f4486fd7d4021bbd4c7ced6327",
+      "gosx-host/gosx.config.json": "be572382eddb9ae9397794abcaa0b0de9c365aaa5e0d30b3322dd3829009cf00",
+      "gosx-host/internal/clientbuild/build.go": "33b25448edbb55cfd8a35899f80a5306599c61945c1384c8c8cc7f367537b1c6",
+      "gosx-host/launch_workspace.go": "16015021a96435e19d6c2618c588cfb2a4cc6a705ed05ef9ebb74fc94f375cda",
+      "gosx-host/legacy_test.go": "9b62cdfb85bb63ce9ed7de88f136a3341e9a37eff1605464eff1c47775fde60c",
+      "gosx-host/main.go": "8c17b8452ef556ba68a86e8cf6ca17f852c0c3e99fb67692c47de47868bb753f",
+      "gosx-host/main_test.go": "39271cc2ed69e6a04f786bd06e6aa0adb83aba55e9b1a283dc7e51e38287619f",
+      "gosx-host/media_ffmpeg.go": "d3450a70173e73fc00baa1b490d449f7d0f8ff02169e938e93c386fab8136654",
+      "gosx-host/media_native.go": "d79d520a97a6253f48d34e0b8b18419c2e782b337355a051f2264289661a753a",
+      "gosx-host/media_test.go": "3aa652e64991cc2b9d908fa86dbcb1b6a900d57bad29a2bd4244970616977c7f",
+      "gosx-host/media_wav.go": "160e785d6141ddcfa5b5d570c8aec85fe6f91166e5edc3ded878cb085ce55e3a",
+      "gosx-host/music_test.go": "6762a204d8b5ca320c0f9a9d80915648b3d069c69299ff0c93d9bbbd21447d72",
+      "gosx-host/native_media_test.go": "60648868b944c759ec6913a5af8b38269ee60a08db582f6cc5b8bbac4ef3731c",
+      "gosx-host/project_handoff.go": "4561b2e52eb84c1bb14e43030f4600770bd55b96ae047111af11f3483deecbbc",
+      "gosx-host/project_plan.go": "2fd60b48ffbcc96c3e8395526d42c98a75c7c8f9605ad927f343445657816fcb",
+      "gosx-host/project_prompts.go": "1d139c05d9171d5cdb1815e4e02ba7b1f6fa6e25e69d367e5c4bd9f39dd167ad",
+      "gosx-host/project_references.go": "2226f46aec0b294e978f186e801e79feadd0bd210a2033e08e46e9cac55e3aa2",
+      "gosx-host/project_state.go": "91f5707a2a84676f30704b3a0414a6f44dfb0e4fb3bf409fe46131402ae8fe0a",
+      "gosx-host/project_view.go": "74ee9e29ffdf0649efcf2cf4da7adaebf94351109fb056a241a108da563045f1",
+      "gosx-host/sections_export.go": "8196e74acc2e3902bec13e5d372328e89fa63ae2882920bb2205be5f068f6cdc",
+      "gosx-host/settings.go": "0ac5f83ec48f20129fdc0396b773a7c417ea63874c2de8d07360b3947359fecf",
+      "gosx-host/settings_test.go": "a4a2a18e83cfbfc0994f49bdd9497f3611e5c5afcce1388bbc7752ff7002d738",
+      "gosx-host/standalone_test.go": "ba9ca2ffd20a6dce2b0e4347011b5d50ac270d31aaba6ec0c8cb9432c342fff4",
+      "gosx-host/storage_unix.go": "6da727428ad49815ae63908b2ba72d75531f20c25c5375b32f8e0e6f065ee478",
+      "gosx-host/storage_windows.go": "0120978984866cfa123d052d57d63bf347379e45054f6a75b5aed43c3e34707b",
+      "gosx-host/storage_windows_test.go": "6dd173bd81fbf8ec2a18a4a7dd0ebe2a7dd388af492f6cf5171fd8dcb32f426d",
+      "gosx-host/store.go": "e38d31e6bffb0d82b6549cb4d27c2afa597a1815e7baf2dbc638de522a050d45",
+      "gosx-host/store_aux.go": "732fb508fd8bf79165b6958f3d46a96f8cfe68f109bf3dc351c7f7af0ec6f815",
+      "gosx-host/store_commands.go": "29b6bd21d0cfafee651977a90a386496c4f5615dfea6925df11b629e67c0ef8e",
+      "gosx-host/store_export.go": "b672026d5950d6a8cd6d4f3f02193ea2678b152d259e5273f9bba2e6ef85baa0",
+      "gosx-host/store_media.go": "6d4a0137c3a8c7b55c43f0be8cc0733be72292c6ce6e4f7f015608e1488cd884",
+      "gosx-host/store_music.go": "815edbcc0f89c1ceeab619289a3deb85f60638661a90bc86c36332afa31b1620",
+      "gosx-host/store_placement.go": "6e3669179f8ead7112ed3ef62e06ad4a54fc39a0ec3f53fea5945b8c07f5d60e",
+      "gosx-host/store_read.go": "315e33446661d0c60c0ca4f418cf33c614713b3188566d4133dd9aa7fef518e3",
+      "gosx-host/store_read_test.go": "63fd951404cd6303b56dc4be67e0ab60f793cf0715e4c70053edd7f6e9b4f582",
+      "gosx-host/store_test.go": "b8dcd65c8cdb02dcb03e983b0f89fc4f4b9777cee5410c68d43ef4fc8dcbeb66",
+      "gosx-host/terminal_darwin.go": "4c1e65bbb546f043678f6e7143cc916200fc7394e06037d023faf8cda887a2e0",
+      "gosx-host/terminal_linux.go": "3318a1b3f96f0cc9f93a5806583a9254b446a86f52e9aaabd6f4b06a445d9883",
+      "gosx-host/terminal_windows.go": "4def38fb0021e5d68b1dda1238f0897cf7507fd183f6397850a128284e74bf90",
+      "gosx-host/workspace.css": "bba38dd600411ac0f1efa21ff2a059c1da0c04288482ccff4c2195fa06b7e96a",
+      "gosx-host/workspace.go": "6b7754277ec8a9d23c086f5aff2306523a16f4714e5ae3a2a3455cc78e152246",
+      "gosx-host/workspace_browser_test.go": "0078a0f0c06350ee99f1b8e4ba3bc400d1b6af1f4e53ebfca7d72587244a5b31",
+      "gosx-host/workspace_client.go": "6735c391754000c32d2949bcbbebe9703a638ec394a817d3dc19edd65e2f1fd0",
+      "gosx-host/workspace_cloud.go": "1530b932f421f1c33514630e2428afe4f0ffe34510bb3c3f6e645dd4ce2ba28c",
+      "gosx-host/workspace_download.go": "1a35d7ae7ee326af4f1c62ac2f9f74bc4f33c03563cfcbc1e035b88ad0da6e4a",
+      "gosx-host/workspace_download_test.go": "867571a44e1b90618f47b0c297a9883db79fe728191c60eb81c227f5d195d3fe",
+      "gosx-host/workspace_drafts.go": "74d0392298b14a2d5adc36d995f80c593e555a66d2ac512ec493a38059a9d8d2",
+      "gosx-host/workspace_drawing.go": "544b287818e66a02ae3f509d9447433d1b662e231d3dea1a2be7536fb0a2971b",
+      "gosx-host/workspace_exports.go": "6fa239a9507a97aaa94b46923db600413ae37e642d5a7c9595bf33d6af3669ed",
+      "gosx-host/workspace_load.go": "849d60e6e519a5c3e93e8705bea7c48839dd3021ab9df6ac82d4673922c4db07",
+      "gosx-host/workspace_media.go": "221975aa7f72b8b7cf5cca25339f4a222370cd61ca7ed97fd8a024483886cfc9",
+      "gosx-host/workspace_music.go": "e397457d08d51844ab6e2f2a9299e7b7be74bec2fcae81b262a99fa279740198",
+      "gosx-host/workspace_prompts.go": "1e57f6ab2fe52d4b3e46f797947ec0bd6ae3e056decd026e39f5a6e9ddd29a09",
+      "gosx-host/workspace_review.go": "2a7e4305940b05beff10cb76c89485dc8eed7a429c557fb82ec48d71e67a4e15",
+      "gosx-host/workspace_test.go": "f00d24ea0279ccfbfdc57a93ec1b96a8fa0668a18c6d48a3bd4b1d981b9903b4"
+    },
+    "deleted": [
+      "gosx-host/workspace.js"
+    ],
+    "equivalent_committed_source": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+    "git_eol_normalized_paths": [
+      "Start Storyboard Desk.bat"
+    ],
+    "git_blob_sha256_for_eol_paths": {
+      "Start Storyboard Desk.bat": "a7aa800f3903deeedbcb45a67cf1fd3be756e07348a3e55d6dc9ec78e6fc787f"
+    }
+  },
+  "toolchain": {
+    "application": "Go 1.26+, pinned GoSX 0.57.24 Go-WASM engine builder",
+    "browser_test_driver": "Go chromedp, isolated headless Chrome for Testing 156.0.8078.4 on Linux/WSL",
+    "node_npm_required": false,
+    "application_javascript_source_files": 0,
+    "browser_loader": "Unmodified supplied GoSX runtime assets and its generated standard-Go WASM shim; JavaScript still exists inside these framework loaders."
+  },
+  "validation": {
+    "race": {
+      "passed_cases": [
+        "TestShotCardRendersAndEscapesProjectContent",
+        "TestRenderBoardListsProjectsAndEscapesShotFields",
+        "TestCloudConfirmationBudgetAndIdempotentImageImport",
+        "TestCloudUnknownRequestKeepsReservationAndIsNeverReplayed",
+        "TestCloudStaleQuotesAndChangedReferencesFailBeforeSubmission",
+        "TestCloudReportedCostAboveEstimateAndBriefApproval",
+        "TestCloudVideoResumesExistingJobAndPreservesStarterBinding",
+        "TestProviderRejectsArbitraryEndpointsBeforeReadingCredentials",
+        "TestCompleteCompatibilityFixture",
+        "TestGoSXGeneratedShotCard",
+        "TestLocalDrawingSnapshotsOfflineArgumentsAndIdempotentRecovery",
+        "TestLocalDrawingCancellationAndCriticalMemoryPreserveMedia/false",
+        "TestLocalDrawingCancellationAndCriticalMemoryPreserveMedia/true",
+        "TestLocalDrawingCancellationAndCriticalMemoryPreserveMedia",
+        "TestReviewedDirectionImportUsesCurrentImageAndBasis",
+        "TestCoverageCollectionPreservesAssemblyAndEditorialNotes",
+        "TestCoverageReservationSurvivesTrackReplacementAndBlocksDuplicateBytes",
+        "TestInvalidSectionInputsAndPortionBatchesNeverWrite",
+        "TestPlacementsFlattenLineageAndUndoProtectsLaterSelection",
+        "TestLargeEpisodeAndDirectionContextCompatibility",
+        "TestLegacyFixtureIntegrityAndUnchangedMedia",
+        "TestOnlyExplicitLoopbackRootIsAccepted",
+        "TestHealthRejectsAnotherAppAndRedirects",
+        "TestMediaImportApprovalBinAndRangeServing",
+        "TestMultipartImportAndTraversalRejection",
+        "TestActualFFmpegImportPlacementAndSilentExport",
+        "TestLegacyDerivedParity",
+        "TestMusicPortionsCuesAndUndo",
+        "TestActualSectionCoverageReservationsAndExports",
+        "TestGoSettingsPreserveOverridesAndRejectCredentials",
+        "TestChildProcessesDoNotInheritGenerationKey",
+        "TestStandaloneLegacyProjectRoundTripWithoutToolRuntimes",
+        "TestStandaloneBackgroundStartupReusesOnlyMatchingGoStorage",
+        "TestReadProjectPreservesExistingData",
+        "TestReadProjectRejectsBadInputWithoutCreatingFiles",
+        "TestReadProjectDoesNotFollowProjectDirectorySymlink",
+        "TestReadProjectDoesNotFollowProjectFileSymlink",
+        "TestReadLegacyProjectFixture",
+        "TestStorePreservesLegacyDataAcrossEditsAndReopen",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/stale",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/missing_shot",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/media_injection",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/unknown_mutation",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/bad_duration",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/invalid_raw_number",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/padded_null",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/null_title",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/long_text",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/bad_aspect",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/bad_music_flag",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/bad_insert",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/missing_anchor",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/remove_by_reorder",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/replace_by_reorder",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/traversal",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting",
+        "TestStoreConcurrentCommandsOnlyOneRevisionWins",
+        "TestStoreOwnershipAndUnavailablePaths",
+        "TestStoreRejectsSymlinksAndReplacedRoot",
+        "TestStoreIgnoresCrashTempsAndRejectsMalformedProjects",
+        "TestStoreSceneEditHonorsExistingCoverageReservation",
+        "TestStoreSurvivesWriterProcessCrash",
+        "TestNativeExportSaveCancelAndCopy",
+        "TestNativeDownloadAuthorizationPathsAndErrors",
+        "TestExportCopyPreservesDestinationOnFailureAndProtectsStorage/symlink",
+        "TestExportCopyPreservesDestinationOnFailureAndProtectsStorage",
+        "TestWorkspaceCoreCommandsAndRejectedDrafts",
+        "TestTemplateAndPlanPreserveMediaAndUnknownData",
+        "TestSceneFilterChoosesShotFromThatScene"
+      ],
+      "skipped_cases": [
+        "TestActualMacNativeMediaHelpers",
+        "TestStorageWriterProcess"
+      ],
+      "failures": [],
+      "log_sha256": "9336647b4225996af9902c25fec34ca40d118c574b0c67f2fd45a1ec48e3d662"
+    },
+    "browser": {
+      "passed_cases": [
+        "TestWorkspaceGoClientFormsFilesAndNativeSaving",
+        "TestWorkspaceGoClientMediaImportMetadataAndCoverage",
+        "TestWorkspaceGoClientReviewAndCloudControls"
+      ],
+      "skipped_cases": [],
+      "failures": [],
+      "log_sha256": "26b211424ccf422c7573331adc6aafd3d81389be868ffbfa9c4fa03b6d09dfc2"
+    },
+    "vet_exit_code": 0,
+    "package_go_only_path": {
+      "exit_code": 0,
+      "available_tools": [
+        "go",
+        "git"
+      ],
+      "CGO_ENABLED": "0",
+      "log_sha256": "9b85e6ab81a0c3738bbcc6a984d376c8ef8deb23c44c0ae2191be8fb6a7fa6ea",
+      "temporary_tool_links_removed": true
+    }
+  },
+  "go_client_behavior": [
+    "Dirty form and navigation protection",
+    "Save adapter cancellation and success preserve unsaved shot edits",
+    "Regular shot edits persist and reopen",
+    "Native plan downloads save JSON",
+    "Clipboard copy from an opened handoff",
+    "JSON file preview preserves opaque integers and Unicode",
+    "Invalid and oversized JSON retain the previous draft",
+    "Native new-project disclosure",
+    "Actual PNG browser upload copies matching bytes and stays unselected",
+    "Actual video metadata fills missing range measurements",
+    "Review pause, resume, completion and missing-source coverage stop",
+    "Cloud kind/model/prompt changes preserve a custom prompt"
+  ],
+  "native_save_safety": [
+    "OS dialog selected path only; request destination ignored",
+    "Correct extension and overwrite prompt",
+    "CSRF and same-origin rejection before showing a dialog",
+    "Export path confinement",
+    "No destinations inside project storage",
+    "No destination symlinks",
+    "Interrupted stream preserves existing destination and removes temporary file",
+    "Concurrent Save dialogs rejected"
+  ],
+  "generated_module": {
+    "file": "workspace.22cb9881cc15a95d.wasm",
+    "hash": "22cb9881cc15a95d",
+    "size": 5426472,
+    "gzipSize": 1477662,
+    "brotliSize": 1227864
+  },
+  "headless_profile": {
+    "scope": "One synthetic legacy project, cold isolated desktop Chrome load; navigation load timing is not a complete editor-interaction benchmark.",
+    "ttfb_ms": 4.799999997019768,
+    "document_content_loaded_ms": 160.8999999910593,
+    "navigation_loaded_ms": 202,
+    "bytes_transferred": 1326786,
+    "total_blocking_time_ms": 69,
+    "limitations": "No pre-migration performance comparison; optional WebGL probe is unrelated to this editor. No existing performance budget file was present."
+  },
+  "screenshots": {
+    "desktop": "gosx-go-client-desktop.png",
+    "mobile": "gosx-go-client-mobile.png",
+    "environment": "Actual Go-WASM UI in isolated headless Chrome on Jorge’s physical Apple Silicon Mac, source cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+    "capture_source_commit": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+    "desktop_sha256": "08bf473c74a6b07ec6c614144c2a25015fd1589a25f9d093a1ba9cd9bbdb82ab",
+    "mobile_sha256": "e86bc39a09ccf4dd08b6cb7906492dba591246344d479f1eaac6b8de71db00b5"
+  },
+  "mac_background_checks": {
+    "status": "passed",
+    "source_commit": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+    "source_worktree_clean": true,
+    "environment": {
+      "hardware": "Apple M1 Max, arm64",
+      "macos": "26.6.2",
+      "go": "1.26.5",
+      "browser": "Google Chrome 156.0.8078.76, isolated headless profile"
+    },
+    "race": {
+      "passed_cases": [
+        "TestShotCardRendersAndEscapesProjectContent",
+        "TestRenderBoardListsProjectsAndEscapesShotFields",
+        "TestCloudConfirmationBudgetAndIdempotentImageImport",
+        "TestCloudUnknownRequestKeepsReservationAndIsNeverReplayed",
+        "TestCloudStaleQuotesAndChangedReferencesFailBeforeSubmission",
+        "TestCloudReportedCostAboveEstimateAndBriefApproval",
+        "TestCloudVideoResumesExistingJobAndPreservesStarterBinding",
+        "TestProviderRejectsArbitraryEndpointsBeforeReadingCredentials",
+        "TestCompleteCompatibilityFixture",
+        "TestLocalDrawingSnapshotsOfflineArgumentsAndIdempotentRecovery",
+        "TestLocalDrawingCancellationAndCriticalMemoryPreserveMedia/false",
+        "TestLocalDrawingCancellationAndCriticalMemoryPreserveMedia/true",
+        "TestLocalDrawingCancellationAndCriticalMemoryPreserveMedia",
+        "TestReviewedDirectionImportUsesCurrentImageAndBasis",
+        "TestCoverageCollectionPreservesAssemblyAndEditorialNotes",
+        "TestCoverageReservationSurvivesTrackReplacementAndBlocksDuplicateBytes",
+        "TestInvalidSectionInputsAndPortionBatchesNeverWrite",
+        "TestPlacementsFlattenLineageAndUndoProtectsLaterSelection",
+        "TestLargeEpisodeAndDirectionContextCompatibility",
+        "TestLegacyFixtureIntegrityAndUnchangedMedia",
+        "TestOnlyExplicitLoopbackRootIsAccepted",
+        "TestHealthRejectsAnotherAppAndRedirects",
+        "TestMediaImportApprovalBinAndRangeServing",
+        "TestMultipartImportAndTraversalRejection",
+        "TestActualFFmpegImportPlacementAndSilentExport",
+        "TestLegacyDerivedParity",
+        "TestMusicPortionsCuesAndUndo",
+        "TestActualSectionCoverageReservationsAndExports",
+        "TestActualMacNativeMediaHelpers",
+        "TestGoSettingsPreserveOverridesAndRejectCredentials",
+        "TestChildProcessesDoNotInheritGenerationKey",
+        "TestStandaloneLegacyProjectRoundTripWithoutToolRuntimes",
+        "TestStandaloneBackgroundStartupReusesOnlyMatchingGoStorage",
+        "TestReadProjectPreservesExistingData",
+        "TestReadProjectRejectsBadInputWithoutCreatingFiles",
+        "TestReadProjectDoesNotFollowProjectDirectorySymlink",
+        "TestReadProjectDoesNotFollowProjectFileSymlink",
+        "TestReadLegacyProjectFixture",
+        "TestStorePreservesLegacyDataAcrossEditsAndReopen",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/stale",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/missing_shot",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/media_injection",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/unknown_mutation",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/bad_duration",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/invalid_raw_number",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/padded_null",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/null_title",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/long_text",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/bad_aspect",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/bad_music_flag",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/bad_insert",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/missing_anchor",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/remove_by_reorder",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/replace_by_reorder",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting/traversal",
+        "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting",
+        "TestStoreConcurrentCommandsOnlyOneRevisionWins",
+        "TestStoreOwnershipAndUnavailablePaths",
+        "TestStoreRejectsSymlinksAndReplacedRoot",
+        "TestStoreIgnoresCrashTempsAndRejectsMalformedProjects",
+        "TestStoreSceneEditHonorsExistingCoverageReservation",
+        "TestStoreSurvivesWriterProcessCrash",
+        "TestNativeExportSaveCancelAndCopy",
+        "TestNativeDownloadAuthorizationPathsAndErrors",
+        "TestExportCopyPreservesDestinationOnFailureAndProtectsStorage/symlink",
+        "TestExportCopyPreservesDestinationOnFailureAndProtectsStorage",
+        "TestWorkspaceCoreCommandsAndRejectedDrafts",
+        "TestTemplateAndPlanPreserveMediaAndUnknownData",
+        "TestSceneFilterChoosesShotFromThatScene"
+      ],
+      "skipped_cases": [
+        "TestGoSXGeneratedShotCard",
+        "TestStorageWriterProcess"
+      ],
+      "failures": [],
+      "log_sha256": "462a08a2f7d207bc53d921ccfb6374fcddadd846559de1655caf9f4a973df580"
+    },
+    "browser": {
+      "passed_cases": [
+        "TestWorkspaceGoClientFormsFilesAndNativeSaving",
+        "TestWorkspaceGoClientMediaImportMetadataAndCoverage",
+        "TestWorkspaceGoClientReviewAndCloudControls"
+      ],
+      "skipped_cases": [],
+      "failures": [],
+      "log_sha256": "c7045b0973c00f71e0c8a215a071d05edc6f765aefcc9dd891f3943372eda257"
+    },
+    "vet_exit_code": 0,
+    "native_helper_build_exit_code": 0,
+    "package_exit_code": 0,
+    "package": {
+      "path": "~/work/storyboard-desk/build/gosx/Storyboard Desk.app",
+      "binary_sha256": "b09efba8ba74542d1ab227e22b6352c40f017531e8d6d541754e95b6fc165938",
+      "CGO_ENABLED": "0",
+      "GOARCH": "arm64",
+      "vcs_revision": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+      "vcs_modified": false
+    },
+    "generated_module": {
+      "file": "workspace.7bdc551a5f547895.wasm",
+      "hash": "7bdc551a5f547895",
+      "size": 5407943,
+      "gzipSize": 1472933,
+      "brotliSize": 1223156
+    },
+    "desktop_app_relaunched": false,
+    "foreground_ui_automation": false,
+    "evidence_sha256": {
+      "binary.sha256": "99f66156b4ff190155847d0b0296fc234fa0235de69ae4e4977bb316c28d410b",
+      "browser.jsonl": "c7045b0973c00f71e0c8a215a071d05edc6f765aefcc9dd891f3943372eda257",
+      "browser.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "buildinfo.txt": "e9cc925210a3379d80c5dc288b62548aadee9b5e3c0d5301ba0381f841565646",
+      "client-build.log": "9b26a6684dc246165335494e90657d648382bdb0420d5d885440f31d19f13959",
+      "client-manifest.json": "39426003d0eba55a2742ddad65fe2250b345b1a86b3f21a5c69a5ba9ade4e9c8",
+      "desktop.png": "08bf473c74a6b07ec6c614144c2a25015fd1589a25f9d093a1ba9cd9bbdb82ab",
+      "mobile.png": "e86bc39a09ccf4dd08b6cb7906492dba591246344d479f1eaac6b8de71db00b5",
+      "native-build.log": "be6815abe2c665299dd8b839ec34877d631c2b0eecda33ff6e25d9bb357f94f3",
+      "package.log": "7617f1dbec31db0211365f3dd0ff707b057aa41dd958e3a1724242cc08d8d800",
+      "race.jsonl": "462a08a2f7d207bc53d921ccfb6374fcddadd846559de1655caf9f4a973df580",
+      "race.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "run.state": "2700165975f68815c97d605c56eca8e90d497ade1264b6282401d13fee99ac27",
+      "source-status.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "limits": "This headless phase did not interact with the native window; subsequent mac_native_checks records actual WKWebView and native Save verification using the same clean binary."
+  },
+  "limits": [
+    "Injected native dialog results in browser tests prove the Go save adapter and UI behavior, not OS dialog interaction.",
+    "Native Go-WASM rendering, Save cancel/reopen/save and custom filenames/folders containing spaces and Unicode pass on source cc21af1. Native dirty drafts remain unverified.",
+    "The native AX draft-edit attempt did not change the text field; no native dirty-draft signoff is claimed. Separate browser tests cover dirty forms with injected dialog results.",
+    "Historical Windows native evidence belongs to its recorded source revision; the new native Save adapter still needs interactive Windows verification.",
+    "No live paid provider, actual Draw Things model, or iMovie/Final Cut import was exercised."
+  ],
+  "browser_test_followup": {
+    "reason": "CI read aria-pressed immediately after a click and observed the previous state.",
+    "change": "Wait for aria-pressed=false and verify Shot 1 of 1 before reading the pause state; natural sequence completion cannot satisfy the check.",
+    "source_path": "gosx-host/workspace_browser_test.go",
+    "source_sha256": "79a79c9a242cc0de2e8452faf330c1a4f7b57a4acbac70d380e8d9832a12f758",
+    "linux_playback_repetitions_passed": 5,
+    "linux_log_sha256": "9f7b5d17d7f73f538006d2ae18e9e5fa328aef8a3c951a1923083b14acc632fe",
+    "mac_browser_cases_passed": [
+      "TestWorkspaceGoClientFormsFilesAndNativeSaving",
+      "TestWorkspaceGoClientMediaImportMetadataAndCoverage",
+      "TestWorkspaceGoClientReviewAndCloudControls"
+    ],
+    "mac_log_sha256": "9074ecbe04029a5164d650abb71ceada728ab8796704969ef7c53f23b88215ae",
+    "mac_source_checkout_clean": true,
+    "mac_test_method": "Go test overlay of this one hash-bound test file on source 019a3bd; source checkout unchanged.",
+    "application_source_unchanged_from": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+    "native_ui_retested": false
+  },
+  "mac_native_checks": {
+    "status": "passed for the displayed default filename and synthetic input directory",
+    "source_commit": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+    "production_code_unchanged_through": "c87cd92b1edda2de32bc38a7741324348a001146",
+    "binary_sha256": "b09efba8ba74542d1ab227e22b6352c40f017531e8d6d541754e95b6fc165938",
+    "binary_vcs_modified": false,
+    "target": "Physical Apple M1 Max, arm64, macOS 26.6.2; installed GoSX WKWebView bundle",
+    "observed_at_utc": {
+      "save_file_mtime": "2026-11-02T22:36:20Z",
+      "launch_preflight": "2026-11-02T22:13:36Z"
+    },
+    "idle_policy": {
+      "minimum_seconds": 120,
+      "launch_preflight_seconds": 273.79811475,
+      "save_preflight_seconds": 334.383518375,
+      "console_unlocked": true,
+      "stopped_on_resumed_input": true,
+      "previous_app": "Blender",
+      "focus_restored_by_automation": false,
+      "focus_note": "The user resumed Blender activity; no further focus changes were made."
+    },
+    "native_window": {
+      "rendered": true,
+      "window_bounds": {
+        "width": 1440,
+        "height": 988
+      },
+      "screenshot": "gosx-mac-native-go.png",
+      "capture_engine": "ScreenCaptureKit with fresh Accessibility observations",
+      "go_wasm_proof": [
+        "Save cancelled",
+        "Saved storyboard-a6a95d42c7be.zip"
+      ]
+    },
+    "preservation": {
+      "project_sha256": "eb6a5e228e7c33e11a9d29c63434b726a08d86adb074e0567633f071dea0eb23",
+      "project_revision": 16,
+      "original_media_sha256": {
+        "media/0ea280ddd70e/3db2834c103f.mp4": "f8c67d6a1aee16dd0e0e3b5d3a150d7eb878e87622ce6ee52915c2c68761085c",
+        "media/0ea280ddd70e/cf39833aa863.png": "187f2cb6304c06396f82bbd563c5448fa50e5e179f334be05cbdf4a7db1efb85",
+        "media/0ea280ddd70e/d3046566d27a.png": "187f2cb6304c06396f82bbd563c5448fa50e5e179f334be05cbdf4a7db1efb85"
+      },
+      "all_original_hashes_unchanged": true,
+      "opaque_integer": "900719925474099312345"
+    },
+    "limits": [
+      "This initial case used defaults. Later custom_filename_verification and custom_folder_verification pass names and locations containing spaces and Unicode.",
+      "The native AX draft-edit attempt did not change the text field; no native dirty-draft signoff is claimed. Separate browser tests cover dirty forms with injected dialog results.",
+      "Historical native file-picker/import evidence remains attributed to source 2a08440."
+    ],
+    "saved_zip": {
+      "saved_path": "workspace/input/storyboard-a6a95d42c7be.zip",
+      "archive_bytes": 258822,
+      "archive_sha256": "92ed6a43fd38f129166692514347fa0964530e183ee690572167db3feafeb7d7",
+      "zip_crc_valid": true,
+      "archive_project_matches_source_except_terminal_newline": true
+    },
+    "detailed_report": "gosx-mac-verification.json#updated_native_verification"
+  },
+  "mac_custom_filename_checks": {
+    "status": "passed",
+    "source_commit": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+    "binary_sha256": "b09efba8ba74542d1ab227e22b6352c40f017531e8d6d541754e95b6fc165938",
+    "filename": "Custom review 雪.zip",
+    "directory": "workspace/input",
+    "archive_bytes": 258822,
+    "archive_sha256": "747c9e62979b1296a98c9745585d5f862f4df75a6bc68695e47c68543ff15dcb",
+    "zip_crc_valid": true,
+    "matches_generated_export": true,
+    "native_client_status": "Saved Custom review 雪.zip",
+    "limits": "This earlier filename-only case used workspace/input; custom_folder_verification records the subsequent successful folder case. Native dirty drafts remain unverified.",
+    "screenshot": "gosx-mac-custom-name.png",
+    "detailed_report": "gosx-mac-verification.json: custom_filename_verification"
+  },
+  "rejected_draft_regression": {
+    "date": "2026-11-03",
+    "baseline_commit": "7d297d871c120e9a5f8bdccb643896578a8ebde4",
+    "environment": "Linux/WSL, Go-driven isolated headless Chrome for Testing 156.0.8078.4, synthetic temporary projects",
+    "test": "TestWorkspaceGoClientRejectedDraftNavigation",
+    "reproduction": "go -C gosx-host run ./cmd/client && go -C gosx-host test -tags browser -run '^TestWorkspaceGoClientRejectedDraftNavigation$' -count=1 -v . (set STORYBOARD_BROWSER_EXECUTABLE if Chrome is not on PATH)",
+    "before": {
+      "stale_save_http_status": 409,
+      "invalid_duration_http_status": 400,
+      "observed": "Both rejected pages retained the field value but immediately navigating to Media Library discarded it without asking. Both regression cases failed at the missing navigation confirmation."
+    },
+    "after": {
+      "observed": "Each rejected save retains the Unicode draft and submitted revision 1, reports Unsaved changes, asks before navigation, and retains the draft on Cancel without any further input event.",
+      "storage": "Project bytes remain identical across rejection and cancelled navigation: revision 2 for the stale case (the separate window's write), revision 1 for invalid input.",
+      "automatic_conflict_retry": false,
+      "source_sha256": {
+        "gosx-host/workspace.go": "8d49a57813a30d1e5dac655964f58571c820f67da21cb6445e5fd9db01555366",
+        "gosx-host/workspace_drafts.go": "3e1f4b27b429a26f6aee67b7053f8f69e4a608d07a4276181102a8f23b747533",
+        "gosx-host/client/workspace_js_wasm.go": "31e42b700cf859d204351bf823fba27ca34087d507e9f6f5a568c2f566491624",
+        "gosx-host/workspace_browser_test.go": "20c5558080954ad2c2776774530ad6605c88fe61c471d62374cb0b6dedaa8d7f",
+        "gosx-host/workspace_test.go": "c884fd43f9824007018068e3d1bdfb6e4a533273a8f57ef59acacbb4a6315348"
+      }
+    },
+    "checks": {
+      "go_wasm_build": "passed using pinned GoSX 0.57.24 without Node or application JavaScript",
+      "browser_workflows": "4 top-level workflows passed, including both rejection subcases",
+      "race": "69 cases passed; existing native-Mac and child-process-helper skips retained",
+      "vet": "passed",
+      "ci_evidence": "Source checks uploads go-browser-tests.jsonl and go-tests-Linux.jsonl for each tested commit."
+    },
+    "limits": "This is browser interaction proof; the updated native Mac dirty-draft path and current Windows native dialogs remain separate verification. Earlier native evidence retains its original source attribution."
+  },
+  "shot_action_slice": {
+    "date": "2026-11-03",
+    "source_parent": "ca9368d29493a7923fd79d85a785ce698cbb4008",
+    "source_sha256": {
+      "gosx-host/workspace.go": "0682770a2af0f8e06ad9cb42aabe5e2cf6fc10fe652a9c017df3529d839420ec",
+      "gosx-host/workspace_forms.go": "b5d77996d20ea2f0e775043b06cc9b020f78a41f8f7012acfbbc246db9d30c05",
+      "gosx-host/workspace_shot.go": "658d464ef089344f9acaabd0c9e1f03735143946af849bd001ed1866e49e1612",
+      "gosx-host/workspace_shot_action.go": "34f74453915672652cddbf1aa8a54215c740635819e609799305128cdebed306",
+      "gosx-host/workspace_shot_action_test.go": "7192ff289431d9bd60bf5d1c2a828c13342cfa08d05fefe003938a479417abdc",
+      "gosx-host/workspace_browser_test.go": "11a9a31f5a7c9d6cbfc8e12b58a2270422a1e2e99c1250c4fa13bbfa075ff84c",
+      "gosx-host/workspace.css": "79b45f690c37459bd5433e2d2d782db20a3f94c1f2e50d1068e492ffab408bd9"
+    },
+    "test": "TestWorkspaceShotActionContractAndLegacyCompatibility",
+    "acceptance": [
+      "HTML /save retains 303 redirects, partial-field clients and the original root redirect when view is absent.",
+      "Accept: application/json invokes the same GoSX action and returns structured validation errors or a successful project/shot/revision receipt.",
+      "All submitted shot fields survive validation; invalid fields receive aria-invalid and aria-describedby with visible errors.",
+      "Success increments the project revision once. Invalid and repeated stale requests leave project bytes unchanged; stale revisions are never automatically replaced.",
+      "Legacy media bytes, asset metadata, selection, approval receipt and opaque large integers remain intact.",
+      "POST values win over query parameters; loopback Host, Origin and per-run CSRF rejection remain enforced.",
+      "A missing shot's rejected draft keeps its submitted target instead of editing a fallback shot."
+    ],
+    "checks": {
+      "race": "74 passing test cases including transport-guard subcases; the two existing scoped skips remain",
+      "browser": "All four Go-WASM workflows passed, including stale/invalid draft navigation, native-save adapters, file import, playback and cloud controls",
+      "vet": "passed"
+    },
+    "screenshot": "gosx-shot-validation.png",
+    "limits": "Headless browser evidence does not certify the updated native Mac dirty-draft path or Windows native dialogs. No live generation requests were made."
+  },
+  "client_controller_slice": {
+    "date": "2026-11-03",
+    "source_parent": "8651e7916bb001e0049a91d94cd0ff78329628ae",
+    "source_sha256": {
+      "gosx-host/client/workspace_js_wasm.go": "b08bdb6074a9ad3e5a17a260ce787a95bd31fa9a0488aaa97179f9f973a81bfa",
+      "gosx-host/client/forms_js_wasm.go": "ffe9212429007cf8efeb130f50b523409a0738cb95a4a415ff83f03f5814bf68",
+      "gosx-host/client/capabilities_js_wasm.go": "2b3212d4f24ee7ec4b2ca8f12db59300bc53971e63ef7bdc52d3fd341c3f3626",
+      "gosx-host/client/cloud_js_wasm.go": "7725bb976045f84597937b3ed29176007684f028c9b82f380e80c5da5e1d4f88",
+      "gosx-host/client/review_js_wasm.go": "f45993eb7c9d2ef398fe23df8cc82cc14afbdf32ab915e614605cb8122b9ef79",
+      "gosx-host/client/scope_js_wasm.go": "64e6d59707c7b838f7f9d90ddf00d47f0f12df91dfe71bb5fe5cb7a9fec3ed24",
+      "gosx-host/client/dom_js_wasm.go": "aa81cb6b9fcd8be2adebf62e97f162a75d4b3bc1956a73fa91f2e8b8fa3bf57d"
+    },
+    "checks": {
+      "go_wasm_build": "passed, pinned GoSX 0.57.24",
+      "go_wasm_vet": "GOOS=js GOARCH=wasm go vet ./client passed",
+      "browser": "All four existing workflows passed against the rebuilt module: rejected drafts, native-save adapters, clipboard/JSON previews, copied media/metadata, cloud choices and review playback",
+      "host_checks": "Reused the passing host race/vet evidence from the shot-action slice; this slice changes browser controllers only."
+    },
+    "runtime": {
+      "file": "workspace.1583b171b5669347.wasm",
+      "bytes": 5440825,
+      "gzip_bytes": 1480915,
+      "brotli_bytes": 1229579,
+      "gosx_size_total_bytes": 5896001,
+      "gosx_size_total_brotli_bytes": 1198955
+    },
+    "headless_profile": {
+      "scope": "One cold isolated Chromium load of the synthetic legacy project on Linux/WSL; no complete interaction or cross-machine benchmark is claimed.",
+      "gosx_version": "0.57.24",
+      "ttfb_ms": 2.2,
+      "document_content_loaded_ms": 144.4,
+      "navigation_loaded_ms": 172.3,
+      "bytes_transferred": 1328948,
+      "total_blocking_time_ms": 14,
+      "smoke_assertions": "network_kb < 2048 and tbt < 200 both passed; these are local smoke limits, not product performance guarantees."
+    },
+    "limits": "Controller separation retains the existing Go-WASM runtime. A declarative island still requires explicit VM/manifest packaging. This browser run does not replace source-bound native verification."
+  },
+  "project_action_slice": {
+    "date": "2026-11-03",
+    "source_parent": "38165ca24fd694dca2aef71895f8aa6931c102b1",
+    "source_sha256": {
+      "gosx-host/workspace.go": "6594e7333e544aee7e28c8486dec723e7cebff5ab46a0e34232a5566dae891f7",
+      "gosx-host/workspace_actions.go": "cc0e97b31808bc9cbb14903efc2c6fc5bb9b3436e54ce5e548f210e029c63e7b",
+      "gosx-host/workspace_project.go": "5eca0d7742c9af9722016c6a13692e0074bc6a478d18e2c392425c0d20e651d8",
+      "gosx-host/workspace_project_action.go": "df42d4d95225d9d79b663cd6f86b84a10b2533b62e10d5356a7141aa2f73021b",
+      "gosx-host/workspace_project_action_test.go": "0b5260c1ad6d79b5e79a7dfd6f5e02d347bc8fa1ab14e03eaea852afc37722d1",
+      "gosx-host/workspace_shot_action.go": "329dd8b487a89057a43181ced18de5bb0b569010cc6c41e2cc7d09f4a9e54487",
+      "gosx-host/workspace_forms.go": "162a3553d4ad682f58dda1b363a44c2ed7584c6055d0196765bdcccb55065353",
+      "gosx-host/workspace_browser_test.go": "fd68adcc318b72f1694a2397e258f73feec0ac9dc49d56fb8d72fa5deaa69d7c"
+    },
+    "tests": [
+      "TestWorkspaceProjectActionsPreserveLegacyData",
+      "TestWorkspaceRejectedMoveScopesEachShotCard",
+      "TestWorkspaceGoClientProjectActions"
+    ],
+    "acceptance": [
+      "The project editor and /project, /insert and /move use typed commands and the same GoSX action/legacy-form adapter as shot saves.",
+      "Rejected project edits retain all text, the submitted revision and an unchecked Music video field; navigation asks, and Cancel keeps the draft.",
+      "Correcting and saving the project, inserting a shot and moving it through the real editor each increments the revision once.",
+      "New shots receive fresh identities without copied media or approval; existing shot identities, original media bytes and opaque large integers remain intact.",
+      "Stale insertion retries and edge moves leave project bytes unchanged.",
+      "A rejected move only restores action state into its own card; other cards retain their distinct shot targets. Missing shot edits retain their original target."
+    ],
+    "checks": {
+      "race": "76 passing cases including transport subcases; the existing native-Mac and child-process-helper skips remain",
+      "browser": "All five Go-WASM workflows passed",
+      "vet": "passed",
+      "reproduction": "go -C gosx-host test -race ./...; go -C gosx-host test -tags browser -run '^TestWorkspaceGoClient' -timeout 3m ."
+    },
+    "limits": "No project-format migration or live generation call. Declarative island packaging, remaining feature-action extraction and source-current native platform verification remain separate slices."
+  },
+  "mac_custom_folder_checks": {
+    "status": "passed",
+    "source_commit": "cc21af1ea708f0acb72fc6d2b425f138aa5c1244",
+    "binary_sha256": "b09efba8ba74542d1ab227e22b6352c40f017531e8d6d541754e95b6fc165938",
+    "saved_path": "workspace/saved/Custom folder 雪/Custom review 雪.zip",
+    "archive_bytes": 258822,
+    "archive_sha256": "1d851377524c4a6b919bb891d8c73e7fd371fff1f2224ba7c003a68473f929d4",
+    "zip_crc_valid": true,
+    "matches_generated_export": true,
+    "native_client_status": "Saved Custom review 雪.zip",
+    "both_filename_and_directory_observed_before_save": true,
+    "save_button_action_confirmed": true,
+    "original_project_and_three_media_hashes_unchanged": true,
+    "screenshot": "gosx-mac-custom-folder.png",
+    "detailed_report": "gosx-mac-verification.json: custom_folder_verification"
+  }
+}

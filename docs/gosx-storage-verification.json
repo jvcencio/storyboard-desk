@@ -1,0 +1,265 @@
+{
+  "purpose": "Go-owned project storage and standalone GoSX editor verification",
+  "source_snapshot": {
+    "git_head": "e9b6664946a9a4ddf2ee3855aff6e2eb61710934",
+    "uncommitted": true,
+    "sha256": "6e6d42fa49a59f932b37a970d0a6d7e7fd174abebcecc16d90bc4772349402a9",
+    "algorithm": "SHA-256 of sorted UTF-8 path + NUL + file SHA-256 + newline",
+    "files": {
+      "build_desktop.py": "6e0da0572a56fecdc97aa5f92f3cb595d4e8cdd1cdca9de4304e8b9fb1b91d9a",
+      "build_native.py": "4b90296947097e60fb555e386c28fff5e4b80d37990e7b7f9f44b58d6dbe7896",
+      "cloud.py": "b476d558b65610067a00866e47b0507790ef2ababba9e9f7825757aa251dc809",
+      "cloud_catalog.json": "1a032bd89041a418c87091ec14007c5ca33263b87bfde70b580a2a764447bd6d",
+      "cowboy.json": "2dcc30dae180685ebf029839881396505f2b160e649db045db15335fb969eafe",
+      "export_range.swift": "e32880f81470b680181509e6de13613acbf7e19722b9f39797816fd162d13e30",
+      "export_reel.swift": "6d80bea2df720a72d04b3006a1ef6b37f5ff1e560f99296f9de4f6da89a0d84c",
+      "gosx-host/board.gsx": "9144617187054b69e81273990cfbdb208d70cca51a0e66010fac2e7a3569e245",
+      "gosx-host/board_generated.go": "cba7cfb32abb2c4dd3a7084437ab7b4acfac612e5192c98dc5d6651abadea28c",
+      "gosx-host/board_test.go": "3a5dbbef6e9494a65f8f54f08f47cabd0dc55b8f5279b7b172b14507a0dfca6c",
+      "gosx-host/board_view.go": "174ad5e9c7adebf058ecb6a32334bcfff74b012ff5b949251b000c65ee87682b",
+      "gosx-host/board_view_test.go": "c9e7b2639e80c076f743bc4943cbd8bf951685de1dee45a2eed3d8b7c09d1246",
+      "gosx-host/create_integration_test.go": "3d612a2b63845e486f3f3a5195b57fc805bcce5b7cf4c08e581877156fedb979",
+      "gosx-host/create_test.go": "26157806521d8fa6e6709189511bf5475f2cff0fc4574cc7e1c6fe0c1b1839af",
+      "gosx-host/editor.go": "13bb53e161e36d67cbde8e7a68fc8cf27567cd492d0cf3790d08f9b62fa3edf7",
+      "gosx-host/editor_integration_test.go": "efcdbda303b0254bba8a7810bf56a2ab87739bcc4884f4eed9f6e3fd8ed41758",
+      "gosx-host/editor_test.go": "87e587738cc142b54295c43c5756763ee28ffb0c1f0b5a47d781c9e64bec7203",
+      "gosx-host/go.mod": "94cc65d3686259806ed55f20bf240a465e10ca216301c230745ee65622388a4b",
+      "gosx-host/go.sum": "7811ba8519ecbe6bb54b30d06526cce85c39baa5b02d6f13a1e45dc4301c499d",
+      "gosx-host/insert_integration_test.go": "48305ebd070cdface6d36c07f6e6f6064482f80bfa420b4c375c6ade2647f61e",
+      "gosx-host/insert_test.go": "cf0aac007c6c465e9b668c626bb6bce9bce42172a3f7cb45d156412442e4a97a",
+      "gosx-host/integration_test.go": "277ad7ad20e27d94591d0c1eb270d3f6f938ca04798b52ca740294bf050c9d75",
+      "gosx-host/main.go": "ea6e6cbbc317437ed96a96f9d6da210e4698e76d8703c237872e742e3af7bf7a",
+      "gosx-host/main_test.go": "4d2208c6529879c2a62583bd319872a8ff57e503d1a07a59b3fc2f02830d1a5d",
+      "gosx-host/service.go": "0d1175894845df354688dec8e205c66fa2582a00e095bdb75e13fce95a2349d9",
+      "gosx-host/service_test.go": "6a3b49aa86b64e84e2ac00c2cbec67bc356da8f1125dfa45ee95bc690295aa29",
+      "gosx-host/storage_unix.go": "604a00e25b775aeaa5a2852b2fb985b0066947418484d61252c6a6b9ba9d9cbb",
+      "gosx-host/storage_windows.go": "8dd79dc79be6d1da9e15a57390521e3f266affc817cd04bd2bfe2464cfd8b642",
+      "gosx-host/store.go": "a1f347060caca52c9796c81e760994f3537026a428daca720bdc0e28856ea003",
+      "gosx-host/store_commands.go": "26b1acfc5c5b893bc80828f2bf92127093b650b99f39512ff06442f6c009e59e",
+      "gosx-host/store_read.go": "315e33446661d0c60c0ca4f418cf33c614713b3188566d4133dd9aa7fef518e3",
+      "gosx-host/store_read_test.go": "ea5a5910a511b0bb26bff9667ed3255b8882f389c80f2501f72c692e1a6a1f97",
+      "gosx-host/store_service.go": "50e340177fe3708bd51dbe0aef47128e8fad867e19989e89889cb55d17cc7ade",
+      "gosx-host/store_test.go": "b8dcd65c8cdb02dcb03e983b0f89fc4f4b9777cee5410c68d43ef4fc8dcbeb66",
+      "launch.py": "12b70ab38a922b9088cd375d757ecaddac4144a8e037ec45e2df4bf51dea15f1",
+      "media_probe.swift": "df61e6c9245ea75ec8531be066694419dd8b304ca11a5e25320fdd1fea139bd5",
+      "media_tools.py": "c67b144f65be8bb1c274b30a29e0253cc1d67873b92f4312b6a12698ff0309de",
+      "platform_support.py": "5ee245b7ae4ad3d532ca6442509649d8be2ec9489c12ebeaea9a15381eb8cdde",
+      "sections.py": "9cb8430a2b5e969bdce59d91a63448a59d0cc70581a186e7f9d0738b7c9dcc1d",
+      "server.py": "957580590133be814ea5f8de9bf39d40a373270580635eb0bbe288401e22abcd",
+      "settings.example.json": "d8231b8913a506d93c6bab83443b0b4f058d7d5c7247aa0737edd1d951850e45",
+      "settings.py": "8f761ab597b696182c468d697d7c86ec1d1bee80d2585b0efc67b58cfd3e8fd0",
+      "static/app.js": "1de32adc514dd90260e3d3dc9b5e6d758b91cf8a73e829964bdffc421dd9e088",
+      "static/blocking.js": "547fafca4fa28de445e0395ea482581186ec12cb2e936a7f4590ca0b297bf7cd",
+      "static/cloud.js": "a42e60923c2c22d2295798c1e54c4e9cca0acd8c406dd969e4d77639f3f23c96",
+      "static/drawing.js": "677051608497531eadb5602f75f5c455f7ba0a56892513859a2588fdc2d1305c",
+      "static/index.html": "e0dbb6538d6d2331cdbebf08232e2b5834db589a0b81fe38cb2d77619d812844",
+      "static/library.js": "c14682918695608f864497b4d7ba9182631850abf6eb41b5c59a229ff362761c",
+      "static/music.js": "5f3494218a97349ac00dc927672a753c2368b4f4782f79b5949d880feca07514",
+      "static/sections.js": "2e9f05a5bf7b720daa3c6782071fe536dba13303afa92dabc0f5c30ed09aaeb8",
+      "static/style.css": "a19b72511078099c48edeec10e137623977cef5c4cd126bf531c16222b34ba40",
+      "templates/storyboard-project-template.json": "d20ec7eaf01465fc90259ddf51158109b894ad7d21adbe8f4daf4c820581d399",
+      "test_cloud.py": "48a329d26669c29bfacf152b0f4d73928221304d32cb6d1f90fa7243a007beec",
+      "test_coverage.py": "f22128074ddcf22994bafcdbfea107caac871cf9f539afe75072923583f5557b",
+      "test_drawing.py": "0c44fdd7981410ff367ac7c52caf045b46b4e08d0424e3ca0e28449210372cd4",
+      "test_gosx_bridge.py": "2a12e0f4d83bcd5ba2e965df215a642dfc204698316cda8232674cc0168404b6",
+      "test_gosx_compile.py": "8492dbe808c493ed08655061b824f43f3084c92584f79e5da8b59ebf2798dd45",
+      "test_gosx_store.py": "ec020a06547fef95840f239e8a1e0c2d752175115fc85b74127d66cb77a3c314",
+      "test_launch.py": "27ff428af1350d9330da40f17246b42f18385bb87c9e64d6c9fe36b539d8be83",
+      "test_library.py": "4a31ba634891cc7227285a1a280c2a0ebec6e56463fcb5b3bcdda9532a94f772",
+      "test_media_tools.py": "c5861f1f28f1d8a80ab1bbc877affb80cab5b55ada44bb072a63a34a5d66cf38",
+      "test_music.py": "311031a4e895a3f6075164776dbe0031ccb331ec5f1f036de1f43acd94dfe1cf",
+      "test_platform_support.py": "9ba816adf44476d2995ab12a3cbd1d1dd1b932f8783cd5ec96d107077f675377",
+      "test_portions.py": "848a929ec63a4806e9fa4cc3abc6be65be9797fea3a8ed187503cc2addfd1362",
+      "test_sections.py": "dece1576efaf33cf1f5466915ed78c86cfb4872094eeca19d8dc4f805b968b1c",
+      "test_server.py": "b827a153ab98a9cb67e91ac5c982c715fff19d39fa5f0c2088278fe2c613e77b",
+      "test_settings.py": "dde22b2ab4d3f36a90f7ce62f548a4c016433153cb573e3c0ef9ce6071c1e8de",
+      "tests/make_video_fixture.swift": "7bfff9823507ede2df1dac8f5cedd218a308cef283275c47cdbea864c8190266"
+    }
+  },
+  "environment": {
+    "executed": "Linux/amd64 (WSL)",
+    "go": "go version go1.26.0 linux/amd64",
+    "fixtures": "Temporary synthetic projects, PNG/WAV media, future JSON fields and fake job receipts; no real user projects or generation calls."
+  },
+  "checks": [
+    {
+      "claim": "Standalone editor needs no Python service",
+      "evidence": "test_gosx_store.GoStorageChecks.test_standalone_editor_round_trip_preserves_existing_projects",
+      "observed": "Built executable with empty PATH served real HTTP; create/save/insert succeeded; stale revisions, wrong tokens and foreign origins rejected; HTML escaped."
+    },
+    {
+      "claim": "Existing projects survive Go edits and Python reopening",
+      "evidence": "Same HTTP round-trip test and TestStorePreservesLegacyDataAcrossEditsAndReopen",
+      "observed": "Media SHA-256 values unchanged; large integers, nested unknown fields, lyrics, soundtrack, sections, selections, approval and direction receipts retained. Python recalculated readiness correctly and edited a Go-created project."
+    },
+    {
+      "claim": "Only one writer owns a data directory",
+      "evidence": "test_python_and_go_exclude_each_other_and_release_after_crash; test_existing_legacy_worker_is_detected_before_opening_projects",
+      "observed": "Python excludes Go, Go excludes Python and another Go process; existing legacy worker detected; killing owner permits reopening."
+    },
+    {
+      "claim": "Revision conflicts and process crashes preserve committed data",
+      "evidence": "TestStoreConcurrentCommandsOnlyOneRevisionWins; TestStoreSurvivesWriterProcessCrash",
+      "observed": "Exactly one of two concurrent writes committed. Killing an actively writing subprocess left valid committed JSON that reopened and accepted the next revision."
+    },
+    {
+      "claim": "Unsupported or unsafe changes do not write project data",
+      "evidence": "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting; TestStoreRejectsSymlinksAndReplacedRoot; TestStoreSceneEditHonorsExistingCoverageReservation",
+      "observed": "Rejected commands left original project bytes unchanged; symlinks and replaced roots refused; reserved media could not be moved into a conflicting scene."
+    }
+  ],
+  "python": {
+    "command": "PYTHONDONTWRITEBYTECODE=1 CGO_ENABLED=0 python3 -m unittest discover -s . -p 'test_*.py' -v",
+    "cwd": ".",
+    "result": "pass",
+    "tests": 134,
+    "focused_output": [
+      "test_real_service_read_save_and_revision_conflict (test_gosx_bridge.GoSXBridgeChecks.test_real_service_read_save_and_revision_conflict) ... ok",
+      "test_shot_card_generated_source (test_gosx_compile.GoSXCompileChecks.test_shot_card_generated_source) ... ok",
+      "test_existing_legacy_worker_is_detected_before_opening_projects (test_gosx_store.GoStorageChecks.test_existing_legacy_worker_is_detected_before_opening_projects) ... ok",
+      "test_explicit_initialization_and_missing_folder_guard (test_gosx_store.GoStorageChecks.test_explicit_initialization_and_missing_folder_guard) ... ok",
+      "test_python_and_go_exclude_each_other_and_release_after_crash (test_gosx_store.GoStorageChecks.test_python_and_go_exclude_each_other_and_release_after_crash) ... ok",
+      "test_standalone_editor_round_trip_preserves_existing_projects (test_gosx_store.GoStorageChecks.test_standalone_editor_round_trip_preserves_existing_projects) ... ok"
+    ],
+    "summary": [
+      "----------------------------------------------------------------------",
+      "Ran 134 tests in 17.547s",
+      "",
+      "OK"
+    ]
+  },
+  "go": {
+    "command": "go test -race -count=1 -json ./...",
+    "cwd": "gosx-host",
+    "result": "pass",
+    "top_level_tests": [
+      {
+        "test": "TestShotCardRendersAndEscapesProjectContent",
+        "result": "pass"
+      },
+      {
+        "test": "TestRenderBoardListsProjectsAndEscapesShotFields",
+        "result": "pass"
+      },
+      {
+        "test": "TestPythonEditorCreatesProject",
+        "result": "skip"
+      },
+      {
+        "test": "TestEditorCreatesProject",
+        "result": "pass"
+      },
+      {
+        "test": "TestPythonEditorRoundTrip",
+        "result": "skip"
+      },
+      {
+        "test": "TestEditorRendersAndSavesWithRevisionAndCSRF",
+        "result": "pass"
+      },
+      {
+        "test": "TestPythonInsertRoundTrip",
+        "result": "skip"
+      },
+      {
+        "test": "TestEditorInsertShot",
+        "result": "pass"
+      },
+      {
+        "test": "TestPythonServiceRoundTrip",
+        "result": "skip"
+      },
+      {
+        "test": "TestOnlyExplicitLoopbackRootIsAccepted",
+        "result": "pass"
+      },
+      {
+        "test": "TestHealthRejectsAnotherAppAndRedirects",
+        "result": "pass"
+      },
+      {
+        "test": "TestServiceClientLoadsAndSavesShotWithoutLosingFields",
+        "result": "pass"
+      },
+      {
+        "test": "TestServiceClientSurfacesConflict",
+        "result": "pass"
+      },
+      {
+        "test": "TestServiceClientRejectsRemoteAndRedirects",
+        "result": "pass"
+      },
+      {
+        "test": "TestReadProjectPreservesExistingData",
+        "result": "pass"
+      },
+      {
+        "test": "TestReadProjectRejectsBadInputWithoutCreatingFiles",
+        "result": "pass"
+      },
+      {
+        "test": "TestReadProjectDoesNotFollowProjectDirectorySymlink",
+        "result": "pass"
+      },
+      {
+        "test": "TestReadProjectDoesNotFollowProjectFileSymlink",
+        "result": "pass"
+      },
+      {
+        "test": "TestReadPythonProjectFixture",
+        "result": "skip"
+      },
+      {
+        "test": "TestStorePreservesLegacyDataAcrossEditsAndReopen",
+        "result": "pass"
+      },
+      {
+        "test": "TestStoreRejectsInvalidAndStaleCommandsWithoutWriting",
+        "result": "pass"
+      },
+      {
+        "test": "TestStoreConcurrentCommandsOnlyOneRevisionWins",
+        "result": "pass"
+      },
+      {
+        "test": "TestStoreOwnershipAndUnavailablePaths",
+        "result": "pass"
+      },
+      {
+        "test": "TestStoreRejectsSymlinksAndReplacedRoot",
+        "result": "pass"
+      },
+      {
+        "test": "TestStoreIgnoresCrashTempsAndRejectsMalformedProjects",
+        "result": "pass"
+      },
+      {
+        "test": "TestStoreSceneEditHonorsExistingCoverageReservation",
+        "result": "pass"
+      },
+      {
+        "test": "TestStorageWriterProcess",
+        "result": "skip"
+      },
+      {
+        "test": "TestStoreSurvivesWriterProcessCrash",
+        "result": "pass"
+      }
+    ],
+    "note": "Python-dependent Go tests skipped in this standalone race run are exercised by test_gosx_bridge during the full Python suite. The helper test executes only as a child process."
+  },
+  "cross_compilation": {
+    "command": "GOOS=<target> GOARCH=amd64 CGO_ENABLED=0 go test -c -o <temporary-output>",
+    "cwd": "gosx-host",
+    "windows": "pass",
+    "darwin": "pass",
+    "outputs": "Temporary executables removed after compilation."
+  },
+  "limits": [
+    "Windows/macOS filesystem and lock behavior was cross-compiled, not executed here.",
+    "No native WebView interaction or full application feature parity claimed.",
+    "Process-crash tests are not physical power-loss testing; durability depends on filesystem and device.",
+    "Stop older app versions before upgrading; only updated runtimes implement the directory ownership protocol.",
+    "Go editor intentionally omits derived approval/music/coverage views and unported media/generation operations."
+  ]
+}
