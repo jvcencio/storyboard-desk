@@ -17,3 +17,11 @@ audio{width:100%;max-width:640px}.reference-image{width:100%;height:240px;object
 pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;background:#eeeee5;padding:16px;border-radius:4px}fieldset{border:1px solid var(--line);margin:20px 0}fieldset label{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:10px;margin:10px 0}.button-row{display:flex;gap:10px;flex-wrap:wrap}.blocking-frame{width:100%;height:100%;max-height:320px}.sequence-review video,.sequence-review img{width:100%;height:450px;object-fit:contain;background:#202b25}.review-gap{background:#202b25;color:#edf0e3;padding:70px 30px;text-align:center}.review-shot{margin-top:24px}[hidden]{display:none!important}
 @media(max-width:760px){.sequence-review video,.sequence-review img{height:240px}}
 @media(max-width:760px){input,textarea,select,.shot-editor textarea{font-size:16px}}
+
+/* Reserve space for offscreen cards until their actual height is known. */
+@supports (content-visibility: auto) and (contain-intrinsic-block-size: auto 30rem) {
+  .shot-card {
+    content-visibility: auto;
+    contain-intrinsic-block-size: auto 30rem;
+  }
+}

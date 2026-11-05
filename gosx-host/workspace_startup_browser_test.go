@@ -16,6 +16,7 @@ import (
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
+	"github.com/chromedp/chromedp/kb"
 )
 
 // This opt-in probe measures navigation from an empty browser profile. CDP
@@ -169,5 +170,45 @@ func TestColdWorkspaceStartup(t *testing.T) {
 	}
 	if err := os.WriteFile(report, raw, 0600); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestWorkspaceGoClientOffscreenCard(t *testing.T) {
+	store, id := workspaceBoardFixture(t)
+	before, err := store.snapshot(id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, origin := editorBrowser(t, &workspaceHandler{store: store, csrf: "browser-token"})
+	const button = `.shot-card:last-child button[title="Move earlier"]`
+	var offscreen bool
+	if err := chromedp.Run(ctx, chromedp.Navigate(origin+pageURL(id, "board", "", "")), browserReady(),
+		chromedp.Evaluate(`document.querySelector('.shot-card:last-child').getBoundingClientRect().top > innerHeight`, &offscreen)); err != nil {
+		t.Fatal(err)
+	}
+	if !offscreen {
+		t.Fatal("the final card should start offscreen")
+	}
+	if err := chromedp.Run(ctx, chromedp.Focus(button, chromedp.ByQuery), chromedp.Poll(`(() => {
+		const button = document.querySelector('.shot-card:last-child button[title="Move earlier"]');
+		const bounds = button.getBoundingClientRect();
+		return document.activeElement === button && bounds.top >= 0 && bounds.bottom <= innerHeight;
+	})()`, nil)); err != nil {
+		t.Fatal(err)
+	}
+	response, err := chromedp.RunResponse(ctx, chromedp.KeyEvent(kb.Enter))
+	if err != nil || response == nil || response.Status != 200 {
+		t.Fatalf("keyboard reorder response: %+v (%v)", response, err)
+	}
+	after, err := store.snapshot(id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	last := len(before.shots) - 1
+	if len(after.shots) != len(before.shots) ||
+		documentRevision(after.document) != documentRevision(before.document)+1 ||
+		shotText(after.shots[last-1], "id") != shotText(before.shots[last], "id") ||
+		shotText(after.shots[last], "id") != shotText(before.shots[last-1], "id") {
+		t.Fatal("moving the offscreen card did not persist exactly one reorder")
 	}
 }
