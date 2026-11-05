@@ -65,6 +65,13 @@ func editorDocument(renderer *island.Renderer, w workspacePage, r *http.Request,
 
 func workspaceDocument(renderer *island.Renderer, r *http.Request, status int, body gosx.Node, bodyAttrs gosx.AttrList) gosx.Node {
 	summary := renderer.Summary()
+	var engines gosx.Node
+	if summary.BootstrapFeatureEnginesPath != "" {
+		// The GoSX chunk registers its factory before bootstrap. Let the
+		// browser execute it in order instead of inserting it after DOMContentLoaded.
+		engines = el("script", attrs("defer", "defer", "src", summary.BootstrapFeatureEnginesPath,
+			"crossorigin", "anonymous", "referrerpolicy", "no-referrer", "data-gosx-script", "feature-engines"))
+	}
 	return server.HTMLDocument(&server.DocumentContext{
 		Request: r, Pattern: "/", Path: r.URL.RequestURI(), PageID: "storyboard-workspace", Status: status, Title: "Storyboard Desk",
 		Bootstrap: true, RuntimeActive: true,
@@ -73,7 +80,7 @@ func workspaceDocument(renderer *island.Renderer, r *http.Request, status int, b
 			StandardGoWASMExecPath: summary.StandardGoWASMExecPath, BootstrapPath: summary.BootstrapPath,
 			BootstrapFeatureEnginesPath: summary.BootstrapFeatureEnginesPath, Engines: summary.Engines,
 		},
-		Head: gosx.Fragment(el("link", attrs("rel", "stylesheet", "href", "/workspace.css")), renderer.PreloadHints(), renderer.PageHead()),
+		Head: gosx.Fragment(el("link", attrs("rel", "stylesheet", "href", "/workspace.css")), renderer.PreloadHints(), engines, renderer.PageHead()),
 		Body: body, BodyAttrs: bodyAttrs,
 	})
 }
