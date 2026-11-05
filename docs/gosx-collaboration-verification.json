@@ -23,343 +23,177 @@
       }
     }
   },
+  "build_toolchain": {
+    "equivalence": "The three shipped SDK JavaScript assets and their compressed representations match the traced prior pin byte for byte. The new SDK version stamp changes the WASM hash. Cold-start measurements were repeated for the final workspace.1cffe1171a1a8e92.wasm build.",
+    "pinned_go_tool": "m31labs.dev/gosx/cmd/gosx",
+    "regression": "Version-suffixed CLI execution started independent module resolution and failed the public checksum lookup despite the application's locked GoSX checksums.",
+    "verification": "Go-WASM build and CLI installation passed with GOPROXY=off and empty GOPRIVATE/GONOSUMDB. The matching compiler check and Go vet passed."
+  },
   "cold_start": {
     "limits": "Browser process startup is excluded. The 20 Mbps cap applies only to WASM at 2500000 bytes per second. Tracing and scan counters are excluded from these runs.",
     "method": "12 alternating pairs per condition, fresh Chromium profile per run, navigation to data-editor-ready",
     "networks": {
       "20mbps": {
-        "candidate_faster_pairs": 7,
-        "median_baseline_dcl_ms": 152.94999999552965,
-        "median_baseline_ready_ms": 420.3500000089407,
-        "median_candidate_dcl_ms": 152.10000000149012,
-        "median_candidate_ready_ms": 420.04999999701977,
+        "candidate_faster_pairs": 4,
+        "median_baseline_dcl_ms": 165.39999999850988,
+        "median_baseline_ready_ms": 429.59999999403954,
+        "median_candidate_dcl_ms": 164.59999999403954,
+        "median_candidate_ready_ms": 434.94999998807907,
         "pairs": [
           {
             "run": 1,
             "baseline": {
-              "ready_ms": 448.5,
-              "dom_content_loaded_ms": 160.40000000596046,
-              "ttfb_ms": 75.79999999701977
+              "ready_ms": 410.5,
+              "dom_content_loaded_ms": 147.29999999701977,
+              "ttfb_ms": 46.099999994039536
             },
             "candidate": {
-              "ready_ms": 421,
-              "dom_content_loaded_ms": 156.09999999403954,
-              "ttfb_ms": 59.70000000298023
+              "ready_ms": 432.09999999403954,
+              "dom_content_loaded_ms": 154.79999999701977,
+              "ttfb_ms": 61.79999999701977
             }
           },
           {
             "run": 2,
             "baseline": {
-              "ready_ms": 428.19999998807907,
-              "dom_content_loaded_ms": 157.29999999701977,
-              "ttfb_ms": 59.19999998807907
+              "ready_ms": 441.30000001192093,
+              "dom_content_loaded_ms": 165.20000000298023,
+              "ttfb_ms": 64.90000000596046
             },
             "candidate": {
-              "ready_ms": 422.79999999701977,
-              "dom_content_loaded_ms": 157.59999999403954,
-              "ttfb_ms": 68.59999999403954
+              "ready_ms": 441.1000000089407,
+              "dom_content_loaded_ms": 168.30000001192093,
+              "ttfb_ms": 57.80000001192093
             }
           },
           {
             "run": 3,
             "baseline": {
-              "ready_ms": 401.3999999910593,
-              "dom_content_loaded_ms": 129.5,
-              "ttfb_ms": 56.70000000298023
+              "ready_ms": 437.80000001192093,
+              "dom_content_loaded_ms": 166.5,
+              "ttfb_ms": 67.20000000298023
             },
             "candidate": {
-              "ready_ms": 429,
-              "dom_content_loaded_ms": 151.70000000298023,
-              "ttfb_ms": 62.70000000298023
+              "ready_ms": 411,
+              "dom_content_loaded_ms": 138.1000000089407,
+              "ttfb_ms": 40.6000000089407
             }
           },
           {
             "run": 4,
             "baseline": {
-              "ready_ms": 417.79999999701977,
-              "dom_content_loaded_ms": 156.3999999910593,
-              "ttfb_ms": 63
+              "ready_ms": 415.90000000596046,
+              "dom_content_loaded_ms": 152.1000000089407,
+              "ttfb_ms": 48.1000000089407
             },
             "candidate": {
-              "ready_ms": 427.1000000089407,
-              "dom_content_loaded_ms": 154.6000000089407,
-              "ttfb_ms": 63.6000000089407
+              "ready_ms": 441,
+              "dom_content_loaded_ms": 169.5,
+              "ttfb_ms": 72.09999999403954
             }
           },
           {
             "run": 5,
             "baseline": {
-              "ready_ms": 426.29999999701977,
-              "dom_content_loaded_ms": 165.29999999701977,
-              "ttfb_ms": 78.40000000596046
+              "ready_ms": 438.09999999403954,
+              "dom_content_loaded_ms": 179.40000000596046,
+              "ttfb_ms": 73
             },
             "candidate": {
-              "ready_ms": 407.8999999910593,
-              "dom_content_loaded_ms": 142.09999999403954,
-              "ttfb_ms": 60.29999999701977
+              "ready_ms": 432.20000000298023,
+              "dom_content_loaded_ms": 150.70000000298023,
+              "ttfb_ms": 67.20000000298023
             }
           },
           {
             "run": 6,
             "baseline": {
-              "ready_ms": 419.90000000596046,
-              "dom_content_loaded_ms": 156.90000000596046,
-              "ttfb_ms": 62.900000005960464
+              "ready_ms": 419.29999999701977,
+              "dom_content_loaded_ms": 169.40000000596046,
+              "ttfb_ms": 65.40000000596046
             },
             "candidate": {
-              "ready_ms": 406.79999999701977,
-              "dom_content_loaded_ms": 141.59999999403954,
-              "ttfb_ms": 59.099999994039536
+              "ready_ms": 426,
+              "dom_content_loaded_ms": 163.59999999403954,
+              "ttfb_ms": 57.3999999910593
             }
           },
           {
             "run": 7,
             "baseline": {
-              "ready_ms": 427.59999999403954,
-              "dom_content_loaded_ms": 149.5,
-              "ttfb_ms": 69.5
+              "ready_ms": 429.29999999701977,
+              "dom_content_loaded_ms": 177.5,
+              "ttfb_ms": 58.900000005960464
             },
             "candidate": {
-              "ready_ms": 417.80000001192093,
-              "dom_content_loaded_ms": 145,
-              "ttfb_ms": 60.80000001192093
+              "ready_ms": 444.8999999910593,
+              "dom_content_loaded_ms": 169,
+              "ttfb_ms": 72.59999999403954
             }
           },
           {
             "run": 8,
             "baseline": {
-              "ready_ms": 405,
-              "dom_content_loaded_ms": 147.79999999701977,
-              "ttfb_ms": 60
+              "ready_ms": 439.79999999701977,
+              "dom_content_loaded_ms": 163.70000000298023,
+              "ttfb_ms": 80
             },
             "candidate": {
-              "ready_ms": 416.70000000298023,
-              "dom_content_loaded_ms": 150.20000000298023,
-              "ttfb_ms": 70.20000000298023
+              "ready_ms": 436.69999998807907,
+              "dom_content_loaded_ms": 148,
+              "ttfb_ms": 60.3999999910593
             }
           },
           {
             "run": 9,
             "baseline": {
-              "ready_ms": 418.69999998807907,
-              "dom_content_loaded_ms": 157.79999999701977,
-              "ttfb_ms": 58.5
+              "ready_ms": 392.29999999701977,
+              "dom_content_loaded_ms": 134.70000000298023,
+              "ttfb_ms": 42.20000000298023
             },
             "candidate": {
-              "ready_ms": 413.79999999701977,
-              "dom_content_loaded_ms": 146.5,
-              "ttfb_ms": 55.20000000298023
+              "ready_ms": 430.09999999403954,
+              "dom_content_loaded_ms": 184.8999999910593,
+              "ttfb_ms": 74.3999999910593
             }
           },
           {
             "run": 10,
             "baseline": {
-              "ready_ms": 422.59999999403954,
-              "dom_content_loaded_ms": 149.40000000596046,
-              "ttfb_ms": 68.79999999701977
+              "ready_ms": 429.8999999910593,
+              "dom_content_loaded_ms": 175.69999998807907,
+              "ttfb_ms": 73.09999999403954
             },
             "candidate": {
-              "ready_ms": 424.5,
-              "dom_content_loaded_ms": 156.1000000089407,
-              "ttfb_ms": 66.79999999701977
-            }
-          },
-          {
-            "run": 11,
-            "baseline": {
-              "ready_ms": 398.5,
-              "dom_content_loaded_ms": 136.59999999403954,
-              "ttfb_ms": 55.79999999701977
-            },
-            "candidate": {
-              "ready_ms": 422.09999999403954,
-              "dom_content_loaded_ms": 152.5,
-              "ttfb_ms": 73
-            }
-          },
-          {
-            "run": 12,
-            "baseline": {
-              "ready_ms": 420.80000001192093,
-              "dom_content_loaded_ms": 145,
-              "ttfb_ms": 63.6000000089407
-            },
-            "candidate": {
-              "ready_ms": 419.09999999403954,
-              "dom_content_loaded_ms": 154.59999999403954,
-              "ttfb_ms": 73.3999999910593
-            }
-          }
-        ],
-        "payload": {
-          "baseline_wasm_decoded_bytes": 3541931,
-          "baseline_wasm_encoded_bytes": 746186,
-          "candidate_wasm_decoded_bytes": 3585629,
-          "candidate_wasm_encoded_bytes": 752044,
-          "html_bytes": 183788
-        }
-      },
-      "loopback": {
-        "candidate_faster_pairs": 7,
-        "median_baseline_dcl_ms": 160.20000000298023,
-        "median_baseline_ready_ms": 211.95000000298023,
-        "median_candidate_dcl_ms": 155.70000000298023,
-        "median_candidate_ready_ms": 209.8500000089407,
-        "pairs": [
-          {
-            "run": 1,
-            "baseline": {
-              "ready_ms": 213.59999999403954,
-              "dom_content_loaded_ms": 162.29999999701977,
-              "ttfb_ms": 70.40000000596046
-            },
-            "candidate": {
-              "ready_ms": 216.3999999910593,
-              "dom_content_loaded_ms": 169,
-              "ttfb_ms": 69.70000000298023
-            }
-          },
-          {
-            "run": 2,
-            "baseline": {
-              "ready_ms": 200,
-              "dom_content_loaded_ms": 146.79999999701977,
-              "ttfb_ms": 61.900000005960464
-            },
-            "candidate": {
-              "ready_ms": 187.19999998807907,
-              "dom_content_loaded_ms": 141.79999999701977,
-              "ttfb_ms": 61.3999999910593
-            }
-          },
-          {
-            "run": 3,
-            "baseline": {
-              "ready_ms": 211.90000000596046,
-              "dom_content_loaded_ms": 161.40000000596046,
-              "ttfb_ms": 71.29999999701977
-            },
-            "candidate": {
-              "ready_ms": 183.5,
-              "dom_content_loaded_ms": 131.59999999403954,
-              "ttfb_ms": 48.599999994039536
-            }
-          },
-          {
-            "run": 4,
-            "baseline": {
-              "ready_ms": 223.69999998807907,
-              "dom_content_loaded_ms": 173.19999998807907,
-              "ttfb_ms": 65.19999998807907
-            },
-            "candidate": {
-              "ready_ms": 225,
-              "dom_content_loaded_ms": 174.09999999403954,
-              "ttfb_ms": 77
-            }
-          },
-          {
-            "run": 5,
-            "baseline": {
-              "ready_ms": 220.69999998807907,
-              "dom_content_loaded_ms": 170.79999999701977,
-              "ttfb_ms": 75.19999998807907
-            },
-            "candidate": {
-              "ready_ms": 210.6000000089407,
-              "dom_content_loaded_ms": 171.20000000298023,
-              "ttfb_ms": 83.29999999701977
-            }
-          },
-          {
-            "run": 6,
-            "baseline": {
-              "ready_ms": 201.5,
-              "dom_content_loaded_ms": 146.20000000298023,
-              "ttfb_ms": 56.599999994039536
-            },
-            "candidate": {
-              "ready_ms": 204.70000000298023,
-              "dom_content_loaded_ms": 151.20000000298023,
+              "ready_ms": 433.19999998807907,
+              "dom_content_loaded_ms": 154.09999999403954,
               "ttfb_ms": 66.5
             }
           },
           {
-            "run": 7,
-            "baseline": {
-              "ready_ms": 212,
-              "dom_content_loaded_ms": 161.70000000298023,
-              "ttfb_ms": 65.8999999910593
-            },
-            "candidate": {
-              "ready_ms": 209.1000000089407,
-              "dom_content_loaded_ms": 150.70000000298023,
-              "ttfb_ms": 62.30000001192093
-            }
-          },
-          {
-            "run": 8,
-            "baseline": {
-              "ready_ms": 218.59999999403954,
-              "dom_content_loaded_ms": 154,
-              "ttfb_ms": 69.69999998807907
-            },
-            "candidate": {
-              "ready_ms": 193.40000000596046,
-              "dom_content_loaded_ms": 143.30000001192093,
-              "ttfb_ms": 57
-            }
-          },
-          {
-            "run": 9,
-            "baseline": {
-              "ready_ms": 206,
-              "dom_content_loaded_ms": 145.20000000298023,
-              "ttfb_ms": 55.1000000089407
-            },
-            "candidate": {
-              "ready_ms": 214.5,
-              "dom_content_loaded_ms": 160.20000000298023,
-              "ttfb_ms": 66.80000001192093
-            }
-          },
-          {
-            "run": 10,
-            "baseline": {
-              "ready_ms": 202,
-              "dom_content_loaded_ms": 159,
-              "ttfb_ms": 76.5
-            },
-            "candidate": {
-              "ready_ms": 222.5,
-              "dom_content_loaded_ms": 165.29999999701977,
-              "ttfb_ms": 72.79999999701977
-            }
-          },
-          {
             "run": 11,
             "baseline": {
-              "ready_ms": 191.40000000596046,
-              "dom_content_loaded_ms": 137.79999999701977,
-              "ttfb_ms": 65.20000000298023
+              "ready_ms": 432.09999999403954,
+              "dom_content_loaded_ms": 149.79999999701977,
+              "ttfb_ms": 69.79999999701977
             },
             "candidate": {
-              "ready_ms": 188.29999999701977,
-              "dom_content_loaded_ms": 143.5,
-              "ttfb_ms": 65
+              "ready_ms": 439.30000001192093,
+              "dom_content_loaded_ms": 179.80000001192093,
+              "ttfb_ms": 81.80000001192093
             }
           },
           {
             "run": 12,
             "baseline": {
-              "ready_ms": 215.09999999403954,
-              "dom_content_loaded_ms": 163.19999998807907,
-              "ttfb_ms": 74.59999999403954
+              "ready_ms": 416.59999999403954,
+              "dom_content_loaded_ms": 165.59999999403954,
+              "ttfb_ms": 50.79999999701977
             },
             "candidate": {
-              "ready_ms": 212.5,
-              "dom_content_loaded_ms": 166.70000000298023,
-              "ttfb_ms": 65.3999999910593
+              "ready_ms": 437.29999999701977,
+              "dom_content_loaded_ms": 165.59999999403954,
+              "ttfb_ms": 77.70000000298023
             }
           }
         ],
@@ -367,7 +201,179 @@
           "baseline_wasm_decoded_bytes": 3541931,
           "baseline_wasm_encoded_bytes": 746186,
           "candidate_wasm_decoded_bytes": 3585629,
-          "candidate_wasm_encoded_bytes": 752044,
+          "candidate_wasm_encoded_bytes": 751814,
+          "html_bytes": 183788
+        }
+      },
+      "loopback": {
+        "candidate_faster_pairs": 6,
+        "median_baseline_dcl_ms": 174.94999999552965,
+        "median_baseline_ready_ms": 239.20000000298023,
+        "median_candidate_dcl_ms": 176.75,
+        "median_candidate_ready_ms": 240.95000000298023,
+        "pairs": [
+          {
+            "run": 1,
+            "baseline": {
+              "ready_ms": 257.70000000298023,
+              "dom_content_loaded_ms": 204.20000000298023,
+              "ttfb_ms": 71.40000000596046
+            },
+            "candidate": {
+              "ready_ms": 258.5,
+              "dom_content_loaded_ms": 172.90000000596046,
+              "ttfb_ms": 49.70000000298023
+            }
+          },
+          {
+            "run": 2,
+            "baseline": {
+              "ready_ms": 241,
+              "dom_content_loaded_ms": 182.79999999701977,
+              "ttfb_ms": 70.29999999701977
+            },
+            "candidate": {
+              "ready_ms": 257.5,
+              "dom_content_loaded_ms": 188.90000000596046,
+              "ttfb_ms": 64.79999999701977
+            }
+          },
+          {
+            "run": 3,
+            "baseline": {
+              "ready_ms": 209.30000001192093,
+              "dom_content_loaded_ms": 149.80000001192093,
+              "ttfb_ms": 27.600000008940697
+            },
+            "candidate": {
+              "ready_ms": 252.5,
+              "dom_content_loaded_ms": 185.6000000089407,
+              "ttfb_ms": 53.80000001192093
+            }
+          },
+          {
+            "run": 4,
+            "baseline": {
+              "ready_ms": 281.5,
+              "dom_content_loaded_ms": 194.79999999701977,
+              "ttfb_ms": 64.70000000298023
+            },
+            "candidate": {
+              "ready_ms": 246.6000000089407,
+              "dom_content_loaded_ms": 189.20000000298023,
+              "ttfb_ms": 68.1000000089407
+            }
+          },
+          {
+            "run": 5,
+            "baseline": {
+              "ready_ms": 271.70000000298023,
+              "dom_content_loaded_ms": 212.70000000298023,
+              "ttfb_ms": 64.20000000298023
+            },
+            "candidate": {
+              "ready_ms": 237.70000000298023,
+              "dom_content_loaded_ms": 174.70000000298023,
+              "ttfb_ms": 57.5
+            }
+          },
+          {
+            "run": 6,
+            "baseline": {
+              "ready_ms": 224.09999999403954,
+              "dom_content_loaded_ms": 167.09999999403954,
+              "ttfb_ms": 51.70000000298023
+            },
+            "candidate": {
+              "ready_ms": 255.90000000596046,
+              "dom_content_loaded_ms": 192.70000000298023,
+              "ttfb_ms": 75.90000000596046
+            }
+          },
+          {
+            "run": 7,
+            "baseline": {
+              "ready_ms": 227,
+              "dom_content_loaded_ms": 165.90000000596046,
+              "ttfb_ms": 39.29999999701977
+            },
+            "candidate": {
+              "ready_ms": 212.1000000089407,
+              "dom_content_loaded_ms": 156.70000000298023,
+              "ttfb_ms": 48.6000000089407
+            }
+          },
+          {
+            "run": 8,
+            "baseline": {
+              "ready_ms": 310.90000000596046,
+              "dom_content_loaded_ms": 249,
+              "ttfb_ms": 136
+            },
+            "candidate": {
+              "ready_ms": 235.5,
+              "dom_content_loaded_ms": 178.79999999701977,
+              "ttfb_ms": 65.3999999910593
+            }
+          },
+          {
+            "run": 9,
+            "baseline": {
+              "ready_ms": 238.90000000596046,
+              "dom_content_loaded_ms": 185.5,
+              "ttfb_ms": 59.900000005960464
+            },
+            "candidate": {
+              "ready_ms": 223,
+              "dom_content_loaded_ms": 163.5,
+              "ttfb_ms": 56.29999999701977
+            }
+          },
+          {
+            "run": 10,
+            "baseline": {
+              "ready_ms": 209.5,
+              "dom_content_loaded_ms": 156.6000000089407,
+              "ttfb_ms": 54.80000001192093
+            },
+            "candidate": {
+              "ready_ms": 244.20000000298023,
+              "dom_content_loaded_ms": 189.5,
+              "ttfb_ms": 73.90000000596046
+            }
+          },
+          {
+            "run": 11,
+            "baseline": {
+              "ready_ms": 223.30000001192093,
+              "dom_content_loaded_ms": 166.1000000089407,
+              "ttfb_ms": 62.5
+            },
+            "candidate": {
+              "ready_ms": 228,
+              "dom_content_loaded_ms": 169.29999999701977,
+              "ttfb_ms": 66.79999999701977
+            }
+          },
+          {
+            "run": 12,
+            "baseline": {
+              "ready_ms": 239.5,
+              "dom_content_loaded_ms": 165,
+              "ttfb_ms": 72.3999999910593
+            },
+            "candidate": {
+              "ready_ms": 220.80000001192093,
+              "dom_content_loaded_ms": 160,
+              "ttfb_ms": 81.20000000298023
+            }
+          }
+        ],
+        "payload": {
+          "baseline_wasm_decoded_bytes": 3541931,
+          "baseline_wasm_encoded_bytes": 746186,
+          "candidate_wasm_decoded_bytes": 3585629,
+          "candidate_wasm_encoded_bytes": 751814,
           "html_bytes": 183788
         }
       }
@@ -446,7 +452,7 @@
     "matching_gosx_compiler": "passed",
     "race_test_cases": 91
   },
-  "observed_at": "2026-11-04T21:49:14-08:00",
+  "observed_at": "2026-11-04T22:18:52-08:00",
   "reproduction": {
     "browser": "STORYBOARD_BROWSER_EXECUTABLE=/path/to/chrome",
     "code_hash": "git ls-files -co --exclude-standard -z -- gosx-host .github/workflows/ci.yml | sort -z | xargs -0 sha256sum | sha256sum",
@@ -456,12 +462,14 @@
   },
   "source": {
     "baseline_commit": "f6f66778fc8b82e4bb00cbbe16817d1c03f2a28a",
-    "candidate_code_sha256": "1f86ad647d0e7b350c434b4aafab397958e09936c50de478122ed9f2b6d9e6b4",
+    "bootstrap_trace_app_commit": "bb6db8937284ddbd0893a63e4066c55d1b7ec612",
+    "bootstrap_trace_code_sha256": "1f86ad647d0e7b350c434b4aafab397958e09936c50de478122ed9f2b6d9e6b4",
+    "candidate_code_sha256": "3e5ccb04202f8167fc2662f3142c30d6d7d81b03ea87b1a3bfde6c2e66d431f4",
     "gosx_pr": "https://github.com/odvcencio/gosx/pull/791",
     "gosx_runtime_commit": "581707ff65014453325e425eae4a5feba2856706",
-    "gosx_validation_commit": "ee14eef312c2be7b1df904a4e508c62797effb0c",
-    "gosx_version": "v0.59.2-0.20261105052909-ee14eef312c2",
-    "runtime_bytes_identical_after_size_target_followup": true
+    "gosx_validation_commit": "c6959da7b5459599e67bfe5d024627a40153ac70",
+    "gosx_version": "v0.59.2-0.20261105061125-c6959da7b545",
+    "sdk_javascript_bytes_identical_after_validation_followups": true
   },
   "upstream_size_audit": {
     "affected_reviewed_targets": 22,
@@ -470,5 +478,13 @@
     "core_raw_delta": 667,
     "metrics_checked": 121,
     "target_strategy": "Exact minimum passing values under the existing 5 percent error fraction, per-metric floors and caps"
+  },
+  "upstream_wire_audit": {
+    "affected_js_limits": 3,
+    "hosted_run": "https://github.com/odvcencio/gosx/actions/runs/41974306576",
+    "increase_per_limit_bytes": 157,
+    "measured_routes": 11,
+    "source_matched_loader_fixture_files": 936,
+    "strategy": "Set only the three exceeded limits to their exact hosted measurements with source-bound raise explanations under the existing policy. Validate all 11 routes and the base-to-head ratchet."
   }
 }

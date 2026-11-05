@@ -24,7 +24,7 @@ jobs:
         run: go -C gosx-host run ./cmd/native
       - if: runner.os == 'Linux'
         working-directory: gosx-host
-        run: go install "m31labs.dev/gosx/cmd/gosx@$(go list -m -f '{{.Version}}' m31labs.dev/gosx)"
+        run: go install m31labs.dev/gosx/cmd/gosx
       - run: go -C gosx-host run ./cmd/client
       - working-directory: gosx-host
         shell: bash
