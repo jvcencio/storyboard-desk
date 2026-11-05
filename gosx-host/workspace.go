@@ -587,17 +587,17 @@ func (w workspacePage) board() gosx.Node {
 				card.shot = s
 				controls = card.form("/move").sharedControls()
 			}
-			footer = el("form", controls.forShot(shotID, moveButtons[0], moveButtons[1], edit)...)
+			footer = el("form", controls.forShot(shotID, cardFooter, moveButtons[0], moveButtons[1], edit)...)
 		} else {
-			footer = cls("div", "card-move",
+			footer = el("div", cardFooter,
 				el("button", attrs("form", moveFormID, "name", "move", "value", "-1:"+shotID, "title", "Move earlier"), txt("←")),
 				el("button", attrs("form", moveFormID, "name", "move", "value", "1:"+shotID, "title", "Move later"), txt("→")), edit)
 		}
 		cards = append(cards, el("article", class,
-			el("div", cardTop, el("span", txt(fmt.Sprintf("SHOT %03d", (i+1)*10))), el("span", txt(fmt.Sprintf("%.1fs", number(s, "duration"))))),
+			el("div", cardTop, txt(fmt.Sprintf("SHOT %03d", (i+1)*10)), el("span", txt(fmt.Sprintf("%.1fs", number(s, "duration"))))),
 			w.cardArt(s, scope.ProjectID, artHref, title),
 			el("div", cardBody, el("p", eyebrow, txt(scene)), el("h2", txt(title)), el("p", txt(shotText(s, "purpose")))),
-			el("div", cardFooter, footer)))
+			footer))
 	}
 	filters := []any{attrs("method", "get", "action", "/", "class", "scene-filter"), hidden("project", shotText(w.project, "id")), hidden("view", "board"), w.selectField("", "Scene / sequence", "scene", w.scene, scenes), button("Filter")}
 	var moveForm gosx.Node

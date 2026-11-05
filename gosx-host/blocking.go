@@ -6,7 +6,7 @@ import "m31labs.dev/gosx"
 func blockingDiagram(shot ProjectDocument, aspect string) gosx.Node {
 	kind := shotText(shot, "blocking")
 	if kind == "" {
-		return el("span", txt("＋"))
+		return txt("＋")
 	}
 	viewBox := "0 0 640 360"
 	transform := ""
