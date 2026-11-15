@@ -8,73 +8,58 @@ import (
 	"math"
 	"net/url"
 	"strconv"
+	"strings"
 	"syscall/js"
 	"time"
 
+	"github.com/jvcencio/storyboard-desk/gosx-host/internal/blockingflow"
 	"m31labs.dev/gosx/client/browser"
 )
 
+// blockingClient connects the blocking page to blockingflow.Flow. It reports
+// DOM events to the flow and performs the effects the flow returns; the preview
+// and capture lifecycle lives in the flow, not in flags here.
 type blockingClient struct {
 	*eventScope
-	root, form, surface                       js.Value
-	forms                                     *formState
-	previous, mode                            string
-	version, commandRevision, captureRevision int
-	busy, pending, dragging                   bool
-	timer                                     *time.Timer
-	rafID                                     int
-	rafCallback                               js.Func
+	root, form, surface js.Value
+	forms               *formState
+	flow                *blockingflow.Flow
+	previous            string // encoded form values the scene shows now
+	dragging            bool
+	debounce, readiness *time.Timer
+	frameID             int
+	frame               js.Func
 }
 
 func mountBlocking(ctx context.Context, root js.Value, forms *formState) *blockingClient {
-	ui := &blockingClient{eventScope: newEventScope(ctx), root: root, form: query(root, "form"), surface: query(root, "[data-gosx-scene3d]"), forms: forms, mode: "plan"}
-	values := formValues(ui.form)
-	values.Set("mode", ui.mode)
-	ui.previous = values.Encode()
-	ui.on(root, "input", func(e js.Value) {
+	ui := &blockingClient{eventScope: newEventScope(ctx), root: root, form: query(root, `form[action="/blocking/save"]`),
+		surface: query(root, "[data-gosx-scene3d]"), forms: forms, flow: blockingflow.New(blockingflow.Plan)}
+	ui.previous = ui.values().Encode()
+	changed := func(e js.Value) {
 		if ui.form.Call("contains", e.Get("target")).Bool() {
-			ui.previewSoon()
+			ui.apply(ui.flow.Changed())
 		}
-	})
-	ui.on(root, "change", func(e js.Value) {
-		if ui.form.Call("contains", e.Get("target")).Bool() {
-			ui.previewSoon()
-		}
-	})
+	}
+	ui.on(root, "input", changed)
+	ui.on(root, "change", changed)
 	ui.on(root, "click", func(e js.Value) {
 		if button := closest(e.Get("target"), "[data-blocking-view]"); button.Truthy() {
-			ui.mode = attr(button, "data-blocking-view")
-			root.Call("setAttribute", "data-mode", ui.mode)
+			mode := attr(button, "data-blocking-view")
+			root.Call("setAttribute", "data-mode", mode)
 			each(root, "[data-blocking-view]", func(tab js.Value) {
-				tab.Call("setAttribute", "aria-pressed", strconv.FormatBool(attr(tab, "data-blocking-view") == ui.mode))
+				tab.Call("setAttribute", "aria-pressed", strconv.FormatBool(attr(tab, "data-blocking-view") == mode))
 			})
-			ui.previewSoon()
+			ui.apply(ui.flow.ModeChanged(blockingflow.Mode(mode)))
 		}
 		if closest(e.Get("target"), "[data-blocking-capture]").Truthy() {
-			if ui.mode != "camera" {
-				ui.status("Switch to Camera to capture its frame.")
-				return
-			}
-			if attr(root, "data-saved") != "true" || forms.protects(root) {
-				ui.status("Save blocking before capturing a poster.")
-				return
-			}
-			ui.captureRevision = -1
-			ui.previewSoon()
+			ui.apply(ui.flow.CaptureClicked(attr(root, "data-saved") == "true", forms.protects(root)))
 		}
 	})
 	ui.on(ui.surface, "gosx:scene3d:commands-applied", func(e js.Value) {
-		revision := e.Get("detail").Get("revision").Int()
-		if revision != ui.commandRevision {
-			return
-		}
-		ui.status("Preview ready")
-		if ui.captureRevision == revision {
-			ui.capture()
-		}
+		ui.apply(ui.flow.Applied(e.Get("detail").Get("revision").Int()))
 	})
 	ui.on(ui.surface, "pointerdown", func(e js.Value) {
-		if ui.mode != "plan" || e.Get("button").Int() != 0 || e.Get("target").Get("tagName").String() != "CANVAS" {
+		if ui.flow.Mode() != blockingflow.Plan || e.Get("button").Int() != 0 || e.Get("target").Get("tagName").String() != "CANVAS" {
 			return
 		}
 		e.Call("preventDefault")
@@ -97,90 +82,91 @@ func mountBlocking(ctx context.Context, root js.Value, forms *formState) *blocki
 func (ui *blockingClient) field(name string) js.Value {
 	return ui.form.Get("elements").Call("namedItem", name)
 }
-func (ui *blockingClient) status(message string) {
-	setText(query(ui.root, "#blocking-status"), message)
+
+// values returns the blocking form together with the stage view.
+func (ui *blockingClient) values() url.Values {
+	values := formValues(ui.form)
+	values.Set("mode", string(ui.flow.Mode()))
+	return values
 }
 
+// apply performs what the flow asked for. Effects that read the canvas run
+// before this function returns, inside the animation frame that requested them.
+func (ui *blockingClient) apply(effect blockingflow.Effect) {
+	if ui.disposed {
+		return
+	}
+	if effect.CancelFrame {
+		ui.cancelFrame()
+	}
+	if effect.Status != "" {
+		setText(query(ui.root, "#blocking-status"), effect.Status)
+	}
+	if effect.Debounce {
+		if ui.debounce != nil {
+			ui.debounce.Stop()
+		}
+		ui.debounce = time.AfterFunc(80*time.Millisecond, ui.previewDue)
+	}
+	if effect.Fetch {
+		ui.fetch()
+	}
+	if effect.Frame {
+		ui.requestFrame()
+	}
+	if effect.Save {
+		ui.save()
+	}
+	if effect.Redo {
+		ui.previewDue()
+	}
+}
+
+func (ui *blockingClient) previewDue() {
+	if !ui.disposed {
+		ui.apply(ui.flow.PreviewDue(ui.form.Call("checkValidity").Bool()))
+	}
+}
+
+// waitReady polls for the 3D surface. After ten seconds it reports the scene
+// unavailable and keeps looking once a second, so a slow device still recovers.
 func (ui *blockingClient) waitReady(attempt int) {
 	if ui.disposed {
 		return
 	}
 	if attr(ui.surface, "data-gosx-scene3d-ready") == "true" {
-		ui.status("Preview ready")
 		ui.root.Call("setAttribute", "data-blocking-ready", "true")
-		if ui.version > 0 {
-			ui.preview()
-		}
+		ui.apply(ui.flow.SceneReady())
 		return
 	}
+	delay := 100 * time.Millisecond
 	if attempt >= 100 {
-		ui.status("The 3D preview is unavailable. Positions can still be saved.")
-		return
+		if attempt == 100 {
+			ui.apply(ui.flow.SceneUnavailable())
+		}
+		delay = time.Second
 	}
-	ui.timer = time.AfterFunc(100*time.Millisecond, func() { ui.waitReady(attempt + 1) })
+	ui.readiness = time.AfterFunc(delay, func() { ui.waitReady(attempt + 1) })
 }
 
-func (ui *blockingClient) previewSoon() {
-	ui.version++
-	ui.status("Updating preview…")
-	if ui.captureRevision > 0 {
-		ui.captureRevision = 0
-	}
-	if attr(ui.root, "data-blocking-ready") != "true" {
-		return
-	}
-	if ui.timer != nil {
-		ui.timer.Stop()
-	}
-	ui.timer = time.AfterFunc(80*time.Millisecond, ui.preview)
-}
-
-func (ui *blockingClient) preview() {
-	if ui.disposed {
-		return
-	}
-	if ui.busy {
-		ui.pending = true
-		return
-	}
-	if !ui.form.Call("checkValidity").Bool() {
-		ui.status("Check the highlighted fields to update the preview.")
-		return
-	}
-	ui.busy = true
-	version := ui.version
-	values := formValues(ui.form)
-	values.Set("mode", ui.mode)
+func (ui *blockingClient) fetch() {
+	values := ui.values()
 	current := values.Encode()
 	values.Set("previous", ui.previous)
-	ui.status("Updating preview…")
+	body := []byte(values.Encode())
 	go func() {
-		defer func() {
-			ui.busy = false
-			if ui.pending && !ui.disposed {
-				ui.pending = false
-				ui.preview()
-			}
-		}()
-		response, err := browser.Fetch(ui.ctx, browser.FetchRequest{URL: "/blocking/preview", Method: "POST", ContentType: "application/x-www-form-urlencoded", Body: []byte(values.Encode())})
-		if ui.disposed || version != ui.version {
-			ui.pending = true
+		response, err := browser.Fetch(ui.ctx, browser.FetchRequest{URL: "/blocking/preview", Method: "POST", ContentType: "application/x-www-form-urlencoded", Body: body})
+		if ui.disposed {
 			return
 		}
-		if err != nil || response.Status != 200 {
-			ui.status("Preview could not update. Check the fields and try again.")
-			ui.captureRevision = 0
-			return
+		effect := ui.flow.PreviewFetched(err == nil && response.Status == 200)
+		if effect.Send > 0 {
+			ui.previous = current
+			commands := js.Global().Get("JSON").Call("parse", string(response.Body)).Get("commands")
+			detail := map[string]any{"revision": effect.Send, "commands": commands}
+			ui.surface.Call("dispatchEvent", js.Global().Get("CustomEvent").New("gosx:scene3d:commands", map[string]any{"detail": detail}))
 		}
-		data := js.Global().Get("JSON").Call("parse", string(response.Body))
-		ui.previous = current
-		ui.commandRevision++
-		if ui.captureRevision == -1 {
-			ui.captureRevision = ui.commandRevision
-		}
-		detail := map[string]any{"revision": ui.commandRevision, "commands": data.Get("commands")}
-		event := js.Global().Get("CustomEvent").New("gosx:scene3d:commands", map[string]any{"detail": detail})
-		ui.surface.Call("dispatchEvent", event)
+		ui.apply(effect)
 	}()
 }
 
@@ -189,6 +175,9 @@ func (ui *blockingClient) place(e js.Value, selectNearest bool) {
 	box := canvas.Call("getBoundingClientRect")
 	x := (e.Get("clientX").Float()-box.Get("left").Float())/box.Get("width").Float()*16 - 8
 	z := (e.Get("clientY").Float()-box.Get("top").Float())/box.Get("height").Float()*10 - 5
+	if !finite(x) || !finite(z) {
+		return // the canvas has no size yet
+	}
 	index, _ := strconv.Atoi(query(ui.root, `input[name="selected_actor"]:checked`).Get("value").String())
 	if selectNearest {
 		count, _ := strconv.Atoi(ui.field("actor_count").Get("value").String())
@@ -208,46 +197,58 @@ func (ui *blockingClient) place(e js.Value, selectNearest bool) {
 	}
 }
 
-// GoSX schedules its draw before commands-applied. Capturing in the next
-// animation callback reads that draw before WebGL's buffer is discarded.
-func (ui *blockingClient) capture() {
-	if ui.rafID != 0 {
-		js.Global().Call("cancelAnimationFrame", ui.rafID)
-		ui.rafCallback.Release()
-	}
-	version := ui.version
-	ui.captureRevision = 0
-	ui.rafCallback = js.FuncOf(func(js.Value, []js.Value) any {
-		ui.rafID = 0
-		defer ui.rafCallback.Release()
-		if ui.disposed || ui.version != version || ui.forms.protects(ui.root) {
-			return nil
-		}
-		image := query(ui.surface, "canvas").Call("toDataURL", "image/png").String()
-		values := formValues(ui.form)
-		values.Set("image", image)
-		ui.status("Saving camera poster…")
-		go ui.savePoster(values)
+// GoSX schedules its draw before commands-applied. The next animation frame
+// reads that draw before WebGL discards its buffer.
+func (ui *blockingClient) requestFrame() {
+	ui.cancelFrame()
+	var callback js.Func
+	callback = js.FuncOf(func(js.Value, []js.Value) any {
+		ui.frameID = 0
+		callback.Release()
+		ui.apply(ui.flow.Framed(ui.forms.protects(ui.root)))
 		return nil
 	})
-	ui.rafID = js.Global().Call("requestAnimationFrame", ui.rafCallback).Int()
+	ui.frame = callback
+	ui.frameID = js.Global().Call("requestAnimationFrame", callback).Int()
 }
 
-func (ui *blockingClient) savePoster(values url.Values) {
-	response, err := browser.Fetch(ui.ctx, browser.FetchRequest{URL: "/blocking/poster", Method: "POST", ContentType: "application/x-www-form-urlencoded", Body: []byte(values.Encode())})
-	if ui.disposed {
-		return
+func (ui *blockingClient) cancelFrame() {
+	if ui.frameID != 0 {
+		js.Global().Call("cancelAnimationFrame", ui.frameID)
+		ui.frame.Release()
+		ui.frameID = 0
 	}
-	if err != nil {
-		ui.status("Poster save could not be confirmed. Reopen the shot to check its saved poster.")
-		return
-	}
-	if response.Status != 200 {
-		ui.status(string(response.Body))
-		return
-	}
-	data := js.Global().Get("JSON").Call("parse", string(response.Body))
-	ui.field("revision").Set("value", strconv.Itoa(data.Get("revision").Int()))
+}
+
+// save reads the canvas now, while the frame the flow asked for is current,
+// then posts it.
+func (ui *blockingClient) save() {
+	values := formValues(ui.form)
+	values.Set("image", query(ui.surface, "canvas").Call("toDataURL", "image/png").String())
+	body := []byte(values.Encode())
+	go func() {
+		response, err := browser.Fetch(ui.ctx, browser.FetchRequest{URL: "/blocking/poster", Method: "POST", ContentType: "application/x-www-form-urlencoded", Body: body})
+		if ui.disposed {
+			return
+		}
+		if err != nil {
+			ui.apply(ui.flow.PosterDone(false, ""))
+			return
+		}
+		if response.Status != 200 {
+			ui.apply(ui.flow.PosterDone(false, strings.TrimSpace(string(response.Body))))
+			return
+		}
+		data := js.Global().Get("JSON").Call("parse", string(response.Body))
+		ui.field("revision").Set("value", strconv.Itoa(data.Get("revision").Int()))
+		ui.showPoster(data.Get("url"))
+		ui.apply(ui.flow.PosterDone(true, ""))
+	}()
+}
+
+// showPoster displays the new poster and offers it as a composition sketch.
+// A note about a sketch made from the previous poster no longer applies.
+func (ui *blockingClient) showPoster(source js.Value) {
 	poster := query(ui.root, ".blocking-poster")
 	if !poster.Truthy() {
 		poster = js.Global().Get("document").Call("createElement", "img")
@@ -255,18 +256,26 @@ func (ui *blockingClient) savePoster(values url.Values) {
 		poster.Set("alt", "Saved camera blocking study")
 		query(ui.root, "#blocking-status").Call("after", poster)
 	}
-	poster.Set("src", data.Get("url"))
-	ui.status("Camera poster saved")
+	poster.Set("src", source)
+	if note := query(ui.root, "[data-blocking-study-note]"); note.Truthy() {
+		note.Call("remove")
+	}
+	if offer := query(ui.root, "[data-blocking-study-offer]"); offer.Truthy() {
+		offer.Call("removeAttribute", "hidden")
+		// Every form on the page carries the project revision, and the poster
+		// request just advanced it.
+		if revision := query(offer, `input[name="revision"]`); revision.Truthy() {
+			revision.Set("value", ui.field("revision").Get("value"))
+		}
+	}
 }
 
 func (ui *blockingClient) Dispose() {
-	if ui.timer != nil {
-		ui.timer.Stop()
+	for _, timer := range []*time.Timer{ui.debounce, ui.readiness} {
+		if timer != nil {
+			timer.Stop()
+		}
 	}
-	if ui.rafID != 0 {
-		js.Global().Call("cancelAnimationFrame", ui.rafID)
-		ui.rafCallback.Release()
-		ui.rafID = 0
-	}
+	ui.cancelFrame()
 	ui.eventScope.Dispose()
 }

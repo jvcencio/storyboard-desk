@@ -32,6 +32,9 @@
 !/gosx-host/internal/clientwire/
 /gosx-host/internal/clientwire/*
 !/gosx-host/internal/clientwire/*.go
+!/gosx-host/internal/blockingflow/
+/gosx-host/internal/blockingflow/*
+!/gosx-host/internal/blockingflow/*.go
 !/gosx-host/cloud_catalog.json
 !/gosx-host/cmd/
 /gosx-host/cmd/*

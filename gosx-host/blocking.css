@@ -23,6 +23,11 @@
 .blocking-inspector input[type="color"] { height: 36px; padding: 3px; }
 .blocking-inspector form > button { position: sticky; top: -18px; z-index: 2; width: 100%; margin-bottom: 18px; }
 .blocking-actor-select input { width: 16px; height: 16px; margin: 0; }
+.blocking-inspector .blocking-remove { grid-column: 1 / -1; justify-self: start; padding: 6px 12px; font-size: 12px; }
+.blocking-add { margin: 0 0 20px; }
+.blocking-add button { width: 100%; }
+.blocking-study { max-width: 420px; margin-top: 12px; }
+.blocking-study[hidden] { display: none; }
 .blocking-poster { width: 220px; max-width: 100%; margin-top: 16px; border: 1px solid #b9c1ad; border-radius: 6px; }
 #blocking-status { min-height: 24px; color: #35483d; }
 .blocking-toolbar button:focus-visible, .blocking-inspector input:focus-visible { outline: 3px solid #ad643b; outline-offset: 3px; }

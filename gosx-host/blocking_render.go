@@ -45,7 +45,6 @@ func blockingRender(spec blockingScene, aspect, view string) (scene.Props, error
 	if err := box("stage-floor", "#ded7c5", 0, -.09, 0, 16, .15, 10); err != nil {
 		return scene.Props{}, err
 	}
-	_ = box("stage-bench", "#b7b6a5", 0, .42, -2, 2.8, .84, .8)
 	for i := -8; i <= 8; i++ {
 		_ = box(fmt.Sprintf("grid-x-%d", i), "#c8c2b3", float64(i), -.008, 0, .015, .008, 10)
 	}

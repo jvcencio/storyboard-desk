@@ -12,6 +12,8 @@ func (h *workspaceHandler) coreAction(endpoint string) action.Handler {
 	switch endpoint {
 	case "/blocking/save":
 		return h.saveBlockingAction
+	case "/blocking/sketch":
+		return h.useBlockingPosterAction
 	case "/save":
 		return h.saveShotAction
 	case "/project":

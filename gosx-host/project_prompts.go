@@ -36,6 +36,10 @@ func promptPackage(p, s ProjectDocument, provider string) ProjectDocument {
 	composition := fmt.Sprintf("%s\n%s\n%s\n%s\nCreate a single clear STARTING composition for this story beat. Do not depict a later action or ending state.", framing, shotText(s, "composition"), shared, v)
 	enhancement := fmt.Sprintf("%s\n\nAttach the selected composition image and the approved appearance references.\nPreserve the composition, subject placement, pose, framing and important props in the attached sketch.\n%s\nCOMPOSITION TO PRESERVE: %s\nImprove the surface detail and apply the specified visual treatment. Keep the result suitable as the first frame of an animation.", identity, shared, shotText(s, "composition"))
 	animation := fmt.Sprintf("%s\n\nAnimate the attached approved starter image.\nTARGET EDIT LENGTH: %g seconds. Choose a supported generation length in %s; trim the selected take to the target during review.\nSUBJECT ACTION AND TIMING: %s\nCAMERA: %s\nSOUND: %s\n%s\nENDING / CUT: %s\nMaintain the subject, wardrobe, objects and environment established in the starter image.", identity, number(s, "duration"), strings.ToUpper(provider[:min(1, len(provider))])+provider[min(1, len(provider)):], shotText(s, "action"), shotText(s, "camera"), shotText(s, "sound"), shared, shotText(s, "transition"))
+	if legend := blockingLegend(s); legend != "" {
+		composition += "\n" + legend
+		enhancement += "\n" + legend
+	}
 	if v != "" {
 		enhancement += "\nSTART FRAME CONTRACT\n" + v
 	}

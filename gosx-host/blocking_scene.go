@@ -8,6 +8,7 @@ import (
 	"math"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 type blockingActor struct {
@@ -162,4 +163,184 @@ func mergeBlockingScene(old json.RawMessage, spec blockingScene) json.RawMessage
 	previous["version"], previous["material"] = known["version"], known["material"]
 	previous["actors"], previous["camera"] = rawValue(actors), rawValue(camera)
 	return rawValue(previous)
+}
+
+const blockingMaxActors = 8
+
+// blockingPalette gives each new actor a colour with its own plain name, so a
+// prompt can say "the teal figure" without ambiguity.
+var blockingPalette = []string{"#bd754b", "#56857c", "#4f6fa8", "#8a5a8c", "#b9a13d", "#b04a48", "#6f8f3f", "#c46a94"}
+
+// addBlockingActor appends a standing actor with an unused identity, an unused
+// colour name and a free spot on the stage.
+func addBlockingActor(spec blockingScene) (blockingScene, error) {
+	if len(spec.Actors) >= blockingMaxActors {
+		return spec, fmt.Errorf("A blocking scene supports up to %d actors", blockingMaxActors)
+	}
+	ids, names := map[string]bool{}, map[string]bool{}
+	for _, actor := range spec.Actors {
+		ids[actor.ID], names[colourName(actor.Colour)] = true, true
+	}
+	actor := blockingActor{Height: 1.75, Colour: blockingPalette[len(spec.Actors)%len(blockingPalette)]}
+	for letter := 'a'; letter <= 'z'; letter++ {
+		if id := "actor-" + string(letter); !ids[id] {
+			actor.ID, actor.Name = id, "Actor "+strings.ToUpper(string(letter))
+			break
+		}
+	}
+	for _, colour := range blockingPalette {
+		if !names[colourName(colour)] {
+			actor.Colour = colour
+			break
+		}
+	}
+	// Try the centre line first, then alternate outwards, nearer the camera.
+	for _, spot := range [][2]float64{{0, 1}, {1.5, 1}, {-1.5, 1}, {3, 1}, {-3, 1}, {0, 2.5}, {1.5, 2.5}, {-1.5, 2.5}, {3, 2.5}, {-3, 2.5}} {
+		free := true
+		for _, other := range spec.Actors {
+			free = free && math.Hypot(other.X-spot[0], other.Z-spot[1]) >= .75
+		}
+		if free {
+			actor.X, actor.Z = spot[0], spot[1]
+			break
+		}
+	}
+	spec.Actors = append(append([]blockingActor{}, spec.Actors...), actor)
+	return spec, nil
+}
+
+// removeBlockingActor drops the actor at index. A scene keeps at least one.
+func removeBlockingActor(spec blockingScene, index int) (blockingScene, error) {
+	if index < 0 || index >= len(spec.Actors) {
+		return spec, fmt.Errorf("Choose an actor in this scene to remove")
+	}
+	if len(spec.Actors) == 1 {
+		return spec, fmt.Errorf("A blocking scene keeps at least one actor")
+	}
+	actors := append([]blockingActor{}, spec.Actors[:index]...)
+	spec.Actors = append(actors, spec.Actors[index+1:]...)
+	return spec, nil
+}
+
+// colourName gives a #rrggbb colour the plain word an image model understands.
+func colourName(hexColour string) string {
+	if !blockingColour.MatchString(hexColour) {
+		return "grey"
+	}
+	n, _ := strconv.ParseUint(hexColour[1:], 16, 32)
+	r, g, b := float64(n>>16&255)/255, float64(n>>8&255)/255, float64(n&255)/255
+	high, low := math.Max(r, math.Max(g, b)), math.Min(r, math.Min(g, b))
+	light, spread := (high+low)/2, high-low
+	saturation := 0.0
+	if spread > 0 {
+		saturation = spread / (1 - math.Abs(2*light-1))
+	}
+	switch {
+	case light < .12:
+		return "black"
+	case saturation < .12 && light > .85:
+		return "white"
+	case saturation < .12:
+		return "grey"
+	}
+	hue := 0.0
+	switch high {
+	case r:
+		hue = 60 * math.Mod((g-b)/spread, 6)
+	case g:
+		hue = 60 * ((b-r)/spread + 2)
+	default:
+		hue = 60 * ((r-g)/spread + 4)
+	}
+	if hue < 0 {
+		hue += 360
+	}
+	switch {
+	case hue < 15 || hue >= 335:
+		return "red"
+	case hue < 40 && light < .32:
+		return "brown"
+	case hue < 40:
+		return "orange"
+	case hue < 65:
+		return "yellow"
+	case hue < 155:
+		return "green"
+	case hue < 195:
+		return "teal"
+	case hue < 255:
+		return "blue"
+	case hue < 310:
+		return "purple"
+	}
+	return "pink"
+}
+
+// blockingPosterState says what a shot's saved camera poster is worth. The
+// poster record outlives scene edits, so "has a poster" and "the poster shows
+// the saved scene" are different facts; every reader goes through here.
+type blockingPosterState int
+
+const (
+	blockingPosterNone    blockingPosterState = iota // nothing captured
+	blockingPosterStale                              // captured from an earlier scene or format
+	blockingPosterCurrent                            // shows the saved scene in the project format
+)
+
+func blockingPoster(project, shot ProjectDocument) (ProjectDocument, blockingPosterState) {
+	poster := object(shot, "blocking_poster")
+	if shotText(poster, "path") == "" {
+		return nil, blockingPosterNone
+	}
+	if len(shot["blocking_scene"]) == 0 || shotText(poster, "scene_version") != blockingVersion(shot, shotText(project, "aspect")) {
+		return poster, blockingPosterStale
+	}
+	return poster, blockingPosterCurrent
+}
+
+// blockingStudy returns the active sketch take that was made from a poster
+// with this identity, or nil.
+func blockingStudy(shot ProjectDocument, job string) ProjectDocument {
+	for _, asset := range list(shot, "assets") {
+		if shotText(object(asset, "blocking_study"), "job_id") == job {
+			return asset
+		}
+	}
+	return nil
+}
+
+func blockingStudyJob(poster ProjectDocument) string {
+	version, hash := shotText(poster, "scene_version"), shotText(poster, "sha256")
+	if len(version) < 16 || len(hash) < 16 {
+		return ""
+	}
+	return "blocking-" + version[:16] + "-" + hash[:16]
+}
+
+// blockingLegend tells an image model how to read the shot's selected
+// blocking study: which placeholder figure is which actor, and what to keep.
+// It is empty unless the selected sketch came from the blocking editor, so
+// prompts for every other shot stay byte-identical.
+func blockingLegend(shot ProjectDocument) string {
+	selected := shotText(shot, "selected_sketch")
+	if selected == "" {
+		return ""
+	}
+	for _, asset := range list(shot, "assets") {
+		study := object(asset, "blocking_study")
+		if shotText(asset, "id") != selected || study == nil || shotText(asset, "binned_at") != "" {
+			continue
+		}
+		figures := []string{}
+		for _, actor := range list(study, "actors") {
+			figures = append(figures, fmt.Sprintf("the %s figure is %s", shotText(actor, "colour_name"), shotText(actor, "name")))
+		}
+		if len(figures) == 0 {
+			return ""
+		}
+		return "BLOCKING STUDY: The attached blocking study fixes the camera angle and where each figure stands and faces. " +
+			"Its figures are placeholders, not character designs: " + strings.Join(figures, "; ") + ". " +
+			"Replace each figure with that character and keep its position, scale and facing. Do not draw the floor grid or the placeholder shapes."
+	}
+	return ""
 }

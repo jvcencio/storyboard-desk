@@ -255,7 +255,7 @@ func (room *storyboardRoom) render(w http.ResponseWriter, r *http.Request, statu
 	children = append(children, board)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(status)
-	fmt.Fprint(w, gosx.RenderHTML(workspaceDocument(renderer, r, status, cls("main", "workspace room-workspace", children...), attrs())))
+	fmt.Fprint(w, gosx.RenderHTML(workspaceDocument(renderer, r, status, cls("main", "workspace room-workspace", children...), attrs(), false)))
 }
 
 func shareablePreview(rel string) bool {

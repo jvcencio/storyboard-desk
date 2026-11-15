@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/chromedp/chromedp"
@@ -29,7 +30,10 @@ func TestWorkspaceGoClientBlocking(t *testing.T) {
 			t.Fatalf("%s: %v", name, err)
 		}
 	}
-	step("open plan", chromedp.Navigate(origin+pageURL(id, "blocking", sid, "")), browserReady(),
+	// Set the viewport here, not only on the launcher: a harness that attaches
+	// to a running browser ignores the window size, and the Plan click below
+	// would then miss the canvas.
+	step("open plan", chromedp.EmulateViewport(1440, 960), chromedp.Navigate(origin+pageURL(id, "blocking", sid, "")), browserReady(),
 		chromedp.Poll(`document.querySelector('[data-blocking-editor]').dataset.blockingReady === 'true'`, nil))
 	proof := os.Getenv("STORYBOARD_BLOCKING_PROOF_DIR")
 	capture := func(name string) {
@@ -102,5 +106,31 @@ func TestWorkspaceGoClientBlocking(t *testing.T) {
 	if sceneRequests != 0 {
 		t.Fatal("ordinary board fetched the 3D runtime", sceneRequests)
 	}
-	t.Log("Plan and camera rendered with the zero Plan origin retained. Numeric editing and a real Plan pointer click persisted actor X=-2, Z=1.5. The actual camera PNG was saved, narrow layout fit, and the board loaded its cached poster without Scene3D requests.")
+	ready := chromedp.Poll(`document.querySelector('[data-blocking-editor]').dataset.blockingReady === 'true'`, nil)
+	step("reopen blocking", chromedp.EmulateViewport(1440, 960), chromedp.Navigate(origin+pageURL(id, "blocking", sid, "")), browserReady(), ready,
+		chromedp.WaitVisible(`[data-blocking-study-offer] button`, chromedp.ByQuery))
+	step("use poster as sketch", chromedp.Click(`[data-blocking-study-offer] button`, chromedp.ByQuery),
+		chromedp.WaitVisible(`[data-blocking-study-note]`, chromedp.ByQuery), browserReady(), ready)
+	project, _ = store.Load(id)
+	shot, _ = findShot(project, sid)
+	study := blockingStudy(shot, blockingStudyJob(object(shot, "blocking_poster")))
+	if study == nil || shotText(shot, "selected_sketch") != shotText(study, "id") || shotText(study, "kind") != "sketch" {
+		t.Fatal("the poster did not become the selected sketch take", jsonText(study))
+	}
+	if legend := blockingLegend(shot); !strings.Contains(legend, "the orange figure is Actor A") {
+		t.Fatal("the prompt legend does not describe the study", legend)
+	}
+	step("add actor", chromedp.Click(`button[name="op"][value="add-actor"]`, chromedp.ByQuery),
+		chromedp.WaitVisible(`input[name="actor.2.x"]`, chromedp.ByQuery), browserReady(), ready)
+	var offerHidden bool
+	step("stale poster offer", chromedp.Evaluate(`document.querySelector('[data-blocking-study-offer]').hidden`, &offerHidden))
+	project, _ = store.Load(id)
+	shot, _ = findShot(project, sid)
+	if spec, err = readBlockingScene(shot); err != nil || len(spec.Actors) != 3 || !offerHidden {
+		t.Fatal("add actor", spec, err, offerHidden)
+	}
+	if _, state := blockingPoster(project, shot); state != blockingPosterStale {
+		t.Fatal("a poster of two actors still counts as current for three", state)
+	}
+	t.Log("Plan and camera rendered with the zero Plan origin retained. Numeric editing and a real Plan pointer click persisted actor X=-2, Z=1.5. The actual camera PNG was saved, narrow layout fit, and the board loaded its cached poster without Scene3D requests. The poster became the selected sketch take through the page's own button, and Add actor saved a third actor and retired the poster.")
 }

@@ -325,6 +325,14 @@ func (s *ProjectStore) importMedia(id, sid, kind, filename string, length int64,
 				if shotText(generation, "integration") == "local" {
 					record["local_generation"] = rawValue(generation)
 					record["provider"] = rawValue("Draw Things")
+				} else if shotText(generation, "integration") == "blocking" {
+					record["blocking_study"] = rawValue(generation)
+					record["provider"] = rawValue("Blocking editor")
+					// Selecting a sketch changes the image fingerprint. Select the
+					// study only when that cannot end an approval the person gave.
+					if !imageApproved(p, shot) {
+						shot["selected_sketch"] = rawValue(aid)
+					}
 				} else {
 					record["cloud_generation"] = rawValue(generation)
 					record["provider"] = rawValue("OpenRouter · Google")
@@ -457,8 +465,11 @@ func (s *ProjectStore) ReviewClip(id, sid, aid string, rev int, status, setup, p
 }
 
 func generationProperty(p ProjectDocument) string {
-	if shotText(p, "integration") == "local" {
+	switch shotText(p, "integration") {
+	case "local":
 		return "local_generation"
+	case "blocking":
+		return "blocking_study"
 	}
 	return "cloud_generation"
 }

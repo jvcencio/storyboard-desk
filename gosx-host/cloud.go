@@ -256,6 +256,9 @@ func cloudImages(p ProjectDocument) []ProjectDocument {
 					r[k] = v
 				}
 				r["label"] = rawValue(fmt.Sprintf("%s · %s take %g", shotText(s, "title"), kind, number(a, "take")))
+				if object(a, "blocking_study") != nil {
+					r["label"] = rawValue(fmt.Sprintf("%s · blocking study, sketch take %g (layout reference)", shotText(s, "title"), number(a, "take")))
+				}
 				rows = append(rows, r)
 			} else if kind == "clip" && shotText(a, "poster_path") != "" && object(a, "source_ref") == nil {
 				rows = append(rows, ProjectDocument{"id": rawValue("poster-" + shotText(a, "id")), "path": a["poster_path"], "sha256": rawOr(a, "poster_sha256", nil), "label": rawValue(fmt.Sprintf("%s · clip %g poster (layout reference)", shotText(s, "title"), number(a, "take")))})

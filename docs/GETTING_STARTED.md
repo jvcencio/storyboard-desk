@@ -20,6 +20,18 @@ Choose **Preferred source ranges** and export a selects reel. You get one silent
 
 The separate **Export editor package** action can include individual silent source ranges, handles, song/cue metadata and Final Cut XML. Actual import behavior depends on your editor; the simple MP4 reel is the most direct route for the external editing workflow.
 
+## Block a shot before you generate
+
+Image and video models follow a picture of the staging better than a paragraph about it. Blocking gives them that picture.
+
+1. Open a shot and choose **Edit blocking**. You get a stage measured in metres, with a **Plan** view from above and a **Camera** view.
+2. In **Plan**, pick an actor and click or drag to place them. Set which way they face, their height and their colour. **Add actor** and **Remove** change who is in the shot. Name each actor after the character.
+3. Set the camera's position, pan, tilt and lens, then check the frame in **Camera**.
+4. **Save blocking**, switch to **Camera**, and choose **Capture camera poster**. The poster is tied to the scene you saved; change the scene and you capture a new one.
+5. Choose **Use poster as composition sketch**. The poster becomes a sketch take, and the shot's image prompt gains a short legend, for example "the orange figure is Mara". In **Generate**, tick the blocking study next to your character references.
+
+The figures are placeholders. The legend tells the model to replace each one with the named character and to keep its position, scale and facing. If the shot already has an approved starter image, the new sketch is added without being selected, so your approval stays in force until you choose to select it.
+
 ## Generate an image, then a video
 
 1. Start a session with your own key using `./build/gosx/storyboard-desk-go -ask-openrouter-key` (Windows: use the `.exe`). No key is saved by this command.

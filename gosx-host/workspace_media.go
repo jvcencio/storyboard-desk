@@ -185,8 +185,7 @@ func (w workspacePage) cardArt(s ProjectDocument, projectID, href, title string)
 		hasPreview = hasPreview && shareablePreview(path)
 	}
 	if !hasPreview {
-		poster := object(s, "blocking_poster")
-		if !w.shared && shotText(poster, "scene_version") == blockingVersion(s, shotText(w.project, "aspect")) && shotText(poster, "path") != "" {
+		if poster, state := blockingPoster(w.project, s); !w.shared && state == blockingPosterCurrent {
 			return el("a", attrs("href", href, "class", "card-art"), el("img", attrs("src", mediaURL(projectID, shotText(poster, "path")), "alt", "Blocking study for "+title, "loading", "lazy")))
 		}
 		return el("a", attrs("href", href, "class", "card-art"), blockingDiagram(s, shotText(w.project, "aspect")))

@@ -68,13 +68,16 @@ func editorDocument(renderer *island.Renderer, w workspacePage, r *http.Request,
 	} else {
 		body = w.render()
 	}
-	return workspaceDocument(renderer, r, status, body, attrs("data-native-save", strconv.FormatBool(w.nativeSave)))
+	return workspaceDocument(renderer, r, status, body, attrs("data-native-save", strconv.FormatBool(w.nativeSave)), w.view == "blocking")
 }
 
-func workspaceDocument(renderer *island.Renderer, r *http.Request, status int, body gosx.Node, bodyAttrs gosx.AttrList) gosx.Node {
+// blocking says the body is the blocking editor. The caller decides it from
+// the view it resolved, never from the URL: a room renders the board whatever
+// the URL asks for, and does not serve the blocking stylesheet.
+func workspaceDocument(renderer *island.Renderer, r *http.Request, status int, body gosx.Node, bodyAttrs gosx.AttrList, blocking bool) gosx.Node {
 	summary := renderer.Summary()
 	var blockingStyle gosx.Node
-	if r.URL.Query().Get("view") == "blocking" {
+	if blocking {
 		blockingStyle = el("link", attrs("rel", "stylesheet", "href", "/blocking.css"))
 	}
 	var engines gosx.Node

@@ -70,6 +70,15 @@ func TestStoryboardRoomAccessScope(t *testing.T) {
 		strings.Contains(fragment, "gosx-manifest") || strings.Contains(fragment, "<head") {
 		t.Fatal("room updates must return the authorized board without bootstrapping another runtime")
 	}
+	// A room renders the board whatever view the URL names, and its routes
+	// stay closed to the blocking editor.
+	if page := send(request("GET", "/?view=blocking&shot=first", nil, cookie, ""), 200).Body.String(); strings.Contains(page, "/blocking.css") || strings.Contains(page, "data-blocking-editor") {
+		t.Fatal("a room page asked for the blocking editor or its stylesheet")
+	}
+	send(request("GET", "/blocking.css", nil, cookie, ""), 404)
+	for _, path := range []string{"/blocking/save", "/blocking/sketch", "/blocking/preview", "/blocking/poster"} {
+		send(request("POST", path, url.Values{"project": {id}, "shot": {"first"}}, cookie, origin.String()), 404)
+	}
 	foreignHost := request("GET", "/", nil, cookie, "")
 	foreignHost.Host = "other.example.test"
 	foreignHost.Header.Set("X-Forwarded-Host", origin.Host)
