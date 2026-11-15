@@ -9,7 +9,7 @@ require (
 	github.com/go-json-experiment/json v0.0.0-20260214004413-d219187c3433
 	golang.org/x/net v0.52.0
 	golang.org/x/sys v0.43.0
-	m31labs.dev/gosx v0.59.2-0.20261105061125-c6959da7b545
+	m31labs.dev/gosx v0.60.1-0.20261115194448-28cec7f74780
 )
 
 require (
@@ -28,7 +28,7 @@ require (
 	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/tools v0.42.0 // indirect
 	m31labs.dev/prism v0.1.3 // indirect
-	m31labs.dev/selena v0.5.3-0.20261023001026-65ca73e1b8b1 // indirect
+	m31labs.dev/selena v0.5.3 // indirect
 	m31labs.dev/turboquant v0.2.1 // indirect
 )
 

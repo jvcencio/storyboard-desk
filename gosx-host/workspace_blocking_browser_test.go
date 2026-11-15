@@ -145,6 +145,20 @@ func TestWorkspaceGoClientBlocking(t *testing.T) {
 	capture("poses")
 	step("poses in plan", chromedp.Click(`[data-blocking-view="plan"]`, chromedp.ByQuery), browserText("#blocking-status", "Preview ready"))
 	capture("poses-plan")
+	// The figures read the key light's shadow map through the Selena lighting
+	// chunk. Without that chunk, or with a figure on its fallback material, the
+	// picture still looks plausible, so check both.
+	var shading struct {
+		Lighting bool   `json:"lighting"`
+		Fallback string `json:"fallback"`
+	}
+	step("shadow shading", chromedp.Evaluate(`(() => {
+			const stage = document.querySelector('.blocking-surface');
+			return {lighting: !!window.__gosx_scene3d_selena_lighting_api, fallback: stage.getAttribute('data-gosx-scene3d-render-mesh-material-fallback') || ''};
+		})()`, &shading))
+	if !shading.Lighting || (shading.Fallback != "" && shading.Fallback != "0") {
+		t.Fatalf("the figures do not read the shadow map: lighting chunk loaded %v, material fallbacks %q", shading.Lighting, shading.Fallback)
+	}
 	response, err = chromedp.RunResponse(ctx, chromedp.Click(`form[action="/blocking/save"] button[type="submit"]`, chromedp.ByQuery))
 	if err != nil || response.Status != 200 {
 		t.Fatalf("save poses: %+v %v", response, err)

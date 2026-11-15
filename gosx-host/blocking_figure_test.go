@@ -197,36 +197,3 @@ func TestKeyLightFollowsTheShotCamera(t *testing.T) {
 		t.Errorf("an unknown light gave a direction of length %v", light.distance(point3{}))
 	}
 }
-
-// A shadow falls on the floor on the far side of the caster from the light,
-// and a limb's strip is exactly as wide as the ellipses at its ends reach.
-func TestShadowsFallAwayFromTheLight(t *testing.T) {
-	light := point3{-1, 1, 1}.unit() // from the left, above and in front
-	caster := blockingShadowCaster{toLight: light}
-	spot := caster.ground(point3{0, 1, 0})
-	if math.Abs(spot.Y) > 1e-12 || spot.X < 0.9 || spot.Z > -0.9 {
-		t.Fatalf("a ball 1 m up, lit from the front left, shadows %+v", spot)
-	}
-	away, stretch := caster.away()
-	if away.X < 0.6 || away.Z > -0.6 || math.Abs(stretch-1/light.Y) > 1e-12 {
-		t.Fatalf("away %+v, stretch %v", away, stretch)
-	}
-	across := point3{away.Z, 0, -away.X}
-	along := caster.strip("along", figureBone{A: point3{0, 1, 0}, B: point3{0, 1, 0}.plus(away), Radius: 0.1})
-	if math.Abs(along.Scale.X-0.2) > 1e-9 || math.Abs(along.Scale.Z-1) > 1e-9 {
-		t.Fatalf("a limb lying along the light: width %v, length %v", along.Scale.X, along.Scale.Z)
-	}
-	sideways := caster.strip("across", figureBone{A: point3{0, 1, 0}, B: point3{0, 1, 0}.plus(across), Radius: 0.1})
-	if math.Abs(sideways.Scale.X-0.2*stretch) > 1e-9 {
-		t.Fatalf("a limb lying across the light: width %v, want %v", sideways.Scale.X, 0.2*stretch)
-	}
-	// A vertical limb shadows as a strip as long as the limb is tall, stretched.
-	upright := caster.strip("upright", figureBone{A: point3{0, 0, 0}, B: point3{0, 1, 0}, Radius: 0.1})
-	if want := math.Sqrt(1-light.Y*light.Y) / light.Y; math.Abs(upright.Scale.Z-want) > 1e-9 {
-		t.Fatalf("a 1 m upright limb shadows %v m, want %v", upright.Scale.Z, want)
-	}
-	overhead := blockingShadowCaster{toLight: point3{0, 1, 0}}
-	if dot := overhead.ellipse("dot", point3{2, 1, 3}, 0.1); dot.Position.X != 2 || dot.Position.Z != 3 || dot.Scale.Z != 1 {
-		t.Fatalf("an overhead light shadows %+v scale %+v", dot.Position, dot.Scale)
-	}
-}

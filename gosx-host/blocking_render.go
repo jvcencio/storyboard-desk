@@ -20,12 +20,10 @@ import (
 // metre grid and the stage edge, anti-aliased by the pixel footprint and faded
 // with distance, and in Plan view the shot camera with its field of view.
 //
-// Shadows are geometry, not shadow maps. Under one directional light the
-// shadow of a sphere is an ellipse and the shadow of a capsule is the strip
-// between two such ellipses, so each figure part gets an exact flat silhouette
-// on the floor. At the pinned GoSX version shadow maps were not dependable for
-// this stage: the single-map fit drew no shadow at all, and cascades drew
-// extra shadows where no figure stood.
+// Shadows come from one Scene3D shadow map for the key light. Every figure
+// part casts into it. The floor is a standard material and receives it;
+// BlockingClay reads the same map through the Selena lighting module, so a
+// raised arm shadows the chest and one figure shadows the next.
 const blockingShaders = `material BlockingClay {
     param baseColor : color = rgb(0.74, 0.46, 0.29)
     param skyTint : color = rgb(1.0, 0.98, 0.94)
@@ -33,14 +31,21 @@ const blockingShaders = `material BlockingClay {
 
     context {
         cameraPos : vec3
+        cameraForward : vec3
         sunDir : vec3
+        shadow0 : vec4
+        shadowSplits0 : vec4
+        shadowMatrices0 : array<vec4, 16>
+        shadowMap0 : textureDepth2dArray
     }
 
     surface(geo) -> color {
         let n = normalize(geo.worldNormal)
         let v = normalize(cameraPos - geo.worldPos)
-        let wrap = clamp((dot(n, sunDir) + 0.4) / 1.4, 0.0, 1.0)
-        let key = wrap * wrap
+        let towards = dot(n, sunDir)
+        let wrap = clamp((towards + 0.4) / 1.4, 0.0, 1.0)
+        let shade = mix(1.0, mlShadow0(geo.worldPos), smoothstep(0.0, 0.3, towards))
+        let key = wrap * wrap * shade
         let fill = mix(groundTint, skyTint, n.y * 0.5 + 0.5)
         let rim = pow(1.0 - clamp(dot(n, v), 0.0, 1.0), 3.0)
         let seat = mix(0.78, 1.0, clamp(geo.worldPos.y / 0.3, 0.0, 1.0))
@@ -102,7 +107,7 @@ type blockingMaterialSet struct {
 var blockingMaterials = sync.OnceValue(func() blockingMaterialSet {
 	set, hidden := blockingMaterialSet{}, 0.0
 	set.clay, _, set.err = scene.CompileSelenaMaterial([]byte(blockingShaders), scene.SelenaMaterialOptions{
-		Material: "BlockingClay", Standard: scene.StandardMaterial{Color: "#b98a6a", Roughness: 1}})
+		Material: "BlockingClay", Standard: scene.StandardMaterial{Color: "#b98a6a", Roughness: 1}, Modules: []string{"lighting"}})
 	if set.err != nil {
 		return set
 	}
@@ -114,67 +119,13 @@ var blockingMaterials = sync.OnceValue(func() blockingMaterialSet {
 const (
 	blockingStageHalfWidth = 8.0 // actors stand within ±8 m across
 	blockingStageHalfDepth = 5.0 // and ±5 m in depth
-	blockingFloorSize      = 80.0
+	// The key light's shadow map covers the whole floor, so a smaller floor
+	// gives each figure more of the map. The fog hides the edge at 20 m.
+	blockingFloorSize      = 40.0
 	blockingBackdropColour = "#eeeadd"
 	blockingFloorColour    = "#d6cfbe"
-	blockingShadowColour   = "#8f8879" // the floor colour, darker; every shadow piece is this one opaque colour
 	blockingSeatColour     = "#a79d88"
 )
-
-// blockingShadowCaster lays flat silhouettes on the floor for one light. The
-// pieces are opaque and share one colour, so where they overlap they merge
-// instead of darkening twice.
-type blockingShadowCaster struct {
-	toLight  point3
-	material scene.StandardMaterial
-}
-
-// ground follows the light from p down to the floor.
-func (c blockingShadowCaster) ground(p point3) point3 {
-	fall := p.Y / c.toLight.Y
-	return point3{p.X - c.toLight.X*fall, 0, p.Z - c.toLight.Z*fall}
-}
-
-// away is the direction shadows fall on the floor, and stretch is how much
-// longer than the caster a shadow is along it.
-func (c blockingShadowCaster) away() (direction point3, stretch float64) {
-	direction = point3{-c.toLight.X, 0, -c.toLight.Z}
-	if direction.distance(point3{}) < 1e-9 {
-		return point3{0, 0, 1}, 1 // the light is straight overhead
-	}
-	return direction.unit(), 1 / c.toLight.Y
-}
-
-// ellipse is the shadow of a sphere: as wide as the sphere, and stretched
-// along the light.
-func (c blockingShadowCaster) ellipse(id string, centre point3, radius float64) scene.Mesh {
-	away, stretch := c.away()
-	spot := c.ground(centre)
-	return scene.Mesh{ID: id, Material: c.material, Position: scene.Vec3(spot.X, 0.002, spot.Z),
-		Geometry: scene.CylinderGeometry{RadiusTop: radius, RadiusBottom: radius, Height: 0.002, Segments: 20},
-		Rotation: scene.Euler{Y: math.Atan2(away.X, away.Z)}, Scale: scene.Vec3(1, 1, stretch)}
-}
-
-// strip is the shadow of a limb between its two end ellipses. Its half-width
-// is the ellipse's reach across the strip, so the three pieces join exactly.
-func (c blockingShadowCaster) strip(id string, bone figureBone) scene.Mesh {
-	away, stretch := c.away()
-	a, b := c.ground(bone.A), c.ground(bone.B)
-	length := a.distance(b)
-	along := point3{0, 0, 1}
-	if length > 1e-9 {
-		along = b.minus(a).unit()
-	}
-	across := point3{along.Z, 0, -along.X}
-	onLight := across.X*away.X + across.Z*away.Z
-	offLight := across.X*away.Z - across.Z*away.X
-	half := bone.Radius * math.Sqrt(stretch*stretch*onLight*onLight+offLight*offLight)
-	middle := a.plus(b).times(0.5)
-	// A unit box scaled to size keeps one geometry for every pose and light.
-	return scene.Mesh{ID: id, Material: c.material, Position: scene.Vec3(middle.X, 0.002, middle.Z),
-		Geometry: scene.BoxGeometry{Width: 1, Height: 0.002, Depth: 1},
-		Rotation: scene.Euler{Y: math.Atan2(along.X, along.Z)}, Scale: scene.Vec3(2*half, 1, math.Max(length, 1e-4))}
-}
 
 // blockingLights are the key-light positions, named the way a lighting diagram
 // names them: relative to the shot camera. Azimuth 0 is at the camera, -90 at
@@ -244,14 +195,14 @@ func blockingRender(spec blockingScene, aspect, view string) (scene.Props, error
 	}
 	toLight := blockingKeyLight(spec)
 	nodes := []scene.Node{
-		scene.DirectionalLight{ID: "key-light", Color: "#fff4e4", Intensity: 3, Direction: at(toLight.times(-1))},
+		scene.DirectionalLight{ID: "key-light", Color: "#fff4e4", Intensity: 3, Direction: at(toLight.times(-1)),
+			CastShadow: true, ShadowSize: 4096, ShadowBias: 0.0012, ShadowSoftness: 0.02},
 		scene.HemisphereLight{ID: "fill-light", SkyColor: "#f6f3ec", GroundColor: "#b3ab9b", Intensity: 0.22},
 		scene.Mesh{ID: "stage-floor", Geometry: scene.PlaneGeometry{Width: blockingFloorSize, Height: blockingFloorSize},
-			Material: scene.StandardMaterial{Color: blockingFloorColour, Roughness: 1}},
+			Material: scene.StandardMaterial{Color: blockingFloorColour, Roughness: 1}, ReceiveShadow: true},
 		scene.Mesh{ID: "stage-marks", Geometry: scene.PlaneGeometry{Width: blockingFloorSize, Height: blockingFloorSize},
 			Material: marks, Position: scene.Vec3(0, 0.004, 0)},
 	}
-	shadows := blockingShadowCaster{toLight: toLight, material: scene.StandardMaterial{Color: blockingShadowColour, Roughness: 1}}
 
 	for _, actor := range spec.Actors {
 		clay := materials.clay
@@ -259,18 +210,15 @@ func blockingRender(spec blockingScene, aspect, view string) (scene.Props, error
 		clay.Uniforms = map[string]any{"baseColor": blockingColourUniform(actor.Colour)}
 		figure := poseFigure(actor)
 		ball := func(id string, centre point3, radius float64, segments int) {
-			nodes = append(nodes,
-				scene.Mesh{ID: id, Material: clay, Position: at(centre), Geometry: scene.SphereGeometry{Radius: radius, Segments: segments}},
-				shadows.ellipse(id+"-shadow", centre, radius))
+			nodes = append(nodes, scene.Mesh{ID: id, Material: clay, Position: at(centre), CastShadow: true,
+				Geometry: scene.SphereGeometry{Radius: radius, Segments: segments}})
 		}
 		for _, bone := range figure.Bones {
 			id := actor.ID + "-" + bone.Part
-			nodes = append(nodes,
-				scene.Mesh{ID: id, Material: clay, Position: at(bone.A.plus(bone.B).times(0.5)), Rotation: blockingLimbRotation(bone.B.minus(bone.A)),
-					// Rounded, so the same limb in another pose is the same
-					// geometry and the preview can send a transform alone.
-					Geometry: scene.CylinderGeometry{RadiusTop: bone.Radius, RadiusBottom: bone.Radius, Height: math.Round(bone.A.distance(bone.B)*1e4) / 1e4, Segments: 12}},
-				shadows.strip(id+"-shadow", bone))
+			nodes = append(nodes, scene.Mesh{ID: id, Material: clay, Position: at(bone.A.plus(bone.B).times(0.5)), Rotation: blockingLimbRotation(bone.B.minus(bone.A)), CastShadow: true,
+				// Rounded, so the same limb in another pose is the same
+				// geometry and the preview can send a transform alone.
+				Geometry: scene.CylinderGeometry{RadiusTop: bone.Radius, RadiusBottom: bone.Radius, Height: math.Round(bone.A.distance(bone.B)*1e4) / 1e4, Segments: 12}})
 			// A ball at the far end rounds the limb into the next one.
 			ball(id+"-joint", bone.B, bone.Radius, 12)
 			if bone.Part == "shoulders" {
@@ -288,13 +236,9 @@ func blockingRender(spec blockingScene, aspect, view string) (scene.Props, error
 					continue
 				}
 				side, top := 0.44*actor.Height/figureHeight, part.C.Y-part.Radius*0.8
-				nodes = append(nodes,
-					scene.Mesh{ID: actor.ID + "-seat", Position: scene.Vec3(part.C.X, top/2, part.C.Z), Rotation: scene.Euler{Y: actor.Heading * math.Pi / 180},
-						Geometry: scene.BoxGeometry{Width: 1, Height: 1, Depth: 1}, Scale: scene.Vec3(side, top, side),
-						Material: scene.StandardMaterial{Color: blockingSeatColour, Roughness: 1}},
-					shadows.strip(actor.ID+"-seat-shadow", figureBone{A: point3{part.C.X, 0, part.C.Z}, B: point3{part.C.X, top, part.C.Z}, Radius: side * 0.56}),
-					shadows.ellipse(actor.ID+"-seat-shadow-top", point3{part.C.X, top, part.C.Z}, side*0.56),
-					shadows.ellipse(actor.ID+"-seat-shadow-base", point3{part.C.X, 0, part.C.Z}, side*0.56))
+				nodes = append(nodes, scene.Mesh{ID: actor.ID + "-seat", Position: scene.Vec3(part.C.X, top/2, part.C.Z), Rotation: scene.Euler{Y: actor.Heading * math.Pi / 180},
+					Geometry: scene.BoxGeometry{Width: 1, Height: 1, Depth: 1}, Scale: scene.Vec3(side, top, side), CastShadow: true, ReceiveShadow: true,
+					Material: scene.StandardMaterial{Color: blockingSeatColour, Roughness: 1}})
 			}
 		}
 		// A ring in the actor's colour marks the spot, as tape marks a stage.
@@ -309,7 +253,9 @@ func blockingRender(spec blockingScene, aspect, view string) (scene.Props, error
 		Responsive: scene.Bool(true), FillHeight: scene.Bool(true), AutoRotate: scene.Bool(false), DragToRotate: scene.Bool(false), ForceWebGL: scene.Bool(true), RequireWebGL: scene.Bool(true),
 		// A poster must look the same on every machine, so quality never adapts.
 		AdaptiveQuality: scene.Bool(false),
-		MaxPixels:       960 * 960, Stats: scene.Bool(false), Background: blockingBackdropColour, Graph: scene.NewGraph(nodes...),
+		// Scene3D caps a shadow map at 1024 pixels a side unless the scene asks.
+		Shadows:   scene.Shadows{MaxPixels: scene.ShadowMaxPixels4096},
+		MaxPixels: 960 * 960, Stats: scene.Bool(false), Background: blockingBackdropColour, Graph: scene.NewGraph(nodes...),
 		// Naming the fill here also stops Scene3D adding its own cool fill
 		// light. The fog melts the far floor into the backdrop, like a studio
 		// cyclorama; Plan view looks straight down and has none.

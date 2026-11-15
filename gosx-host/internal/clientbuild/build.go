@@ -54,6 +54,8 @@ func Build(module string) error {
 		"bootstrap-feature-scene3d-hydrate": &manifest.Runtime.BootstrapFeatureScene3DHydrate,
 		"bootstrap-feature-scene3d-webgl":   &manifest.Runtime.BootstrapFeatureScene3DWebGL,
 		"bootstrap-feature-scene3d-webgpu":  &manifest.Runtime.BootstrapFeatureScene3DWebGPU,
+		// The figures' material reads the key light's shadow map.
+		"bootstrap-feature-scene3d-selena-lighting": &manifest.Runtime.BootstrapFeatureScene3DSelenaLighting,
 	} {
 		data, err := os.ReadFile(filepath.Join(sdk.Dir, "client", "js", name+".js"))
 		if err != nil {
@@ -185,5 +187,6 @@ func editorRuntimeAssets(m *buildmanifest.Manifest) []*buildmanifest.HashedAsset
 	return []*buildmanifest.HashedAsset{&m.Runtime.StandardGoWASMExec, &m.Runtime.BootstrapRuntime,
 		&m.Runtime.BootstrapFeatureEngines, &m.Runtime.Patch, &m.Runtime.BootstrapFeatureScene3D,
 		&m.Runtime.BootstrapFeatureScene3DCommand, &m.Runtime.BootstrapFeatureScene3DHydrate,
-		&m.Runtime.BootstrapFeatureScene3DWebGL, &m.Runtime.BootstrapFeatureScene3DWebGPU}
+		&m.Runtime.BootstrapFeatureScene3DWebGL, &m.Runtime.BootstrapFeatureScene3DWebGPU,
+		&m.Runtime.BootstrapFeatureScene3DSelenaLighting}
 }

@@ -400,7 +400,7 @@ func TestBlockingStageHasFiguresLightsAndMarks(t *testing.T) {
 		t.Fatal(err)
 	}
 	stage, _ := json.Marshal(props.SceneIR())
-	for _, id := range []string{"key-light", "fill-light", "stage-floor", "stage-marks", "actor-a-head", "actor-a-nose", "actor-a-left-forearm", "actor-a-right-shin", "actor-a-left-foot-joint", "actor-b-pelvis", "actor-a-mark", "actor-a-head-shadow", "actor-b-left-shin-shadow"} {
+	for _, id := range []string{"key-light", "fill-light", "stage-floor", "stage-marks", "actor-a-head", "actor-a-nose", "actor-a-left-forearm", "actor-a-right-shin", "actor-a-left-foot-joint", "actor-b-pelvis", "actor-a-mark"} {
 		if !strings.Contains(string(stage), `"`+id+`"`) {
 			t.Errorf("the stage has no %q", id)
 		}
@@ -418,7 +418,7 @@ func TestBlockingStageHasFiguresLightsAndMarks(t *testing.T) {
 	if update, _ := json.Marshal(diff.Commands); strings.Contains(string(update), "sunDir") || len(update) > 40_000 {
 		t.Fatalf("a pose preview resends shader sources: %d bytes", len(update))
 	}
-	// A seated figure gets a block to sit on, with its own shadow.
+	// A seated figure gets a block to sit on.
 	spec.Actors[0].Pose = "sit"
 	seated, _ := blockingRender(spec, "16:9", "camera")
 	if seatedJSON := string(mustJSON(seated.SceneIR())); !strings.Contains(seatedJSON, `"actor-a-seat"`) || strings.Contains(string(stage), `"actor-a-seat"`) {
@@ -428,6 +428,61 @@ func TestBlockingStageHasFiguresLightsAndMarks(t *testing.T) {
 	planned, _ := blockingRender(defaultBlockingScene(), "16:9", "plan")
 	if planJSON, _ := json.Marshal(planned.SceneIR()); bytes.Equal(planJSON, mustJSON(standing.SceneIR())) {
 		t.Fatal("Plan and Camera render the same stage")
+	}
+}
+
+// Shadows come from the key light's shadow map: the light casts, every part of
+// a figure and its seat cast, and the floor receives. No object is a drawn
+// shadow, and the stage asks for a larger map than Scene3D's 1024 default.
+func TestBlockingStageShadowsComeFromTheKeyLight(t *testing.T) {
+	spec := defaultBlockingScene()
+	spec.Actors[0].Pose = "sit"
+	props, err := blockingRender(spec, "16:9", "camera")
+	if err != nil {
+		t.Fatal(err)
+	}
+	stage := props.SceneIR()
+	if stage.ShadowMaxPixels != scene.ShadowMaxPixels4096 {
+		t.Errorf("the stage caps shadow maps at %d pixels, want %d", stage.ShadowMaxPixels, scene.ShadowMaxPixels4096)
+	}
+	casting := 0
+	for _, light := range stage.Lights {
+		if light.CastShadow {
+			casting++
+			if light.ID != "key-light" || light.ShadowSize != 4096 {
+				t.Errorf("light %q casts a %d pixel shadow map", light.ID, light.ShadowSize)
+			}
+		}
+	}
+	if casting != 1 {
+		t.Fatalf("%d lights cast shadows, want only the key light", casting)
+	}
+	casters := 0
+	for _, object := range stage.Objects {
+		switch {
+		case strings.Contains(object.ID, "shadow"):
+			t.Errorf("%q is a drawn shadow", object.ID)
+		case object.ID == "stage-floor":
+			if !object.ReceiveShadow || object.CastShadow {
+				t.Errorf("the floor: receives %v, casts %v", object.ReceiveShadow, object.CastShadow)
+			}
+		case object.ID == "stage-marks" || strings.HasSuffix(object.ID, "-mark"):
+			if object.CastShadow {
+				t.Errorf("the flat mark %q casts a shadow", object.ID)
+			}
+		default:
+			casters++
+			if !object.CastShadow {
+				t.Errorf("figure part %q casts no shadow", object.ID)
+			}
+		}
+	}
+	if casters < 60 {
+		t.Fatalf("only %d figure parts cast shadows", casters)
+	}
+	// The figures read the map through the Selena lighting module.
+	if clay := string(mustJSON(blockingMaterials().clay)); !strings.Contains(clay, "shadowMap0") {
+		t.Fatal("the figure material does not read the key light's shadow map")
 	}
 }
 
