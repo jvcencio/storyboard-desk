@@ -60,11 +60,23 @@ func editorRuntime() (*island.Renderer, error) {
 }
 
 func editorDocument(renderer *island.Renderer, w workspacePage, r *http.Request, status int) gosx.Node {
-	return workspaceDocument(renderer, r, status, w.render(), attrs("data-native-save", strconv.FormatBool(w.nativeSave)))
+	var body gosx.Node
+	if w.view == "blocking" {
+		body = cls("main", "workspace blocking-workspace",
+			cls("header", "topbar", txt(shotText(w.project, "title")), cls("span", "status", attrs("id", "save-status"), txt("Saved locally"))),
+			w.blockingEditor(renderer))
+	} else {
+		body = w.render()
+	}
+	return workspaceDocument(renderer, r, status, body, attrs("data-native-save", strconv.FormatBool(w.nativeSave)))
 }
 
 func workspaceDocument(renderer *island.Renderer, r *http.Request, status int, body gosx.Node, bodyAttrs gosx.AttrList) gosx.Node {
 	summary := renderer.Summary()
+	var blockingStyle gosx.Node
+	if r.URL.Query().Get("view") == "blocking" {
+		blockingStyle = el("link", attrs("rel", "stylesheet", "href", "/blocking.css"))
+	}
 	var engines gosx.Node
 	if summary.BootstrapFeatureEnginesPath != "" {
 		// The GoSX chunk registers its factory before bootstrap. Let the
@@ -79,8 +91,9 @@ func workspaceDocument(renderer *island.Renderer, r *http.Request, status int, b
 			Bootstrap: summary.Bootstrap, Runtime: true, BootstrapMode: summary.BootstrapMode, Manifest: summary.Manifest,
 			StandardGoWASMExecPath: summary.StandardGoWASMExecPath, BootstrapPath: summary.BootstrapPath,
 			BootstrapFeatureEnginesPath: summary.BootstrapFeatureEnginesPath, Engines: summary.Engines,
+			BootstrapFeatureScene3DPath: summary.BootstrapFeatureScene3DPath,
 		},
-		Head: gosx.Fragment(el("link", attrs("rel", "stylesheet", "href", "/workspace.css")), renderer.PreloadHints(), engines, renderer.PageHead()),
+		Head: gosx.Fragment(el("link", attrs("rel", "stylesheet", "href", "/workspace.css")), blockingStyle, renderer.PreloadHints(), engines, renderer.PageHead()),
 		Body: body, BodyAttrs: bodyAttrs,
 	})
 }

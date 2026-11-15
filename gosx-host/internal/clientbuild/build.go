@@ -46,9 +46,14 @@ func Build(module string) error {
 	// These are shipped by the pinned Go module. No application JavaScript is
 	// authored or transpiled, and no JavaScript package manager is involved.
 	for name, destination := range map[string]*buildmanifest.HashedAsset{
-		"bootstrap-runtime":         &manifest.Runtime.BootstrapRuntime,
-		"bootstrap-feature-engines": &manifest.Runtime.BootstrapFeatureEngines,
-		"patch":                     &manifest.Runtime.Patch,
+		"bootstrap-runtime":                 &manifest.Runtime.BootstrapRuntime,
+		"bootstrap-feature-engines":         &manifest.Runtime.BootstrapFeatureEngines,
+		"patch":                             &manifest.Runtime.Patch,
+		"bootstrap-feature-scene3d":         &manifest.Runtime.BootstrapFeatureScene3D,
+		"bootstrap-feature-scene3d-command": &manifest.Runtime.BootstrapFeatureScene3DCommand,
+		"bootstrap-feature-scene3d-hydrate": &manifest.Runtime.BootstrapFeatureScene3DHydrate,
+		"bootstrap-feature-scene3d-webgl":   &manifest.Runtime.BootstrapFeatureScene3DWebGL,
+		"bootstrap-feature-scene3d-webgpu":  &manifest.Runtime.BootstrapFeatureScene3DWebGPU,
 	} {
 		data, err := os.ReadFile(filepath.Join(sdk.Dir, "client", "js", name+".js"))
 		if err != nil {
@@ -118,7 +123,7 @@ func Build(module string) error {
 					manifest.GoWASM[name] = candidate
 				}
 			}
-			for _, candidate := range []*buildmanifest.HashedAsset{&manifest.Runtime.StandardGoWASMExec, &manifest.Runtime.BootstrapRuntime, &manifest.Runtime.BootstrapFeatureEngines, &manifest.Runtime.Patch} {
+			for _, candidate := range editorRuntimeAssets(manifest) {
 				if candidate.File == asset.File {
 					candidate.GzipSize, candidate.BrotliSize = gzInfo.Size(), brInfo.Size()
 				}
@@ -164,9 +169,21 @@ func Build(module string) error {
 }
 
 func assetGroups(m *buildmanifest.Manifest) map[string][]buildmanifest.HashedAsset {
-	groups := map[string][]buildmanifest.HashedAsset{"runtime": {m.Runtime.StandardGoWASMExec, m.Runtime.BootstrapRuntime, m.Runtime.BootstrapFeatureEngines, m.Runtime.Patch}}
+	groups := map[string][]buildmanifest.HashedAsset{"runtime": {}}
+	for _, asset := range editorRuntimeAssets(m) {
+		if asset.File != "" {
+			groups["runtime"] = append(groups["runtime"], *asset)
+		}
+	}
 	for _, asset := range m.GoWASM {
 		groups["go-wasm"] = append(groups["go-wasm"], asset)
 	}
 	return groups
+}
+
+func editorRuntimeAssets(m *buildmanifest.Manifest) []*buildmanifest.HashedAsset {
+	return []*buildmanifest.HashedAsset{&m.Runtime.StandardGoWASMExec, &m.Runtime.BootstrapRuntime,
+		&m.Runtime.BootstrapFeatureEngines, &m.Runtime.Patch, &m.Runtime.BootstrapFeatureScene3D,
+		&m.Runtime.BootstrapFeatureScene3DCommand, &m.Runtime.BootstrapFeatureScene3DHydrate,
+		&m.Runtime.BootstrapFeatureScene3DWebGL, &m.Runtime.BootstrapFeatureScene3DWebGPU}
 }

@@ -10,6 +10,8 @@ import (
 
 func (h *workspaceHandler) coreAction(endpoint string) action.Handler {
 	switch endpoint {
+	case "/blocking/save":
+		return h.saveBlockingAction
 	case "/save":
 		return h.saveShotAction
 	case "/project":

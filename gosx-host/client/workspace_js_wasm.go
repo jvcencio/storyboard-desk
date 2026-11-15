@@ -21,6 +21,9 @@ func (ui *workspaceClient) mount() {
 	ui.cancel = cancel
 	forms := mountFormState(ctx, ui.doc)
 	ui.disposers = append(ui.disposers, forms.Dispose, mountCapabilities(ctx, ui.doc).Dispose)
+	if stage := query(ui.doc, "[data-blocking-editor]"); stage.Truthy() {
+		ui.disposers = append(ui.disposers, mountBlocking(ctx, stage, forms).Dispose)
+	}
 	if room := query(ui.doc, "[data-room-events]"); room.Truthy() {
 		ui.disposers = append(ui.disposers, mountRoom(ctx, room, forms))
 	}

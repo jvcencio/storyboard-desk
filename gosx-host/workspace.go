@@ -18,7 +18,7 @@ import (
 	"m31labs.dev/gosx/desktop"
 )
 
-//go:embed workspace.css
+//go:embed workspace.css blocking.css
 var workspaceAssets embed.FS
 
 type workspaceHandler struct {
@@ -133,7 +133,7 @@ func (h *workspaceHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		h.clientAsset(rw, r)
 		return
 	}
-	if r.Method == "GET" && r.URL.Path == "/workspace.css" {
+	if r.Method == "GET" && (r.URL.Path == "/workspace.css" || r.URL.Path == "/blocking.css") {
 		data, err := workspaceAssets.ReadFile(strings.TrimPrefix(r.URL.Path, "/"))
 		if err != nil {
 			http.NotFound(rw, r)
@@ -197,6 +197,10 @@ func (h *workspaceHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 	if subtle.ConstantTimeCompare([]byte(r.PostForm.Get("csrf")), []byte(h.csrf)) != 1 {
 		http.Error(rw, "Invalid token", 403)
+		return
+	}
+	if r.URL.Path == "/blocking/preview" || r.URL.Path == "/blocking/poster" {
+		h.blockingRequest(rw, r)
 		return
 	}
 	if handler := h.coreAction(r.URL.Path); handler != nil {

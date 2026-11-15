@@ -16,6 +16,7 @@
 !/gosx-host/*.go
 !/gosx-host/*.gsx
 !/gosx-host/workspace.css
+!/gosx-host/blocking.css
 !/gosx-host/gosx.config.json
 !/gosx-host/client/
 /gosx-host/client/*

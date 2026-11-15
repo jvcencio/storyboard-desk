@@ -10,6 +10,7 @@ type ShotEditorProps struct {
 	Save, Insert FormView
 	Values       map[string]string
 	Base         string
+	BlockingURL  string
 }
 
 func (w workspacePage) shotForm() gosx.Node {
@@ -30,7 +31,11 @@ func (w workspacePage) shotForm() gosx.Node {
 			base = shotBriefVersion(w.shot)
 		}
 	}
-	return ShotEditor(ShotEditorProps{Save: save, Insert: w.form("/insert"), Values: values, Base: base})
+	blockingURL := ""
+	if !w.shared {
+		blockingURL = w.href("blocking", shotText(w.shot, "id"))
+	}
+	return ShotEditor(ShotEditorProps{Save: save, Insert: w.form("/insert"), Values: values, Base: base, BlockingURL: blockingURL})
 }
 
 // ShotEditor renders a shot brief using explicit values and action state. It
@@ -70,5 +75,9 @@ func ShotEditor(props ShotEditorProps) gosx.Node {
 			el("p", txt("A teammate updated this shot. Your open brief is kept here.")),
 			link("Review latest shot", pageURL(form.Scope.ProjectID, form.Scope.View, form.Scope.ShotID, form.Scope.Scene)+"#shot-editor", "button secondary"))
 	}
-	return cls("aside", "paper shot-editor", attrs("id", "shot-editor"), update, el("form", children...), el("form", insert...))
+	var blocking gosx.Node
+	if props.BlockingURL != "" {
+		blocking = link("Edit blocking", props.BlockingURL, "button secondary blocking-open")
+	}
+	return cls("aside", "paper shot-editor", attrs("id", "shot-editor"), update, blocking, el("form", children...), el("form", insert...))
 }
