@@ -18,7 +18,7 @@
 .blocking-inspector fieldset { border: 0; padding: 0; margin: 0 0 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .blocking-inspector legend { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
 .blocking-inspector label { display: flex; flex-direction: column; align-items: stretch; font-size: 12px; min-width: 0; margin: 0; }
-.blocking-inspector input { min-width: 0; width: 100%; margin-top: 4px; padding: 8px; }
+.blocking-inspector input, .blocking-inspector select { min-width: 0; width: 100%; margin-top: 4px; padding: 8px; }
 .blocking-inspector .blocking-actor-select { grid-column: 1 / -1; display: flex; flex-direction: row; justify-content: flex-start; gap: 8px; align-items: center; font-size: 14px; }
 .blocking-inspector input[type="color"] { height: 36px; padding: 3px; }
 .blocking-inspector form > button { position: sticky; top: -18px; z-index: 2; width: 100%; margin-bottom: 18px; }

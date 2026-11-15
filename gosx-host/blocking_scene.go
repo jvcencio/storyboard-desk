@@ -19,7 +19,17 @@ type blockingActor struct {
 	Heading float64 `json:"heading"`
 	Height  float64 `json:"height"`
 	Colour  string  `json:"colour"`
+	// Pose, Arms and Look name options of blockingPoses, blockingArms and
+	// blockingLooks. The default option is stored as "", so a scene saved
+	// before poses existed keeps its bytes, and its poster stays current.
+	Pose string `json:"pose,omitempty"`
+	Arms string `json:"arms,omitempty"`
+	Look string `json:"look,omitempty"`
 }
+
+// blockingActorChoices are the optional actor keys this editor owns. A key the
+// actor no longer sets is removed from the stored record.
+var blockingActorChoices = []string{"pose", "arms", "look"}
 
 type blockingCamera struct {
 	X    float64 `json:"x"`
@@ -35,6 +45,8 @@ type blockingScene struct {
 	Material string          `json:"material"`
 	Actors   []blockingActor `json:"actors"`
 	Camera   blockingCamera  `json:"camera"`
+	// Light names an option of blockingLights; the default is stored as "".
+	Light string `json:"light,omitempty"`
 }
 
 var blockingID = regexp.MustCompile(`^[a-z][a-z0-9-]{0,31}$`)
@@ -42,7 +54,9 @@ var blockingColour = regexp.MustCompile(`^#[0-9a-fA-F]{6}$`)
 
 func defaultBlockingScene() blockingScene {
 	return blockingScene{Version: 1, Material: "selena-matte-v1",
-		Actors: []blockingActor{{"actor-a", "Actor A", -1, 0, 20, 1.75, "#bd754b"}, {"actor-b", "Actor B", 1, -0.5, -25, 1.8, "#56857c"}},
+		Actors: []blockingActor{
+			{ID: "actor-a", Name: "Actor A", X: -1, Z: 0, Heading: 20, Height: 1.75, Colour: "#bd754b"},
+			{ID: "actor-b", Name: "Actor B", X: 1, Z: -0.5, Heading: -25, Height: 1.8, Colour: "#56857c"}},
 		Camera: blockingCamera{Y: 2.2, Z: 7, Tilt: -8, Lens: 35}}
 }
 
@@ -74,6 +88,9 @@ func blockingFields(spec blockingScene) map[string]string {
 		put(prefix+"z", actor.Z)
 		put(prefix+"heading", actor.Heading)
 		put(prefix+"height", actor.Height)
+		fields[prefix+"pose"] = blockingChoiceKey(blockingPoses, actor.Pose)
+		fields[prefix+"arms"] = blockingChoiceKey(blockingArms, actor.Arms)
+		fields[prefix+"look"] = blockingChoiceKey(blockingLooks, actor.Look)
 	}
 	put("camera.x", spec.Camera.X)
 	put("camera.y", spec.Camera.Y)
@@ -81,6 +98,7 @@ func blockingFields(spec blockingScene) map[string]string {
 	put("camera.pan", spec.Camera.Pan)
 	put("camera.tilt", spec.Camera.Tilt)
 	put("camera.lens", spec.Camera.Lens)
+	fields["light"] = blockingChoiceKey(blockingLights, spec.Light)
 	return fields
 }
 
@@ -93,6 +111,18 @@ func decodeBlockingFields(values map[string]string) (blockingScene, map[string]s
 			fields[name] = fmt.Sprintf("Enter a number between %g and %g.", low, high)
 		}
 		return n
+	}
+	// choice reads one option. A form that does not send the field keeps the
+	// default, and the default is stored as "".
+	choice := func(name string, options []blockingChoice) string {
+		value := values[name]
+		if value == "" || value == options[0].Key {
+			return ""
+		}
+		if blockingChoiceKey(options, value) != value {
+			fields[name] = "Choose one of the listed options."
+		}
+		return value
 	}
 	count, err := strconv.Atoi(values["actor_count"])
 	if err != nil || count < 1 || count > 8 {
@@ -117,8 +147,12 @@ func decodeBlockingFields(values map[string]string) (blockingScene, map[string]s
 		actor.Z = num(prefix+"z", -5, 5)
 		actor.Heading = num(prefix+"heading", -180, 180)
 		actor.Height = num(prefix+"height", 1, 2.5)
+		actor.Pose = choice(prefix+"pose", blockingPoses)
+		actor.Arms = choice(prefix+"arms", blockingArms)
+		actor.Look = choice(prefix+"look", blockingLooks)
 		spec.Actors = append(spec.Actors, actor)
 	}
+	spec.Light = choice("light", blockingLights)
 	spec.Camera = blockingCamera{X: num("camera.x", -15, 15), Y: num("camera.y", 0.5, 10), Z: num("camera.z", 1, 18),
 		Pan: num("camera.pan", -90, 90), Tilt: num("camera.tilt", -60, 20), Lens: num("camera.lens", 18, 100)}
 	return spec, fields
@@ -158,7 +192,17 @@ func mergeBlockingScene(old json.RawMessage, spec blockingScene) json.RawMessage
 		for key, value := range actor {
 			merged[key] = value
 		}
+		for _, key := range blockingActorChoices {
+			if _, set := actor[key]; !set {
+				delete(merged, key) // back to the default option
+			}
+		}
 		actors = append(actors, merged)
+	}
+	if light, set := known["light"]; set {
+		previous["light"] = light
+	} else {
+		delete(previous, "light") // back to the default light
 	}
 	previous["version"], previous["material"] = known["version"], known["material"]
 	previous["actors"], previous["camera"] = rawValue(actors), rawValue(camera)
@@ -333,14 +377,52 @@ func blockingLegend(shot ProjectDocument) string {
 		}
 		figures := []string{}
 		for _, actor := range list(study, "actors") {
-			figures = append(figures, fmt.Sprintf("the %s figure is %s", shotText(actor, "colour_name"), shotText(actor, "name")))
+			figure := fmt.Sprintf("the %s figure is %s", shotText(actor, "colour_name"), shotText(actor, "name"))
+			if stance := shotText(actor, "stance"); stance != "" {
+				figure += " (" + stance + ")"
+			}
+			figures = append(figures, figure)
 		}
 		if len(figures) == 0 {
 			return ""
 		}
-		return "BLOCKING STUDY: The attached blocking study fixes the camera angle and where each figure stands and faces. " +
+		legend := "BLOCKING STUDY: The attached blocking study fixes the camera angle and where each figure stands and faces. " +
 			"Its figures are placeholders, not character designs: " + strings.Join(figures, "; ") + ". " +
-			"Replace each figure with that character and keep its position, scale and facing. Do not draw the floor grid or the placeholder shapes."
+			"Replace each figure with that character and keep its position, pose, scale and facing. Do not draw the floor grid or the placeholder shapes."
+		if light := shotText(study, "light"); light != "" {
+			legend += " " + light
+		}
+		return legend
+	}
+	return ""
+}
+
+// blockingStance says in words what a figure is doing, for the image prompt.
+// A figure in every default option needs no words.
+func blockingStance(actor blockingActor) string {
+	words := []string{}
+	for _, control := range []struct {
+		options []blockingChoice
+		value   string
+	}{{blockingPoses, actor.Pose}, {blockingArms, actor.Arms}, {blockingLooks, actor.Look}} {
+		key := blockingChoiceKey(control.options, control.value)
+		for _, option := range control.options {
+			if option.Key == key && option.Phrase != "" {
+				words = append(words, option.Phrase)
+			}
+		}
+	}
+	return strings.Join(words, ", ")
+}
+
+// blockingLightPhrase says where the key light is, for the image prompt. The
+// default light needs no words.
+func blockingLightPhrase(spec blockingScene) string {
+	key := blockingChoiceKey(blockingLights, spec.Light)
+	for _, light := range blockingLights {
+		if light.Key == key {
+			return light.Phrase
+		}
 	}
 	return ""
 }

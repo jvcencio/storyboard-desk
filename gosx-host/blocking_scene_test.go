@@ -16,7 +16,7 @@ func TestBlockingMaterialsAndLegacySave(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(props.SceneIR().Objects) < 10 || blockingMaterial.FragmentGLSL == "" || blockingMaterial.FragmentWGSL == "" {
+	if materials := blockingMaterials(); len(props.SceneIR().Objects) < 10 || materials.clay.FragmentGLSL == "" || materials.clay.FragmentWGSL == "" || materials.marks.FragmentGLSL == "" {
 		t.Fatal("missing compiled Selena scene")
 	}
 	root, id := legacyFixtureCopy(t)

@@ -26,11 +26,12 @@ Image and video models follow a picture of the staging better than a paragraph a
 
 1. Open a shot and choose **Edit blocking**. You get a stage measured in metres, with a **Plan** view from above and a **Camera** view.
 2. In **Plan**, pick an actor and click or drag to place them. Set which way they face, their height and their colour. **Add actor** and **Remove** change who is in the shot. Name each actor after the character.
-3. Set the camera's position, pan, tilt and lens, then check the frame in **Camera**.
-4. **Save blocking**, switch to **Camera**, and choose **Capture camera poster**. The poster is tied to the scene you saved; change the scene and you capture a new one.
-5. Choose **Use poster as composition sketch**. The poster becomes a sketch take, and the shot's image prompt gains a short legend, for example "the orange figure is Mara". In **Generate**, tick the blocking study next to your character references.
+3. Give each actor a **Pose** (standing, walking, sitting, kneeling, crouching, lying down), an **Arms** position and a direction to look. The figures are jointed clay mannequins; a seated one gets a plain block to sit on.
+4. Set the camera's position, pan, tilt and lens, then check the frame in **Camera**. In **Plan**, a wedge shows what the camera sees. Choose a **Key light**: it is named relative to the camera, and each figure's shadow shows where it falls.
+5. **Save blocking**, switch to **Camera**, and choose **Capture camera poster**. The poster is tied to the scene you saved; change the scene and you capture a new one.
+6. Choose **Use poster as composition sketch**. The poster becomes a sketch take, and the shot's image prompt gains a short legend, for example "the orange figure is Mara (seated, arms crossed)". A key light you changed is named there too. In **Generate**, tick the blocking study next to your character references.
 
-The figures are placeholders. The legend tells the model to replace each one with the named character and to keep its position, scale and facing. If the shot already has an approved starter image, the new sketch is added without being selected, so your approval stays in force until you choose to select it.
+The figures are placeholders. The legend tells the model to replace each one with the named character and to keep its position, pose, scale and facing. If the shot already has an approved starter image, the new sketch is added without being selected, so your approval stays in force until you choose to select it.
 
 ## Generate an image, then a video
 

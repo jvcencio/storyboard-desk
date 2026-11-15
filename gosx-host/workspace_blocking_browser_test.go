@@ -132,5 +132,27 @@ func TestWorkspaceGoClientBlocking(t *testing.T) {
 	if _, state := blockingPoster(project, shot); state != blockingPosterStale {
 		t.Fatal("a poster of two actors still counts as current for three", state)
 	}
+	// Pose the three figures and move the key light through the page's own
+	// controls, then save.
+	step("pose the figures", chromedp.Click(`[data-blocking-view="camera"]`, chromedp.ByQuery), browserText("#blocking-status", "Preview ready"),
+		chromedp.Evaluate(`for (const [name, value] of [["actor.0.pose", "sit"], ["actor.0.arms", "crossed"], ["actor.1.pose", "walk"], ["actor.1.arms", "raise"],
+				["actor.2.pose", "kneel"], ["actor.2.look", "left"], ["light", "key-right"]]) {
+				const field = document.querySelector('[name="' + name + '"]');
+				field.value = value;
+				field.dispatchEvent(new Event('change', {bubbles: true}));
+			}`, nil),
+		browserText("#save-status", "Unsaved changes"), browserText("#blocking-status", "Preview ready"))
+	capture("poses")
+	step("poses in plan", chromedp.Click(`[data-blocking-view="plan"]`, chromedp.ByQuery), browserText("#blocking-status", "Preview ready"))
+	capture("poses-plan")
+	response, err = chromedp.RunResponse(ctx, chromedp.Click(`form[action="/blocking/save"] button[type="submit"]`, chromedp.ByQuery))
+	if err != nil || response.Status != 200 {
+		t.Fatalf("save poses: %+v %v", response, err)
+	}
+	project, _ = store.Load(id)
+	shot, _ = findShot(project, sid)
+	if spec, err = readBlockingScene(shot); err != nil || spec.Actors[0].Pose != "sit" || spec.Actors[1].Arms != "raise" || spec.Actors[2].Look != "left" || spec.Light != "key-right" {
+		t.Fatal("saved poses", spec, err)
+	}
 	t.Log("Plan and camera rendered with the zero Plan origin retained. Numeric editing and a real Plan pointer click persisted actor X=-2, Z=1.5. The actual camera PNG was saved, narrow layout fit, and the board loaded its cached poster without Scene3D requests. The poster became the selected sketch take through the page's own button, and Add actor saved a third actor and retired the poster.")
 }

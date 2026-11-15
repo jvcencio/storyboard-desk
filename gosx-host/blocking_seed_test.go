@@ -14,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"m31labs.dev/gosx/scene"
 )
 
 // blockingTestPoster is a 16:9 PNG with enough colours to pass the blank-frame
@@ -337,6 +339,45 @@ func TestBlockingLegendJoinsThePromptOnlyForASelectedStudy(t *testing.T) {
 	}
 }
 
+func TestBlockingPosesAreSavedAndNamedInThePrompt(t *testing.T) {
+	f := newBlockingFixture(t)
+	response := f.post("/blocking/save", func(v url.Values) {
+		v.Set("actor.0.name", "Mara")
+		v.Set("actor.0.pose", "sit")
+		v.Set("actor.0.arms", "crossed")
+		v.Set("actor.0.look", "left")
+		v.Set("actor.1.pose", "stand") // the default option is not stored
+	})
+	if response.Code != 303 {
+		t.Fatalf("save poses: %d %s", response.Code, response.Body.String())
+	}
+	actors := f.scene().Actors
+	if actors[0].Pose != "sit" || actors[0].Arms != "crossed" || actors[0].Look != "left" || actors[1].Pose != "" {
+		t.Fatalf("saved poses: %+v", actors)
+	}
+	_, shot := f.load()
+	if stored := string(shot["blocking_scene"]); strings.Contains(stored, `"stand"`) || strings.Count(stored, `"pose"`) != 1 {
+		t.Fatalf("a default pose was written to the scene: %s", stored)
+	}
+	f.capture(blockingTestPoster(t, 0))
+	f.post("/blocking/sketch", nil)
+	_, shot = f.load()
+	if legend := blockingLegend(shot); !strings.Contains(legend, "the orange figure is Mara (seated, arms crossed, looking to their left)") ||
+		!strings.Contains(legend, "the teal figure is Actor B;") && !strings.Contains(legend, "the teal figure is Actor B.") {
+		t.Fatalf("legend: %s", legend)
+	}
+	// Returning to the default removes the key instead of leaving the old pose.
+	if response = f.post("/blocking/save", func(v url.Values) { v.Set("actor.0.pose", "stand") }); response.Code != 303 {
+		t.Fatalf("reset pose: %d", response.Code)
+	}
+	if actors = f.scene().Actors; actors[0].Pose != "" || actors[0].Arms != "crossed" {
+		t.Fatalf("after reset: %+v", actors[0])
+	}
+	if response = f.post("/blocking/save", func(v url.Values) { v.Set("actor.0.pose", "levitate") }); response.Code != 400 {
+		t.Fatalf("unknown pose: %d", response.Code)
+	}
+}
+
 func TestColourNamesAreDistinctAcrossThePalette(t *testing.T) {
 	want := []string{"orange", "teal", "blue", "purple", "yellow", "red", "green", "pink"}
 	for i, colour := range blockingPalette {
@@ -348,6 +389,75 @@ func TestColourNamesAreDistinctAcrossThePalette(t *testing.T) {
 		if got := colourName(colour); got != name {
 			t.Errorf("%s is %q, want %q", colour, got, name)
 		}
+	}
+}
+
+func TestBlockingStageHasFiguresLightsAndMarks(t *testing.T) {
+	spec := defaultBlockingScene()
+	spec.Actors[0].Pose, spec.Actors[0].Arms = "kneel", "crossed"
+	props, err := blockingRender(spec, "16:9", "camera")
+	if err != nil {
+		t.Fatal(err)
+	}
+	stage, _ := json.Marshal(props.SceneIR())
+	for _, id := range []string{"key-light", "fill-light", "stage-floor", "stage-marks", "actor-a-head", "actor-a-nose", "actor-a-left-forearm", "actor-a-right-shin", "actor-a-left-foot-joint", "actor-b-pelvis", "actor-a-mark", "actor-a-head-shadow", "actor-b-left-shin-shadow"} {
+		if !strings.Contains(string(stage), `"`+id+`"`) {
+			t.Errorf("the stage has no %q", id)
+		}
+	}
+	// A pose only moves parts: the two scenes have the same objects.
+	standing, _ := blockingRender(defaultBlockingScene(), "16:9", "camera")
+	if a, b := len(props.SceneIR().Objects), len(standing.SceneIR().Objects); a != b {
+		t.Fatalf("a pose changed the object count from %d to %d", b, a)
+	}
+	// So the preview sends transforms, not whole records with their shaders.
+	diff := scene.DiffScene(standing.SceneIR(), props.SceneIR(), scene.DiffOptions{PatchTransforms: true})
+	if len(diff.RemountFields) != 0 || len(diff.Commands) == 0 {
+		t.Fatalf("pose preview: remount %v, %d commands", diff.RemountFields, len(diff.Commands))
+	}
+	if update, _ := json.Marshal(diff.Commands); strings.Contains(string(update), "sunDir") || len(update) > 40_000 {
+		t.Fatalf("a pose preview resends shader sources: %d bytes", len(update))
+	}
+	// A seated figure gets a block to sit on, with its own shadow.
+	spec.Actors[0].Pose = "sit"
+	seated, _ := blockingRender(spec, "16:9", "camera")
+	if seatedJSON := string(mustJSON(seated.SceneIR())); !strings.Contains(seatedJSON, `"actor-a-seat"`) || strings.Contains(string(stage), `"actor-a-seat"`) {
+		t.Fatal("only a seated figure should have a seat")
+	}
+	// Plan view turns on the shot camera drawing in the marks.
+	planned, _ := blockingRender(defaultBlockingScene(), "16:9", "plan")
+	if planJSON, _ := json.Marshal(planned.SceneIR()); bytes.Equal(planJSON, mustJSON(standing.SceneIR())) {
+		t.Fatal("Plan and Camera render the same stage")
+	}
+}
+
+func mustJSON(value any) []byte {
+	data, _ := json.Marshal(value)
+	return data
+}
+
+func TestBlockingLightIsSavedAndNamedInThePrompt(t *testing.T) {
+	f := newBlockingFixture(t)
+	if response := f.post("/blocking/save", func(v url.Values) { v.Set("light", "back") }); response.Code != 303 {
+		t.Fatalf("save light: %d %s", response.Code, response.Body.String())
+	}
+	if f.scene().Light != "back" {
+		t.Fatalf("saved light %q", f.scene().Light)
+	}
+	f.capture(blockingTestPoster(t, 0))
+	f.post("/blocking/sketch", nil)
+	_, shot := f.load()
+	if legend := blockingLegend(shot); !strings.Contains(legend, "backlit") {
+		t.Fatalf("legend: %s", legend)
+	}
+	if response := f.post("/blocking/save", func(v url.Values) { v.Set("light", "key-left") }); response.Code != 303 {
+		t.Fatalf("default light: %d", response.Code)
+	}
+	if _, shot = f.load(); f.scene().Light != "" || strings.Contains(string(shot["blocking_scene"]), `"light"`) {
+		t.Fatalf("the default light was written: %s", shot["blocking_scene"])
+	}
+	if response := f.post("/blocking/save", func(v url.Values) { v.Set("light", "disco") }); response.Code != 400 {
+		t.Fatalf("unknown light: %d", response.Code)
 	}
 }
 

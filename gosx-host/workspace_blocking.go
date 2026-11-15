@@ -183,10 +183,11 @@ func (s *ProjectStore) useBlockingPoster(id, sid, base string) (ProjectDocument,
 	}
 	actors := []ProjectDocument{}
 	for _, actor := range spec.Actors {
-		actors = append(actors, ProjectDocument{"id": rawValue(actor.ID), "name": rawValue(actor.Name), "colour": rawValue(actor.Colour), "colour_name": rawValue(colourName(actor.Colour))})
+		actors = append(actors, ProjectDocument{"id": rawValue(actor.ID), "name": rawValue(actor.Name), "colour": rawValue(actor.Colour),
+			"colour_name": rawValue(colourName(actor.Colour)), "stance": rawValue(blockingStance(actor))})
 	}
 	study := ProjectDocument{"integration": rawValue("blocking"), "job_id": rawValue(job), "scene_version": rawValue(base),
-		"poster_sha256": poster["sha256"], "actors": rawValue(actors), "camera": rawValue(spec.Camera)}
+		"poster_sha256": poster["sha256"], "actors": rawValue(actors), "camera": rawValue(spec.Camera), "light": rawValue(blockingLightPhrase(spec))}
 	// importMedia rejects a project that changed since Load, so the poster
 	// checked above is the one that becomes the take.
 	return s.importMedia(id, sid, "sketch", "blocking-study.png", int64(len(data)), bytes.NewReader(data), documentRevision(project), "", "", study)
@@ -235,7 +236,9 @@ func (h *workspaceHandler) blockingRequest(w http.ResponseWriter, r *http.Reques
 			http.Error(w, "Material unavailable", 500)
 			return
 		}
-		commands := scene.DiffCommands(previous.SceneIR(), next.SceneIR())
+		// A pose change only moves meshes. Sending transforms instead of whole
+		// records keeps the two shader sources out of every drag update.
+		commands := scene.DiffScene(previous.SceneIR(), next.SceneIR(), scene.DiffOptions{PatchTransforms: true}).Commands
 		commands = append(commands, scene.Command{Kind: scene.CommandSetCamera, Data: blockingCameraPayload(next)})
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{"commands": commands})
@@ -307,6 +310,10 @@ func (w workspacePage) blockingEditor(renderer *island.Renderer) gosx.Node {
 		for _, field := range [][3]string{{"name", "Name", "text"}, {"x", "Across · m", "number"}, {"z", "Depth · m", "number"}, {"heading", "Facing · °", "number"}, {"height", "Height · m", "number"}, {"colour", "Colour", "color"}} {
 			items = append(items, blockingField(form, field[1], prefix+field[0], fields[prefix+field[0]], field[2]))
 		}
+		items = append(items,
+			blockingSelect(form, "Pose", prefix+"pose", fields[prefix+"pose"], blockingPoses),
+			blockingSelect(form, "Arms", prefix+"arms", fields[prefix+"arms"], blockingArms),
+			blockingSelect(form, "Looking", prefix+"look", fields[prefix+"look"], blockingLooks))
 		if len(spec.Actors) > 1 {
 			items = append(items, el("button", attrs("type", "submit", "name", "op", "value", fmt.Sprintf("remove-actor.%d", i), "class", "button secondary blocking-remove", "aria-label", "Remove "+actor.Name), txt("Remove")))
 		}
@@ -319,6 +326,7 @@ func (w workspacePage) blockingEditor(renderer *island.Renderer) gosx.Node {
 	for _, field := range [][2]string{{"x", "Across · m"}, {"y", "Height · m"}, {"z", "Distance · m"}, {"pan", "Pan · °"}, {"tilt", "Tilt · °"}, {"lens", "Lens · mm"}} {
 		camera = append(camera, blockingField(form, field[1], "camera."+field[0], fields["camera."+field[0]], "number"))
 	}
+	camera = append(camera, blockingSelect(form, "Key light", "light", fields["light"], blockingLights))
 	controls = append(controls, fragment(actors...), cls("fieldset", "blocking-camera", fragment(camera...)))
 	sketch := w.form("/blocking/sketch")
 	var posterNode, noteNode, offerNode gosx.Node
@@ -362,6 +370,19 @@ func (w workspacePage) blockingEditor(renderer *island.Renderer) gosx.Node {
 		cls("div", "blocking-layout", el("div", cls("div", "blocking-toolbar", el("div", attrs("role", "group", "aria-label", "Stage view"), el("button", attrs("type", "button", "data-blocking-view", "plan", "aria-pressed", "true"), txt("Plan")), el("button", attrs("type", "button", "data-blocking-view", "camera", "aria-pressed", "false"), txt("Camera"))), el("button", attrs("type", "button", "data-blocking-capture", "true"), txt("Capture camera poster"))),
 			cls("div", "blocking-viewport", stage), el("p", attrs("class", "fine", "id", "blocking-help"), txt("Select an actor, then click or drag in Plan to place them. Positions are in metres.")),
 			el("p", attrs("role", "status", "id", "blocking-status"), txt("Preparing preview…")), posterNode, noteNode, offerNode), cls("aside", "paper blocking-inspector", el("fieldset", selection...), el("form", controls...))))
+}
+
+func blockingSelect(form FormView, label, name, value string, options []blockingChoice) gosx.Node {
+	current := form.value(name, value)
+	nodes := []any{attrs("name", name), form.validationAttrs(name)}
+	for _, option := range options {
+		choice := attrs("value", option.Key)
+		if option.Key == current {
+			choice = append(choice, attrs("selected", "selected")...)
+		}
+		nodes = append(nodes, el("option", choice, txt(option.Label)))
+	}
+	return form.label(label, name, el("select", nodes...))
 }
 
 func blockingField(form FormView, label, name, value, kind string) gosx.Node {
