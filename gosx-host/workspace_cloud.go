@@ -66,6 +66,8 @@ func (h *workspaceHandler) cloudCommand(rw http.ResponseWriter, r *http.Request,
 		}
 	case "/cloud-resume":
 		_, err = cloud.Process(values.Get("job"))
+	case "/cloud-reconcile":
+		_, err = cloud.Reconcile(values.Get("job"))
 	default:
 		err = fmt.Errorf("unknown generation operation")
 	}
@@ -124,10 +126,18 @@ func (w workspacePage) generation() gosx.Node {
 	for _, j := range list(state, "jobs") {
 		f = w.controls("/cloud-resume")
 		f = append(f, hidden("job", shotText(j, "id")), el("h3", txt(shotText(j, "model")+" · "+shotText(j, "status"))), el("p", txt(shotText(j, "message"))), el("p", txt(fmt.Sprintf("Reserved $%.4f · reported cost %s", number(j, "reserved_usd"), string(rawOr(j, "actual_cost_usd", nil))))))
-		if shotText(j, "remote_id") != "" || shotText(j, "result_file") != "" || shotText(j, "status") == "queued" {
+		if !cloudJobRuleFor(j).final && (shotText(j, "remote_id") != "" || shotText(j, "result_file") != "" || shotText(j, "status") == "queued") {
 			f = append(f, button("Check / recover this existing job"))
 		}
-		content = append(content, cls("article", "paper", el("form", f...)))
+		var reconcile gosx.Node
+		if shotText(j, "status") == "unknown" {
+			// The app cannot learn what happened to this request. The shot
+			// stays closed to new paid jobs until the person says they looked.
+			reconcile = el("form", append(w.controls("/cloud-reconcile"), hidden("job", shotText(j, "id")),
+				el("p", txt("This shot takes no new request until you have checked your provider activity for this one. The reservation stays either way.")),
+				el("button", attrs("type", "submit", "class", "button secondary"), txt("I checked provider activity for this request")))...)
+		}
+		content = append(content, cls("article", "paper", el("form", f...), reconcile))
 	}
 	return el("section", content...)
 }

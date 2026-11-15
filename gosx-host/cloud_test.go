@@ -21,6 +21,8 @@ type fakeGenerationProvider struct {
 	imageCost             float64
 	imageBody, videoBody  ProjectDocument
 	ready                 func() error
+	pollError             error  // fails the next status checks of the video job
+	pollStatus            string // overrides the reported video status
 }
 
 func (f *fakeGenerationProvider) Ready() error {
@@ -53,9 +55,15 @@ func (f *fakeGenerationProvider) Call(path string, body any, auth bool) (Project
 		return ProjectDocument{"id": rawValue("provider-123"), "status": rawValue("pending")}, nil
 	case "videos/provider-123":
 		f.polls++
+		if f.pollError != nil {
+			return nil, f.pollError
+		}
 		status := "completed"
 		if f.pending {
 			status = "pending"
+		}
+		if f.pollStatus != "" {
+			status = f.pollStatus
 		}
 		return ProjectDocument{"status": rawValue(status), "usage": rawValue(ProjectDocument{"cost": rawValue(.64)}), "urls": rawValue([]string{"https://private.invalid/signed"})}, nil
 	}
@@ -163,6 +171,7 @@ func TestCloudConfirmationBudgetAndIdempotentImageImport(t *testing.T) {
 	if strings.Contains(jsonText(state), "Authorization") {
 		t.Fatal("credential field saved")
 	}
+	job = c.jobs[qid] // Process returns a copy; the crash state belongs in the service
 	delete(job, "asset_id")
 	job["status"] = rawValue("importing")
 	c.save(job)

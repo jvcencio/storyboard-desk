@@ -76,6 +76,16 @@ func (c *CloudService) load() error {
 		if !preparedJobID.MatchString(id) || !projectIDPattern.MatchString(shotText(j, "project_id")) || !finite(number(j, "reserved_usd")) || number(j, "reserved_usd") < 0 {
 			return fmt.Errorf("unrecognized generation receipt; reconcile saved jobs before generating")
 		}
+		if shotText(j, "status") == "queued" {
+			// "submitting" is saved before the provider call, so a job still
+			// queued at startup was never sent. Withdraw it: the quote, the
+			// approvals and the prices it was checked against are stale now.
+			j["status"], j["ended_at"] = rawValue("cancelled"), rawValue(stamp())
+			j["message"] = rawValue("The app stopped before this request was sent. Nothing was sent or charged. Prepare the request again.")
+			if err = c.save(j); err != nil {
+				return err
+			}
+		}
 		if shotText(j, "status") == "submitting" && shotText(j, "remote_id") == "" && shotText(j, "result_file") == "" {
 			j["status"], j["message"] = rawValue("unknown"), rawValue("Interrupted during submission. Reconcile provider activity before creating another request.")
 			if err = c.save(j); err != nil {
@@ -90,11 +100,24 @@ func (c *CloudService) load() error {
 func (c *CloudService) save(j ProjectDocument) error {
 	return c.store.writeAuxJSON("", "cloud/jobs/"+shotText(j, "id")+".json", j)
 }
+
+// update saves the patched job, then changes the job in memory. A failed save
+// leaves memory as it was, so memory never claims a state the disk lacks.
 func (c *CloudService) update(j ProjectDocument, patch ProjectDocument) error {
+	next := make(ProjectDocument, len(j)+len(patch))
+	for k, v := range j {
+		next[k] = v
+	}
+	for k, v := range patch {
+		next[k] = v
+	}
+	if err := c.save(next); err != nil {
+		return err
+	}
 	for k, v := range patch {
 		j[k] = v
 	}
-	return c.save(j)
+	return nil
 }
 func (c *CloudService) spent(id string) float64 {
 	sum := 0.0
@@ -102,7 +125,12 @@ func (c *CloudService) spent(id string) float64 {
 		if shotText(j, "project_id") != id || shotText(j, "status") == "cancelled" {
 			continue
 		}
-		cost := number(j, "reserved_usd")
+		// A reported cost always counts. Without one, the reservation counts
+		// unless the job stopped before any request was sent.
+		cost := 0.0
+		if cloudJobRuleFor(j).charges {
+			cost = number(j, "reserved_usd")
+		}
 		if v, ok := j["actual_cost_usd"]; ok && !nullJSON(v) && finite(number(j, "actual_cost_usd")) && number(j, "actual_cost_usd") >= 0 {
 			cost = number(j, "actual_cost_usd")
 		}
@@ -457,7 +485,7 @@ func (c *CloudService) Submit(qid string, confirmed bool) (ProjectDocument, erro
 		return nil, fmt.Errorf("check the OpenRouter connection first")
 	}
 	if job, ok := c.jobs[qid]; ok {
-		return job, nil
+		return cloneDocument(job), nil
 	}
 	q, err := c.store.auxJSON("", "cloud/quotes/"+qid+".json", nil)
 	if err != nil || q == nil {
@@ -521,8 +549,8 @@ func (c *CloudService) Submit(qid string, confirmed bool) (ProjectDocument, erro
 		return nil, fmt.Errorf("request exceeds the remaining project allowance")
 	}
 	for _, j := range c.jobs {
-		if shotText(j, "project_id") == id && shotText(j, "shot_id") == sid && containsField([]string{"queued", "submitting", "pending", "in_progress", "downloading", "importing"}, shotText(j, "status")) {
-			return nil, fmt.Errorf("this shot already has an active cloud job")
+		if shotText(j, "project_id") == id && shotText(j, "shot_id") == sid && cloudJobRuleFor(j).unfinished {
+			return nil, fmt.Errorf("this shot already has an active cloud job (%s); check or reconcile it before creating another", shotText(j, "status"))
 		}
 	}
 	if err = c.provider.Ready(); err != nil {
@@ -541,7 +569,7 @@ func (c *CloudService) Submit(qid string, confirmed bool) (ProjectDocument, erro
 		return nil, err
 	}
 	c.jobs[qid] = q
-	return q, nil
+	return cloneDocument(q), nil
 }
 func (c *CloudService) body(job ProjectDocument) (ProjectDocument, error) {
 	images := []ProjectDocument{}

@@ -4,7 +4,6 @@ package main
 
 import (
 	"context"
-	"strings"
 	"syscall/js"
 )
 
@@ -72,7 +71,10 @@ func (forms *formState) submit(e js.Value) {
 
 func (forms *formState) click(e js.Value) {
 	anchor := closest(e.Get("target"), "a[href]")
-	if !anchor.Truthy() || e.Get("ctrlKey").Bool() || e.Get("metaKey").Bool() || e.Get("button").Int() > 0 || anchor.Call("hasAttribute", "download").Bool() {
+	// A click with a modifier key opens the link elsewhere or downloads it;
+	// this page and its drafts stay.
+	if !anchor.Truthy() || e.Get("ctrlKey").Bool() || e.Get("metaKey").Bool() || e.Get("shiftKey").Bool() || e.Get("altKey").Bool() ||
+		e.Get("button").Int() > 0 || anchor.Call("hasAttribute", "download").Bool() {
 		return
 	}
 	href := attr(anchor, "href")
@@ -82,11 +84,28 @@ func (forms *formState) click(e js.Value) {
 		query(form, `input[name="title"]`).Call("focus")
 		return
 	}
-	if len(forms.dirty) > 0 && !strings.HasPrefix(href, "#") {
+	// A link to the page that is already open only scrolls: nothing is left
+	// behind, so there is nothing to confirm and no draft to release. A link
+	// marked data-reload asks for the saved version of that same page.
+	// The anchor element already holds its resolved address, so nothing here
+	// can throw on a malformed href.
+	location := js.Global().Get("location")
+	samePage := anchor.Get("origin").String() == location.Get("origin").String() &&
+		anchor.Get("pathname").String() == location.Get("pathname").String() && anchor.Get("search").String() == location.Get("search").String()
+	reload := samePage && anchor.Call("hasAttribute", "data-reload").Bool()
+	if samePage && !reload {
+		return
+	}
+	if len(forms.dirty) > 0 {
 		if !js.Global().Call("confirm", "Discard unsaved edits and leave this view?").Bool() {
 			e.Call("preventDefault")
-		} else {
-			forms.dirty = nil
+			return
 		}
+		forms.dirty = nil
+	}
+	if reload {
+		e.Call("preventDefault")
+		location.Set("hash", anchor.Get("hash"))
+		location.Call("reload")
 	}
 }

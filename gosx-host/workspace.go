@@ -289,7 +289,7 @@ func (h *workspaceHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 				if err == nil {
 					return
 				}
-			case "/cloud-connect", "/cloud-allowance", "/cloud-brief", "/cloud-approve-brief", "/cloud-submit", "/cloud-resume":
+			case "/cloud-connect", "/cloud-allowance", "/cloud-brief", "/cloud-approve-brief", "/cloud-submit", "/cloud-resume", "/cloud-reconcile":
 				updated, err = h.cloudCommand(rw, r, id, rev, values)
 			case "/music-cue", "/section-save", "/section-split", "/coverage-add", "/coverage-edit", "/section-edit", "/section-undo", "/section-reel", "/section-export":
 				var rel string

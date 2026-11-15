@@ -238,7 +238,7 @@ func (s *ProjectStore) importMedia(id, sid, kind, filename string, length int64,
 			}
 			for _, asset := range list(shot, "assets") {
 				if shotText(object(asset, generationProperty(generation)), "job_id") == shotText(generation, "job_id") {
-					return nil
+					return errNoProjectChange // this result is already a take
 				}
 			}
 			generation["direction_stale_on_return"] = rawValue(directionBasis(p, shot) != shotText(generation, "basis"))
@@ -284,7 +284,7 @@ func (s *ProjectStore) importMedia(id, sid, kind, filename string, length int64,
 			for _, r := range refs {
 				if shotText(r, "sha256") == hash {
 					dir.Remove(rel)
-					return nil
+					return errNoProjectChange // the same image is already a reference
 				}
 			}
 			record["title"], record["notes"] = rawValue(title), rawValue(notes)
@@ -419,6 +419,12 @@ func (s *ProjectStore) Bin(id, sid, aid, reason string, restore bool, rev int) (
 					if shotText(a, "kind") == "keyframe" {
 						shot["approval"] = rawValue(nil)
 					}
+				}
+				// The approval names one image. Binning that image ends it even
+				// when another take is selected now; otherwise restoring and
+				// reselecting the image would bring the approval back unasked.
+				if shotText(object(shot, "approval"), "asset_id") == aid {
+					shot["approval"] = rawValue(nil)
 				}
 			}
 			return nil

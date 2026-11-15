@@ -46,20 +46,31 @@ func (c *CloudService) Process(jid string) (ProjectDocument, error) {
 	if !ok {
 		return nil, fmt.Errorf("choose an existing cloud job")
 	}
+	if rule := cloudJobRuleFor(j); rule.final {
+		// A finished job is never asked again: a failed check must not turn a
+		// reported failure back into a job that blocks the shot.
+		if shotText(j, "status") == "done" {
+			return cloneDocument(j), nil
+		}
+		return cloneDocument(j), fmt.Errorf("this request is finished (%s); prepare a new one", shotText(j, "status"))
+	}
 	err := c.process(j)
 	if err != nil {
-		state := "blocked"
-		if shotText(j, "remote_id") != "" || shotText(j, "result_file") != "" {
+		state, message := "unknown", err.Error()
+		switch {
+		case shotText(j, "remote_id") != "" || shotText(j, "result_file") != "":
 			state = "recoverable"
-		} else if shotText(j, "status") == "submitting" || shotText(j, "status") == "unknown" {
-			state = "unknown"
+		case shotText(j, "status") == "queued":
+			// update saves "submitting" before the provider call, so an error
+			// that finds the job still queued came before anything was sent.
+			state, message = "blocked", message+". Nothing was sent and nothing is reserved; prepare the request again."
 		}
-		patch := ProjectDocument{"status": rawValue(state), "message": rawValue(err.Error()), "ended_at": rawValue(stamp())}
+		patch := ProjectDocument{"status": rawValue(state), "message": rawValue(message), "ended_at": rawValue(stamp())}
 		if e := c.update(j, patch); e != nil {
-			return j, fmt.Errorf("job state could not be saved; reconcile provider activity before generating again")
+			return cloneDocument(j), fmt.Errorf("job state could not be saved; reconcile provider activity before generating again")
 		}
 	}
-	return j, err
+	return cloneDocument(j), err
 }
 func (c *CloudService) process(j ProjectDocument) error {
 	if shotText(j, "asset_id") != "" {

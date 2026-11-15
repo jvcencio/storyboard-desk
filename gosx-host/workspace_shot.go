@@ -73,7 +73,10 @@ func ShotEditor(props ShotEditorProps) gosx.Node {
 	if props.Base != "" {
 		update = cls("div", "room-shot-update", attrs("id", "room-shot-update", "hidden", "hidden", "role", "status"),
 			el("p", txt("A teammate updated this shot. Your open brief is kept here.")),
-			link("Review latest shot", pageURL(form.Scope.ProjectID, form.Scope.View, form.Scope.ShotID, form.Scope.Scene)+"#shot-editor", "button secondary"))
+			// This link usually names the page that is already open, where a
+			// plain link would only scroll. data-reload makes the client load
+			// the saved version.
+			el("a", attrs("href", pageURL(form.Scope.ProjectID, form.Scope.View, form.Scope.ShotID, form.Scope.Scene)+"#shot-editor", "class", "button secondary", "data-reload", "true"), txt("Review latest shot")))
 	}
 	var blocking gosx.Node
 	if props.BlockingURL != "" {
